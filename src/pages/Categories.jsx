@@ -1,0 +1,140 @@
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
+import { Plus, Edit2, Trash2 } from 'lucide-react'
+import Modal from '../components/ui/Modal'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
+import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
+import toast from 'react-hot-toast'
+
+const ICONS = ['🛒','🚗','🏠','🎉','💊','👕','📚','📄','💰','💵','🍽️','☕','✈️','🎮','📱','🏋️','🎵','🛍️','🏥','🔧','📦','🌿','🐾','🎁','🏫']
+const COLORS = ['#4CAF50','#2196F3','#FF9800','#E91E63','#00BCD4','#9C27B0','#FF5722','#607D8B','#8BC34A','#6c63ff','#f87171','#fbbf24','#60a5fa','#f472b6','#34d399']
+
+const emptyForm = { name:'', icon:'📦', color:'#6c63ff', type:'expense' }
+
+export default function Categories() {
+  const { user, profile } = useAuth()
+  const [cats, setCats]     = useState([])
+  const [txCounts, setCounts] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [modal, setModal]   = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [form, setForm]     = useState(emptyForm)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => { load() }, [])
+
+  async function load() {
+    const [{ data: cData }, { data: txData }] = await Promise.all([
+      supabase.from('categories').select('*').order('name'),
+      supabase.from('transactions').select('category_id, amount'),
+    ])
+    setCats(cData || [])
+    const counts = {}
+    ;(txData || []).forEach(t => {
+      if (t.category_id) {
+        if (!counts[t.category_id]) counts[t.category_id] = { count: 0, total: 0 }
+        counts[t.category_id].count++
+        counts[t.category_id].total += Number(t.amount)
+      }
+    })
+    setCounts(counts)
+    setLoading(false)
+  }
+
+  function openAdd()   { setEditing(null); setForm(emptyForm); setModal(true) }
+  function openEdit(c) { setEditing(c); setForm({ name:c.name, icon:c.icon, color:c.color, type:c.type }); setModal(true) }
+
+  async function handleSave() {
+    if (!form.name) { toast.error('שם קטגוריה נדרש'); return }
+    setSaving(true)
+    if (editing) {
+      await supabase.from('categories').update(form).eq('id', editing.id)
+      await logActivity({ userId:user.id, userName:profile.name, actionType:ACTION_TYPES.UPDATE, entityType:ENTITY_TYPES.CATEGORY, description:`עדכן/ה קטגוריה: ${form.name}`, entityId:editing.id })
+      toast.success('עודכן!')
+    } else {
+      await supabase.from('categories').insert({ ...form, created_by: user.id })
+      await logActivity({ userId:user.id, userName:profile.name, actionType:ACTION_TYPES.CREATE, entityType:ENTITY_TYPES.CATEGORY, description:`הוסיף/ה קטגוריה: ${form.name}` })
+      toast.success('נוסף!')
+    }
+    setModal(false); load(); setSaving(false)
+  }
+
+  async function handleDelete(c) {
+    if (!confirm(`למחוק את "${c.name}"?`)) return
+    await supabase.from('categories').delete().eq('id', c.id)
+    await logActivity({ userId:user.id, userName:profile.name, actionType:ACTION_TYPES.DELETE, entityType:ENTITY_TYPES.CATEGORY, description:`מחק/ה קטגוריה: ${c.name}`, entityId:c.id })
+    toast.success('נמחק')
+    load()
+  }
+
+  if (loading) return <LoadingSpinner />
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>קטגוריות</h1>
+        <button className="btn-primary" onClick={openAdd}><Plus size={15}/>קטגוריה חדשה</button>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:'1rem'}}>
+        {cats.map(c => (
+          <div key={c.id} className="stat-card" style={{position:'relative'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'0.75rem'}}>
+              <div style={{width:44,height:44,borderRadius:'0.75rem',background:`${c.color}25`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.4rem',border:`1px solid ${c.color}40`}}>{c.icon}</div>
+              <div style={{display:'flex',gap:'0.25rem'}}>
+                <button onClick={()=>openEdit(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.25rem'}}><Edit2 size={13}/></button>
+                <button onClick={()=>handleDelete(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.25rem'}}><Trash2 size={13}/></button>
+              </div>
+            </div>
+            <div style={{fontWeight:600,color:'#e2e8f0',marginBottom:'0.25rem'}}>{c.name}</div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span style={{fontSize:'0.75rem',color:'#64748b'}}>{txCounts[c.id]?.count || 0} טרנזקציות</span>
+              <span style={{fontSize:'0.8rem',fontWeight:600,color: c.type==='income'?'#4ade80':'#f87171'}}>₪{(txCounts[c.id]?.total || 0).toLocaleString()}</span>
+            </div>
+            <div style={{marginTop:'0.5rem',width:'100%',height:3,borderRadius:2,background:`${c.color}20'}}`}}>
+              <div style={{height:'100%',borderRadius:2,background:c.color,width:`${Math.min(100,(txCounts[c.id]?.count||0)*5)}%`}}/>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Modal open={modal} onClose={()=>setModal(false)} title={editing?'ערוך קטגוריה':'קטגוריה חדשה'}>
+        <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
+          <div>
+            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>שם</label>
+            <input className="input-field" placeholder="שם הקטגוריה..." value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/>
+          </div>
+          <div>
+            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סוג</label>
+            <div style={{display:'flex',gap:'0.5rem'}}>
+              {[['expense','הוצאה'],['income','הכנסה'],['both','שניהם']].map(([k,v])=>(
+                <button key={k} onClick={()=>setForm({...form,type:k})} style={{flex:1,padding:'0.4rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${form.type===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:form.type===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:form.type===k?'#a78bfa':'#94a3b8'}}>{v}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.5rem'}}>אייקון</label>
+            <div style={{display:'flex',gap:'0.375rem',flexWrap:'wrap'}}>
+              {ICONS.map(ic=>(
+                <button key={ic} onClick={()=>setForm({...form,icon:ic})} style={{width:34,height:34,borderRadius:'0.5rem',fontSize:'1rem',border:`2px solid ${form.icon===ic?'#6c63ff':'transparent'}`,background:form.icon===ic?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.04)',cursor:'pointer'}}>{ic}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.5rem'}}>צבע</label>
+            <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
+              {COLORS.map(c=>(
+                <button key={c} onClick={()=>setForm({...form,color:c})} style={{width:26,height:26,borderRadius:'50%',background:c,border:`3px solid ${form.color===c?'#fff':'transparent'}`,cursor:'pointer'}}/>
+              ))}
+            </div>
+          </div>
+          <div style={{display:'flex',gap:'0.75rem',justifyContent:'flex-end'}}>
+            <button className="btn-ghost" onClick={()=>setModal(false)}>ביטול</button>
+            <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving?'שומר...':'שמור'}</button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  )
+}
