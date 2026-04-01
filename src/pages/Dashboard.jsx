@@ -33,7 +33,7 @@ export default function Dashboard() {
   const [chartData, setChartData]       = useState([])
   const [categoryData, setCategoryData] = useState([])
   const [showAddTx, setShowAddTx]       = useState(false)
-  const [tx, setTx] = useState({ type:'expense', description:'', amount:'', wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0] })
+  const [tx, setTx] = useState({ type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0] })
   const [categories, setCategories]     = useState([])
   const [saving, setSaving]             = useState(false)
   const [todayEvents, setTodayEvents]   = useState([])
@@ -113,7 +113,7 @@ export default function Dashboard() {
     await logActivity({ userId: user.id, userName: profile.name, actionType: ACTION_TYPES.CREATE, entityType: ENTITY_TYPES.TRANSACTION, description: `הוסיף/ה טרנזקציה: ${tx.description} – ${tx.amount}₪` })
     toast.success('טרנזקציה נוספה!')
     setShowAddTx(false)
-    setTx({ type:'expense', description:'', amount:'', wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0] })
+    setTx({ type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0] })
     loadData()
     setSaving(false)
   }
@@ -236,10 +236,18 @@ export default function Dashboard() {
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תיאור</label>
             <input className="input-field" placeholder="תיאור הטרנזקציה" value={tx.description} onChange={e => setTx({...tx, description: e.target.value})}/>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
+          <div className="form-2col">
             <div>
               <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סכום</label>
-              <input className="input-field" type="number" placeholder="0.00" value={tx.amount} onChange={e => setTx({...tx, amount: e.target.value})} dir="ltr"/>
+              <div style={{display:'flex',gap:'0.5rem'}}>
+                <select className="input-field" value={tx.currency} onChange={e => setTx({...tx, currency: e.target.value})} style={{width:70,flexShrink:0}} dir="ltr">
+                  <option>₪</option>
+                  <option>$</option>
+                  <option>€</option>
+                  <option>£</option>
+                </select>
+                <input className="input-field" type="number" placeholder="0.00" value={tx.amount} onChange={e => setTx({...tx, amount: e.target.value})} dir="ltr"/>
+              </div>
             </div>
             <div>
               <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תאריך</label>
