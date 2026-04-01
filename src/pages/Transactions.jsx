@@ -262,6 +262,24 @@ export default function Transactions() {
           <div>
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סכום</label>
             <input className="input-field" type="number" placeholder="0.00" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} dir="ltr"/>
+            <label style={{display:'inline-flex',alignItems:'center',gap:'0.4rem',marginTop:'0.5rem',cursor:'pointer',fontSize:'0.78rem',color:'#64748b',userSelect:'none'}}>
+              <input
+                type="checkbox"
+                checked={form.currency !== '₪'}
+                onChange={e => setForm({...form, currency: e.target.checked ? '$' : '₪'})}
+                style={{accentColor:'#6c63ff',width:14,height:14,cursor:'pointer'}}
+              />
+              מטבע זר
+            </label>
+            {form.currency !== '₪' && (
+              <div style={{display:'flex',gap:'0.5rem',marginTop:'0.5rem'}}>
+                {['$','€','£'].map(c => (
+                  <button key={c} onClick={()=>setForm({...form,currency:c})} style={{padding:'0.3rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.9rem',fontWeight:600,cursor:'pointer',border:`1px solid ${form.currency===c?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.1)'}`,background:form.currency===c?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.04)',color:form.currency===c?'#a78bfa':'#94a3b8'}}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תאריך</label>
