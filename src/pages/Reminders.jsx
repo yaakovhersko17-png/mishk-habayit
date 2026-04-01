@@ -24,8 +24,11 @@ export default function Reminders() {
 
   useEffect(() => {
     load()
-    // request notification permission
-    if (Notification.permission === 'default') Notification.requestPermission()
+    try {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission()
+      }
+    } catch (_) {}
   }, [])
 
   async function load() {
@@ -42,9 +45,11 @@ export default function Reminders() {
       const diff = new Date(r.due_date) - Date.now()
       if (diff > 0 && diff < 3600000) { // within 1 hour
         setTimeout(() => {
-          if (Notification.permission === 'granted') {
-            new Notification(`תזכורת: ${r.title}`, { body: r.description || '' })
-          }
+          try {
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification(`תזכורת: ${r.title}`, { body: r.description || '' })
+            }
+          } catch (_) {}
         }, diff)
       }
     })
