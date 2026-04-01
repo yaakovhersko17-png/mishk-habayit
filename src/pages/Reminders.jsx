@@ -29,10 +29,11 @@ export default function Reminders() {
   }, [])
 
   async function load() {
-    const [{ data: rData }, { data: pData }] = await Promise.all([
-      supabase.from('reminders').select('*,profiles!reminders_assigned_to_fkey(name),creator:profiles!reminders_created_by_fkey(name)').order('due_date'),
-      supabase.from('profiles').select('*'),
+    const [{ data: rData, error: rErr }, { data: pData }] = await Promise.all([
+      supabase.from('reminders').select('*').order('due_date'),
+      supabase.from('profiles').select('id,name'),
     ])
+    if (rErr) { console.error('Reminders load error:', rErr); toast.error('שגיאה בטעינת תזכורות') }
     setReminders(rData || [])
     setProfiles(pData || [])
     setLoading(false)
@@ -146,7 +147,7 @@ export default function Reminders() {
                       ))}
                     </div>
                   )}
-                  {r.profiles && <div style={{marginTop:'0.375rem',fontSize:'0.75rem',color:'#475569'}}>מוקצה ל: {r.profiles.name}</div>}
+                  {r.assigned_to && <div style={{marginTop:'0.375rem',fontSize:'0.75rem',color:'#475569'}}>מוקצה ל: {profiles.find(p=>p.id===r.assigned_to)?.name || '—'}</div>}
                 </div>
                 <div style={{display:'flex',gap:'0.25rem',flexShrink:0}}>
                   <button onClick={()=>openEdit(r)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.25rem'}}><Edit2 size={13}/></button>
