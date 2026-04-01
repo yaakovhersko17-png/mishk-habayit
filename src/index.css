@@ -159,6 +159,32 @@
   }
   select.input-field option { background: #1e1e3a; color: #e2e8f0; }
 
+  /* ── Responsive layout helpers ──────────────── */
+  /* 2-column grid that collapses to 1 on mobile */
+  .form-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  /* Calendar: calendar + side panel side by side */
+  .cal-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 1.5rem;
+  }
+
+  /* ── Modal ───────────────────────────────────── */
+  /* On desktop: center the modal */
+  @media (min-width: 769px) {
+    .modal-backdrop {
+      align-items: center !important;
+      padding: 1rem !important;
+    }
+    .modal-box {
+      border-radius: 1rem !important;
+    }
+  }
+
   /* ── Sidebar ─────────────────────────────────── */
   .sidebar {
     width: 240px;
@@ -238,6 +264,10 @@
     .mobile-overlay {
       display: block !important;
     }
+
+    /* Collapse 2-col grids to 1-col */
+    .form-2col { grid-template-columns: 1fr; }
+    .cal-grid  { grid-template-columns: 1fr; }
 
     /* Touch-friendly tap targets */
     .sidebar-link {

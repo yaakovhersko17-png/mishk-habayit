@@ -50,7 +50,7 @@ export default function CalendarPage() {
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>לוח שנה</h1>
 
-      <div style={{display:'grid',gridTemplateColumns:'1fr 300px',gap:'1.5rem'}}>
+      <div className="cal-grid">
         <div className="page-card">
           {/* Header */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.5rem'}}>

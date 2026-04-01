@@ -99,7 +99,7 @@ export default function Wallets() {
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>שם הארנק</label>
             <input className="input-field" placeholder="למשל: עוש, מזומן..." value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
+          <div className="form-2col">
             <div>
               <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>יתרה</label>
               <input className="input-field" type="number" placeholder="0.00" value={form.balance} onChange={e=>setForm({...form,balance:e.target.value})} dir="ltr"/>
