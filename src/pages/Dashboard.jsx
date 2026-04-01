@@ -128,15 +128,14 @@ export default function Dashboard() {
       {/* Greeting */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div>
-          <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>
-            שלום, {profile?.name} 👋
+          <h1 style={{margin:0,fontSize:'2rem',fontWeight:900,letterSpacing:'0.12em',background:'linear-gradient(135deg,#a78bfa,#6c63ff,#60a5fa)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
+            HERSKO
           </h1>
           <p style={{margin:'0.25rem 0 0',color:'#64748b',fontSize:'0.875rem'}}>
             {today.toLocaleDateString('he-IL', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
           </p>
         </div>
-        <div style={{display:'flex',gap:'0.75rem'}}>
-          <button className="btn-ghost" onClick={() => navigate('/scanner')}><Mic size={15}/>סריקה</button>
+        <div>
           <button className="btn-primary" onClick={() => setShowAddTx(true)}><Plus size={15}/>טרנזקציה חדשה</button>
         </div>
       </div>
