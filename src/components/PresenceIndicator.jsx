@@ -15,9 +15,10 @@ export default function PresenceIndicator() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchOnlineUsers)
       .subscribe()
 
-    // heartbeat – keep current user marked online
+    // heartbeat – keep current user marked online + refresh others status
     const hb = setInterval(async () => {
       await supabase.from('profiles').update({ is_online: true, last_seen: new Date().toISOString() }).eq('id', user.id)
+      fetchOnlineUsers()
     }, 30000)
 
     // mark offline on tab close
@@ -33,7 +34,9 @@ export default function PresenceIndicator() {
 
   async function fetchOnlineUsers() {
     if (!user) return
-    const { data } = await supabase.from('profiles').select('*').eq('is_online', true).neq('id', user.id)
+    // Consider online only if last_seen within 60 seconds (2 missed heartbeats = offline)
+    const cutoff = new Date(Date.now() - 60000).toISOString()
+    const { data } = await supabase.from('profiles').select('*').neq('id', user.id).gte('last_seen', cutoff)
     setOthers(data || [])
   }
 
