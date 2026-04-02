@@ -4,7 +4,14 @@ import { ChevronRight, ChevronLeft } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 
 const DAYS_HE = ['א','ב','ג','ד','ה','ו','ש']
+const DAYS_FULL = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת']
 const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
+
+function dateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
+function sameDay(a, b) { return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate() }
 
 export default function CalendarPage() {
   const [today] = useState(new Date())
@@ -13,15 +20,27 @@ export default function CalendarPage() {
   const [remByDate, setRemByDate] = useState({})
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [view, setView] = useState('month') // month | week | day
 
-  useEffect(() => { load() }, [current])
+  useEffect(() => { load() }, [current, view])
 
   async function load() {
-    const y = current.getFullYear(), m = current.getMonth()
-    const from = `${y}-${String(m+1).padStart(2,'0')}-01`
-    const to   = `${y}-${String(m+1).padStart(2,'0')}-${new Date(y,m+1,0).getDate()}`
+    let from, to
+    if (view === 'month') {
+      const y = current.getFullYear(), m = current.getMonth()
+      from = `${y}-${String(m+1).padStart(2,'0')}-01`
+      to = `${y}-${String(m+1).padStart(2,'0')}-${new Date(y,m+1,0).getDate()}`
+    } else if (view === 'week') {
+      const start = getWeekStart(current)
+      from = dateStr(start)
+      const end = new Date(start); end.setDate(end.getDate()+6)
+      to = dateStr(end)
+    } else {
+      from = dateStr(current)
+      to = dateStr(current)
+    }
     const [{ data: txData }, { data: remData }] = await Promise.all([
-      supabase.from('transactions').select('date,type,amount,description').gte('date',from).lte('date',to),
+      supabase.from('transactions').select('date,type,amount,description,currency').gte('date',from).lte('date',to),
       supabase.from('reminders').select('due_date,title,is_completed').gte('due_date',from+'T00:00:00').lte('due_date',to+'T23:59:59'),
     ])
     const tbd = {}, rbd = {}
@@ -30,71 +49,188 @@ export default function CalendarPage() {
     setTxByDate(tbd); setRemByDate(rbd); setLoading(false)
   }
 
-  const year = current.getFullYear(), month = current.getMonth()
-  const firstDay = new Date(year, month, 1).getDay()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const prevMonth = () => setCurrent(new Date(year, month - 1, 1))
-  const nextMonth = () => setCurrent(new Date(year, month + 1, 1))
+  function getWeekStart(d) {
+    const start = new Date(d)
+    start.setDate(start.getDate() - start.getDay())
+    return start
+  }
 
-  const selectedDateStr = selected ? `${year}-${String(month+1).padStart(2,'0')}-${String(selected).padStart(2,'0')}` : null
-  const selectedTx  = selectedDateStr ? (txByDate[selectedDateStr] || []) : []
-  const selectedRem = selectedDateStr ? (remByDate[selectedDateStr] || []) : []
+  // Navigation
+  function prev() {
+    if (view === 'month') setCurrent(new Date(current.getFullYear(), current.getMonth() - 1, 1))
+    else if (view === 'week') { const d = new Date(current); d.setDate(d.getDate() - 7); setCurrent(d) }
+    else { const d = new Date(current); d.setDate(d.getDate() - 1); setCurrent(d) }
+  }
+  function next() {
+    if (view === 'month') setCurrent(new Date(current.getFullYear(), current.getMonth() + 1, 1))
+    else if (view === 'week') { const d = new Date(current); d.setDate(d.getDate() + 7); setCurrent(d) }
+    else { const d = new Date(current); d.setDate(d.getDate() + 1); setCurrent(d) }
+  }
+
+  function headerTitle() {
+    if (view === 'month') return `${MONTHS_HE[current.getMonth()]} ${current.getFullYear()}`
+    if (view === 'day') return `${DAYS_FULL[current.getDay()]}, ${current.getDate()} ${MONTHS_HE[current.getMonth()]}`
+    const start = getWeekStart(current)
+    const end = new Date(start); end.setDate(end.getDate()+6)
+    return `${start.getDate()}–${end.getDate()} ${MONTHS_HE[current.getMonth()]} ${current.getFullYear()}`
+  }
+
+  // Selected day events
+  const selectedDateStr2 = selected || (view === 'day' ? dateStr(current) : null)
+  const selectedTx  = selectedDateStr2 ? (txByDate[selectedDateStr2] || []) : []
+  const selectedRem = selectedDateStr2 ? (remByDate[selectedDateStr2] || []) : []
 
   if (loading) return <LoadingSpinner />
 
-  const cells = []
-  for (let i = 0; i < firstDay; i++) cells.push(null)
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+  // Month view cells
+  const year = current.getFullYear(), month = current.getMonth()
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const monthCells = []
+  for (let i = 0; i < firstDay; i++) monthCells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) monthCells.push(d)
+
+  // Week view days
+  const weekStart = getWeekStart(current)
+  const weekDays = Array.from({length:7}, (_, i) => { const d = new Date(weekStart); d.setDate(d.getDate()+i); return d })
+
+  function renderDayCell(day, ds, compact) {
+    const hasTx  = txByDate[ds]?.length > 0
+    const hasRem = remByDate[ds]?.length > 0
+    const isToday = sameDay(day instanceof Date ? day : new Date(year, month, day), today)
+    const isSel = selected === ds
+    return (
+      <div key={ds} onClick={()=>setSelected(ds===selected?null:ds)} style={{
+        aspectRatio: compact ? '1' : undefined,
+        minHeight: compact ? undefined : 60,
+        display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
+        borderRadius:'0.625rem',cursor:'pointer',transition:'all 0.15s',position:'relative',
+        background:isSel?'rgba(108,99,255,0.3)':isToday?'rgba(108,99,255,0.15)':'transparent',
+        border:isSel?'1px solid rgba(108,99,255,0.5)':isToday?'1px solid rgba(108,99,255,0.3)':'1px solid transparent',
+        color:isSel?'#a78bfa':isToday?'#c4b5fd':'#e2e8f0',
+        fontSize:'0.875rem',fontWeight:isToday||isSel?700:400,
+        padding: compact ? 0 : '0.5rem',
+      }}>
+        {typeof day === 'number' ? day : day.getDate()}
+        {(hasTx || hasRem) && (
+          <div style={{position:'absolute',bottom:3,display:'flex',gap:'2px'}}>
+            {hasTx  && <div style={{width:4,height:4,borderRadius:'50%',background:'#6c63ff'}}/>}
+            {hasRem && <div style={{width:4,height:4,borderRadius:'50%',background:'#fbbf24'}}/>}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  function renderEvents(ds) {
+    const tx = txByDate[ds] || []
+    const rem = remByDate[ds] || []
+    if (!tx.length && !rem.length) return <p style={{color:'#475569',fontSize:'0.85rem',textAlign:'center',marginTop:'1rem'}}>אין אירועים</p>
+    return <>
+      {tx.length > 0 && (
+        <div style={{marginBottom:'1rem'}}>
+          <div style={{fontSize:'0.75rem',color:'#6c63ff',fontWeight:600,marginBottom:'0.5rem'}}>💳 טרנזקציות</div>
+          {tx.map((t,i)=>(
+            <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
+              <div style={{fontSize:'0.8rem',color:'#e2e8f0'}}>{t.description}</div>
+              <div style={{fontSize:'0.75rem',color:t.type==='income'?'#4ade80':'#f87171',fontWeight:600}}>{t.currency||'₪'}{Number(t.amount).toLocaleString()}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {rem.length > 0 && (
+        <div>
+          <div style={{fontSize:'0.75rem',color:'#fbbf24',fontWeight:600,marginBottom:'0.5rem'}}>🔔 תזכורות</div>
+          {rem.map((r,i)=>(
+            <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
+              <div style={{fontSize:'0.8rem',color:'#e2e8f0',textDecoration:r.is_completed?'line-through':'none'}}>{r.title}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  }
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
-      <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>לוח שנה</h1>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'0.75rem'}}>
+        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>לוח שנה</h1>
+        <div style={{display:'flex',gap:'0.375rem'}}>
+          {[['month','חודש'],['week','שבוע'],['day','יום']].map(([v,label])=>(
+            <button key={v} onClick={()=>{setView(v);setSelected(null)}} style={{
+              padding:'0.375rem 0.875rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',
+              border:`1px solid ${view===v?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,
+              background:view===v?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',
+              color:view===v?'#a78bfa':'#94a3b8',
+            }}>{label}</button>
+          ))}
+        </div>
+      </div>
 
       <div className="cal-grid">
         <div className="page-card">
-          {/* Header */}
+          {/* Navigation */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.5rem'}}>
-            <button onClick={prevMonth} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'#e2e8f0',padding:'0.375rem',display:'flex'}}><ChevronRight size={18}/></button>
-            <h2 style={{margin:0,fontSize:'1.1rem',fontWeight:600,color:'#e2e8f0'}}>{MONTHS_HE[month]} {year}</h2>
-            <button onClick={nextMonth} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'#e2e8f0',padding:'0.375rem',display:'flex'}}><ChevronLeft size={18}/></button>
+            <button onClick={prev} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'#e2e8f0',padding:'0.375rem',display:'flex'}}><ChevronRight size={18}/></button>
+            <h2 style={{margin:0,fontSize:'1.1rem',fontWeight:600,color:'#e2e8f0'}}>{headerTitle()}</h2>
+            <button onClick={next} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'#e2e8f0',padding:'0.375rem',display:'flex'}}><ChevronLeft size={18}/></button>
           </div>
 
-          {/* Day headers */}
-          <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem',marginBottom:'0.5rem'}}>
-            {DAYS_HE.map(d=>(
-              <div key={d} style={{textAlign:'center',fontSize:'0.75rem',color:'#64748b',fontWeight:600,padding:'0.25rem'}}>{d}</div>
-            ))}
-          </div>
+          {/* MONTH VIEW */}
+          {view === 'month' && <>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem',marginBottom:'0.5rem'}}>
+              {DAYS_HE.map(d=>(
+                <div key={d} style={{textAlign:'center',fontSize:'0.75rem',color:'#64748b',fontWeight:600,padding:'0.25rem'}}>{d}</div>
+              ))}
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem'}}>
+              {monthCells.map((day, i) => {
+                if (!day) return <div key={`e${i}`}/>
+                const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+                return renderDayCell(day, ds, true)
+              })}
+            </div>
+          </>}
 
-          {/* Grid */}
-          <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem'}}>
-            {cells.map((day, i) => {
-              if (!day) return <div key={`e${i}`}/>
-              const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
-              const hasTx  = txByDate[dateStr]?.length > 0
-              const hasRem = remByDate[dateStr]?.length > 0
-              const isToday = day===today.getDate() && month===today.getMonth() && year===today.getFullYear()
-              const isSel = selected===day
-              return (
-                <div key={day} onClick={()=>setSelected(day===selected?null:day)} style={{
-                  aspectRatio:'1',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
-                  borderRadius:'0.625rem',cursor:'pointer',transition:'all 0.15s',position:'relative',
-                  background:isSel?'rgba(108,99,255,0.3)':isToday?'rgba(108,99,255,0.15)':'transparent',
-                  border:isSel?'1px solid rgba(108,99,255,0.5)':isToday?'1px solid rgba(108,99,255,0.3)':'1px solid transparent',
-                  color:isSel?'#a78bfa':isToday?'#c4b5fd':'#e2e8f0',
-                  fontSize:'0.875rem',fontWeight:isToday||isSel?700:400,
-                }}>
-                  {day}
-                  {(hasTx || hasRem) && (
-                    <div style={{position:'absolute',bottom:3,display:'flex',gap:'2px'}}>
-                      {hasTx  && <div style={{width:4,height:4,borderRadius:'50%',background:'#6c63ff'}}/>}
-                      {hasRem && <div style={{width:4,height:4,borderRadius:'50%',background:'#fbbf24'}}/>}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+          {/* WEEK VIEW */}
+          {view === 'week' && <>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem',marginBottom:'0.5rem'}}>
+              {weekDays.map((d,i)=>(
+                <div key={i} style={{textAlign:'center',fontSize:'0.7rem',color:'#64748b',fontWeight:600}}>{DAYS_HE[i]}</div>
+              ))}
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem'}}>
+              {weekDays.map(d => {
+                const ds = dateStr(d)
+                return renderDayCell(d, ds, true)
+              })}
+            </div>
+            {/* Show events for all week days below */}
+            <div style={{marginTop:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
+              {weekDays.map(d => {
+                const ds = dateStr(d)
+                const tx = txByDate[ds] || []
+                const rem = remByDate[ds] || []
+                if (!tx.length && !rem.length) return null
+                return (
+                  <div key={ds}>
+                    <div style={{fontSize:'0.8rem',fontWeight:600,color:'#a78bfa',marginBottom:'0.5rem'}}>{DAYS_FULL[d.getDay()]} {d.getDate()}/{d.getMonth()+1}</div>
+                    {renderEvents(ds)}
+                  </div>
+                )
+              })}
+            </div>
+          </>}
+
+          {/* DAY VIEW */}
+          {view === 'day' && (
+            <div>
+              <div style={{fontSize:'0.85rem',color:'#94a3b8',marginBottom:'1rem',textAlign:'center'}}>
+                {current.getDate()} {MONTHS_HE[current.getMonth()]} {current.getFullYear()}
+              </div>
+              {renderEvents(dateStr(current))}
+            </div>
+          )}
 
           {/* Legend */}
           <div style={{marginTop:'1rem',display:'flex',gap:'1rem',justifyContent:'center'}}>
@@ -109,37 +245,12 @@ export default function CalendarPage() {
 
         {/* Side panel */}
         <div className="page-card">
-          {selected ? (
+          {selectedDateStr2 ? (
             <>
               <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#e2e8f0'}}>
-                {selected} {MONTHS_HE[month]}
+                {(() => { const d = new Date(selectedDateStr2+'T00:00:00'); return `${d.getDate()} ${MONTHS_HE[d.getMonth()]}` })()}
               </h3>
-              {selectedTx.length === 0 && selectedRem.length === 0
-                ? <p style={{color:'#475569',fontSize:'0.85rem',textAlign:'center',marginTop:'2rem'}}>אין אירועים</p>
-                : <>
-                  {selectedTx.length > 0 && (
-                    <div style={{marginBottom:'1rem'}}>
-                      <div style={{fontSize:'0.75rem',color:'#6c63ff',fontWeight:600,marginBottom:'0.5rem'}}>💳 טרנזקציות</div>
-                      {selectedTx.map((t,i)=>(
-                        <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
-                          <div style={{fontSize:'0.8rem',color:'#e2e8f0'}}>{t.description}</div>
-                          <div style={{fontSize:'0.75rem',color:t.type==='income'?'#4ade80':'#f87171',fontWeight:600}}>₪{Number(t.amount).toLocaleString()}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {selectedRem.length > 0 && (
-                    <div>
-                      <div style={{fontSize:'0.75rem',color:'#fbbf24',fontWeight:600,marginBottom:'0.5rem'}}>🔔 תזכורות</div>
-                      {selectedRem.map((r,i)=>(
-                        <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
-                          <div style={{fontSize:'0.8rem',color:'#e2e8f0',textDecoration:r.is_completed?'line-through':'none'}}>{r.title}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              }
+              {renderEvents(selectedDateStr2)}
             </>
           ) : (
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:'#475569',textAlign:'center',gap:'0.5rem'}}>

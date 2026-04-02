@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Edit2, Trash2, X } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import EmptyState from '../components/ui/EmptyState'
@@ -21,6 +21,8 @@ export default function Wallets() {
   const [editing, setEditing] = useState(null)
   const [form, setForm]       = useState(emptyWallet)
   const [saving, setSaving]   = useState(false)
+  const [historyWallet, setHistoryWallet] = useState(null)
+  const [walletTxs, setWalletTxs] = useState([])
 
   useEffect(() => { load() }, [])
 
@@ -28,6 +30,12 @@ export default function Wallets() {
     const { data } = await supabase.from('wallets').select('*').order('created_at')
     setWallets(data || [])
     setLoading(false)
+  }
+
+  async function openHistory(w) {
+    setHistoryWallet(w)
+    const { data } = await supabase.from('transactions').select('*,categories(name,icon)').eq('wallet_id', w.id).order('date', { ascending: false }).limit(50)
+    setWalletTxs(data || [])
   }
 
   function openAdd()  { setEditing(null); setForm(emptyWallet); setModal(true) }
@@ -75,13 +83,13 @@ export default function Wallets() {
         : (
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:'1rem'}}>
             {wallets.map(w => (
-              <div key={w.id} className="stat-card" style={{position:'relative',overflow:'hidden'}}>
+              <div key={w.id} className="stat-card" style={{position:'relative',overflow:'hidden',cursor:'pointer'}} onClick={()=>openHistory(w)}>
                 <div style={{position:'absolute',top:0,left:0,right:0,height:4,background:w.color}}/>
                 <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'1rem',paddingTop:'0.5rem'}}>
                   <div style={{fontSize:'2rem'}}>{w.icon}</div>
                   <div style={{display:'flex',gap:'0.375rem'}}>
-                    <button onClick={() => openEdit(w)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.25rem',borderRadius:'0.5rem'}}><Edit2 size={14}/></button>
-                    <button onClick={() => handleDelete(w)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.25rem',borderRadius:'0.5rem'}}><Trash2 size={14}/></button>
+                    <button onClick={e => { e.stopPropagation(); openEdit(w) }} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.25rem',borderRadius:'0.5rem'}}><Edit2 size={14}/></button>
+                    <button onClick={e => { e.stopPropagation(); handleDelete(w) }} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.25rem',borderRadius:'0.5rem'}}><Trash2 size={14}/></button>
                   </div>
                 </div>
                 <div style={{fontSize:'0.85rem',color:'#94a3b8',marginBottom:'0.375rem'}}>{w.name}</div>
@@ -127,6 +135,32 @@ export default function Wallets() {
             <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving?'שומר...':'שמור'}</button>
           </div>
         </div>
+      </Modal>
+
+      {/* Transaction History Modal */}
+      <Modal open={!!historyWallet} onClose={()=>setHistoryWallet(null)} title={historyWallet ? `היסטוריה – ${historyWallet.icon} ${historyWallet.name}` : ''} size="lg">
+        {walletTxs.length === 0
+          ? <p style={{textAlign:'center',color:'#64748b',padding:'2rem 0'}}>אין עסקאות לארנק זה</p>
+          : <div style={{overflowX:'auto'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',minWidth:'400px'}}>
+                <thead>
+                  <tr style={{borderBottom:'1px solid rgba(255,255,255,0.08)'}}>
+                    {['תאריך','תיאור','סכום','קטגוריה'].map(h=><th key={h} style={{padding:'0.625rem 0.75rem',textAlign:'right',fontSize:'0.75rem',color:'#64748b',fontWeight:500}}>{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {walletTxs.map(t=>(
+                    <tr key={t.id} style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                      <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'#64748b',whiteSpace:'nowrap'}}>{new Date(t.date).toLocaleDateString('he-IL')}</td>
+                      <td style={{padding:'0.625rem 0.75rem',fontSize:'0.85rem',color:'#e2e8f0'}}>{t.description}</td>
+                      <td style={{padding:'0.625rem 0.75rem',fontWeight:600,whiteSpace:'nowrap',color:t.type==='income'?'#4ade80':'#f87171'}}>{t.type==='income'?'+':'-'}{t.currency}{Number(t.amount).toLocaleString()}</td>
+                      <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'#94a3b8'}}>{t.categories ? `${t.categories.icon||''} ${t.categories.name}` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+        }
       </Modal>
     </div>
   )

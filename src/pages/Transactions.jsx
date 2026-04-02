@@ -9,7 +9,7 @@ import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import toast from 'react-hot-toast'
 
 const TYPE_LABELS = { income:'הכנסה', expense:'הוצאה', loan_given:'הלוואה נתתי', loan_received:'הלוואה קיבלתי' }
-const emptyTx = { type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0], notes:'', loan_party:'', loan_due_date:'' }
+const emptyTx = { type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0], notes:'', loan_party:'', loan_due_date:'', loan_returned: false }
 
 export default function Transactions() {
   const { user, profile } = useAuth()
@@ -23,7 +23,7 @@ export default function Transactions() {
   const [form, setForm]         = useState(emptyTx)
   const [saving, setSaving]     = useState(false)
   const [search, setSearch]     = useState('')
-  const [filter, setFilter]     = useState({ type:'', category:'', wallet:'', user:'' })
+  const [filter, setFilter]     = useState({ type:'', category:'', wallet:'', user:'', dateFrom:'', dateTo:'' })
   const [listening, setListening] = useState(false)
   const recognitionRef = useRef(null)
 
@@ -44,7 +44,7 @@ export default function Transactions() {
   }
 
   function openAdd()   { setEditing(null); setForm(emptyTx); setModal(true) }
-  function openEdit(t) { setEditing(t); setForm({ type:t.type, description:t.description, amount:t.amount, currency:t.currency, wallet_id:t.wallet_id||'', category_id:t.category_id||'', date:t.date, notes:t.notes||'', loan_party:t.loan_party||'', loan_due_date:t.loan_due_date||'' }); setModal(true) }
+  function openEdit(t) { setEditing(t); setForm({ type:t.type, description:t.description, amount:t.amount, currency:t.currency, wallet_id:t.wallet_id||'', category_id:t.category_id||'', date:t.date, notes:t.notes||'', loan_party:t.loan_party||'', loan_due_date:t.loan_due_date||'', loan_returned:!!t.loan_returned }); setModal(true) }
 
   async function updateWalletBalance(walletId, amount, type, oldWalletId, oldAmount, oldType) {
     // For new transaction or wallet change: credit/debit the wallet
@@ -79,6 +79,7 @@ export default function Transactions() {
     if (!payload.category_id) delete payload.category_id
     if (!payload.loan_party) delete payload.loan_party
     if (!payload.loan_due_date) delete payload.loan_due_date
+    if (!payload.type.startsWith('loan')) delete payload.loan_returned
 
     if (editing) {
       const { error } = await supabase.from('transactions').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editing.id)
@@ -156,6 +157,8 @@ export default function Transactions() {
     if (filter.category && t.category_id !== filter.category) return false
     if (filter.wallet && t.wallet_id !== filter.wallet) return false
     if (filter.user && t.user_id !== filter.user) return false
+    if (filter.dateFrom && t.date < filter.dateFrom) return false
+    if (filter.dateTo && t.date > filter.dateTo) return false
     return true
   })
 
@@ -190,10 +193,16 @@ export default function Transactions() {
           <option value="">כל הקטגוריות</option>
           {categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
         </select>
+        <select className="input-field" style={{width:'auto'}} value={filter.wallet} onChange={e=>setFilter({...filter,wallet:e.target.value})}>
+          <option value="">כל הארנקים</option>
+          {wallets.map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
+        </select>
         <select className="input-field" style={{width:'auto'}} value={filter.user} onChange={e=>setFilter({...filter,user:e.target.value})}>
           <option value="">כל המשתמשים</option>
           {profiles.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
+        <input className="input-field" type="date" style={{width:'auto'}} value={filter.dateFrom} onChange={e=>setFilter({...filter,dateFrom:e.target.value})} title="מתאריך" dir="ltr"/>
+        <input className="input-field" type="date" style={{width:'auto'}} value={filter.dateTo} onChange={e=>setFilter({...filter,dateTo:e.target.value})} title="עד תאריך" dir="ltr"/>
       </div>
 
       {/* Table */}
@@ -227,6 +236,7 @@ export default function Transactions() {
                         <span className={t.type==='income'?'badge-income':t.type.startsWith('loan')?'badge-loan':'badge-expense'}>
                           {TYPE_LABELS[t.type]}
                         </span>
+                        {t.type.startsWith('loan') && t.loan_returned && <span style={{marginRight:'0.375rem',fontSize:'0.7rem',color:'#4ade80'}}>✓ הוחזר</span>}
                       </td>
                       <td style={{padding:'0.875rem 1rem'}}>
                         <div style={{display:'flex',gap:'0.25rem'}}>
@@ -308,6 +318,12 @@ export default function Transactions() {
               <div>
                 <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תאריך פירעון</label>
                 <input className="input-field" type="date" value={form.loan_due_date} onChange={e=>setForm({...form,loan_due_date:e.target.value})} dir="ltr"/>
+              </div>
+              <div style={{gridColumn:'1/-1'}}>
+                <label style={{display:'inline-flex',alignItems:'center',gap:'0.5rem',cursor:'pointer',fontSize:'0.85rem',color:form.loan_returned?'#4ade80':'#94a3b8'}}>
+                  <input type="checkbox" checked={form.loan_returned} onChange={e=>setForm({...form,loan_returned:e.target.checked})} style={{accentColor:'#4ade80',width:16,height:16,cursor:'pointer'}}/>
+                  הלוואה הוחזרה
+                </label>
               </div>
             </>
           )}
