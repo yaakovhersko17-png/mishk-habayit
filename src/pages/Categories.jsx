@@ -7,10 +7,9 @@ import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import toast from 'react-hot-toast'
 
-const ICONS = ['🛒','🚗','🏠','🎉','💊','👕','📚','📄','💰','💵','🍽️','☕','✈️','🎮','📱','🏋️','🎵','🛍️','🏥','🔧','📦','🌿','🐾','🎁','🏫']
 const COLORS = ['#4CAF50','#2196F3','#FF9800','#E91E63','#00BCD4','#9C27B0','#FF5722','#607D8B','#8BC34A','#6c63ff','#f87171','#fbbf24','#60a5fa','#f472b6','#34d399']
 
-const emptyForm = { name:'', icon:'📦', color:'#6c63ff', type:'expense' }
+const emptyForm = { name:'', icon:'', color:'#6c63ff', type:'expense' }
 
 export default function Categories() {
   const { user, profile } = useAuth()
@@ -115,11 +114,7 @@ export default function Categories() {
           </div>
           <div>
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.5rem'}}>אייקון</label>
-            <div style={{display:'flex',gap:'0.375rem',flexWrap:'wrap'}}>
-              {ICONS.map(ic=>(
-                <button key={ic} onClick={()=>setForm({...form,icon:ic})} style={{width:34,height:34,borderRadius:'0.5rem',fontSize:'1rem',border:`2px solid ${form.icon===ic?'#6c63ff':'transparent'}`,background:form.icon===ic?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.04)',cursor:'pointer'}}>{ic}</button>
-              ))}
-            </div>
+            <input className="input-field" value={form.icon} onChange={e=>setForm({...form,icon:e.target.value})} placeholder="לחץ להוספת אמוג׳י 😀" style={{fontSize:'1.5rem',textAlign:'center'}}/>
           </div>
           <div>
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.5rem'}}>צבע</label>

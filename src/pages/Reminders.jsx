@@ -50,6 +50,17 @@ export default function Reminders() {
               new Notification(`תזכורת: ${r.title}`, { body: r.description || '' })
             }
           } catch (_) {}
+          // Play sound (works on iOS where Notification API is unavailable)
+          try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)()
+            const osc = ctx.createOscillator()
+            const gain = ctx.createGain()
+            osc.connect(gain); gain.connect(ctx.destination)
+            osc.frequency.value = 880
+            gain.gain.setValueAtTime(0.3, ctx.currentTime)
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6)
+            osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.6)
+          } catch (_) {}
         }, diff)
       }
     })
@@ -176,7 +187,7 @@ export default function Reminders() {
           </div>
           <div className="form-2col">
             <div>
-              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תאריך ושעה</label>
+              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תאריך ושעה (אופציונלי)</label>
               <input className="input-field" type="datetime-local" value={form.due_date} onChange={e=>setForm({...form,due_date:e.target.value})} dir="ltr"/>
             </div>
             <div>

@@ -184,7 +184,7 @@ export default function InvoiceArchive() {
       <Modal open={!!selected} onClose={()=>setSelected(null)} title={selected?.business_name || 'חשבונית'} size="lg">
         {selected && (
           <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
+            <div className="form-2col">
               {[['תאריך',selected.date],['סה"כ',`${selected.currency||'₪'}${Number(selected.total||0).toLocaleString()}`],['מע"מ',`${selected.currency||'₪'}${Number(selected.vat||0).toLocaleString()}`],['נסרק ע"י',selected.profiles?.name||'—']].map(([l,v])=>(
                 <div key={l} style={{padding:'0.75rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.04)'}}>
                   <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.25rem'}}>{l}</div>
@@ -200,7 +200,8 @@ export default function InvoiceArchive() {
             {items.length > 0 && (
               <div>
                 <h3 style={{margin:'0 0 0.75rem',fontSize:'0.875rem',fontWeight:600,color:'#94a3b8'}}>פריטים</h3>
-                <table style={{width:'100%',borderCollapse:'collapse'}}>
+                <div style={{overflowX:'auto'}}>
+                <table style={{width:'100%',borderCollapse:'collapse',minWidth:'400px'}}>
                   <thead>
                     <tr style={{borderBottom:'1px solid rgba(255,255,255,0.08)'}}>
                       {['פריט','כמות','מחיר','סה"כ','קטגוריה'].map(h=><th key={h} style={{padding:'0.5rem',textAlign:'right',fontSize:'0.75rem',color:'#64748b'}}>{h}</th>)}
@@ -218,6 +219,7 @@ export default function InvoiceArchive() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
           </div>
