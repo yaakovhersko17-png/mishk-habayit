@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { supabase, cached, invalidate, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Mic, Bell, Receipt, CreditCard as LoanIcon } from 'lucide-react'
-import { LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import Modal from '../components/ui/Modal'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
@@ -30,8 +29,6 @@ export default function Dashboard() {
   const [loading, setLoading]           = useState(true)
   const [wallets, setWallets]           = useState([])
   const [monthlyData, setMonthlyData]   = useState({ income: 0, expense: 0, loans: [] })
-  const [chartData, setChartData]       = useState([])
-  const [categoryData, setCategoryData] = useState([])
   const [showAddTx, setShowAddTx]       = useState(false)
   const [tx, setTx] = useState({ type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0] })
   const [categories, setCategories]     = useState([])
@@ -60,24 +57,6 @@ export default function Dashboard() {
     const expense = monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
     const loans   = (txData || []).filter(t => t.type.startsWith('loan'))
     setMonthlyData({ income, expense, loans })
-
-    // last 6 months line chart
-    const months = []
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const label = d.toLocaleDateString('he-IL', { month: 'short' })
-      const mTxs = (txData || []).filter(t => { const td = new Date(t.date); return td.getMonth() === d.getMonth() && td.getFullYear() === d.getFullYear() })
-      months.push({ name: label, הכנסות: mTxs.filter(t => t.type==='income').reduce((s,t)=>s+Number(t.amount),0), הוצאות: mTxs.filter(t => t.type==='expense').reduce((s,t)=>s+Number(t.amount),0) })
-    }
-    setChartData(months)
-
-    // category pie
-    const catMap = {}
-    monthTxs.filter(t => t.type === 'expense').forEach(t => {
-      const name = t.categories?.name || 'אחר'
-      catMap[name] = (catMap[name] || 0) + Number(t.amount)
-    })
-    setCategoryData(Object.entries(catMap).map(([name, value]) => ({ name, value })))
 
     // Today's events for daily widget
     const todayStr = now.toISOString().split('T')[0]
@@ -172,36 +151,6 @@ export default function Dashboard() {
               ))}
             </div>
         }
-      </div>
-
-      {/* Charts */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-        <div className="page-card">
-          <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>הכנסות vs הוצאות – 6 חודשים</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chartData}>
-              <XAxis dataKey="name" tick={{fill:'#64748b',fontSize:11}} axisLine={false} tickLine={false}/>
-              <YAxis tick={{fill:'#64748b',fontSize:11}} axisLine={false} tickLine={false} width={50}/>
-              <Tooltip contentStyle={{background:'#1e1e3a',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.75rem',color:'#e2e8f0'}}/>
-              <Line type="monotone" dataKey="הכנסות" stroke="#4ade80" strokeWidth={2} dot={false}/>
-              <Line type="monotone" dataKey="הוצאות" stroke="#f87171" strokeWidth={2} dot={false}/>
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="page-card">
-          <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>הוצאות לפי קטגוריה</h3>
-          {categoryData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie data={categoryData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" nameKey="name">
-                  {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]}/>)}
-                </Pie>
-                <Tooltip contentStyle={{background:'#1e1e3a',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.75rem',color:'#e2e8f0'}} formatter={(v) => `₪${v.toLocaleString()}`}/>
-              </PieChart>
-            </ResponsiveContainer>
-          ) : <div style={{height:200,display:'flex',alignItems:'center',justifyContent:'center',color:'#475569',fontSize:'0.875rem'}}>אין הוצאות החודש</div>}
-        </div>
       </div>
 
       {/* Wallets quick view */}
