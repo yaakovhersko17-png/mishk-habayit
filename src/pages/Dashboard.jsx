@@ -149,6 +149,31 @@ export default function Dashboard() {
           sub={openLoans.length > 0 ? `₪${openLoans.reduce((s,l)=>s+Number(l.amount)-Number(l.loan_returned||0),0).toLocaleString()} סה"כ` : 'אין הלוואות פתוחות'} />
       </div>
 
+      {/* Daily widget */}
+      <div className="page-card">
+        <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>
+          📅 אירועי היום — {today.toLocaleDateString('he-IL', { weekday:'long', day:'numeric', month:'long' })}
+        </h3>
+        {todayEvents.length === 0
+          ? <div style={{padding:'1rem 0',textAlign:'center',color:'#475569',fontSize:'0.875rem'}}>אין אירועים להיום 🎉</div>
+          : <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+              {todayEvents.map((ev, i) => (
+                <div key={i} onClick={() => navigate(ev.route)}
+                  style={{display:'flex',alignItems:'center',gap:'0.875rem',padding:'0.75rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',cursor:'pointer',transition:'all 0.15s'}}
+                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.07)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+                  <div style={{width:36,height:36,borderRadius:'0.75rem',background:`${ev.color}20`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.1rem',flexShrink:0}}>{ev.icon}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:500,color:'#e2e8f0',fontSize:'0.875rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ev.label}</div>
+                    <div style={{fontSize:'0.75rem',color:'#64748b',marginTop:'0.1rem'}}>{ev.sub}</div>
+                  </div>
+                  <div style={{fontSize:'0.7rem',color:ev.color,fontWeight:600,flexShrink:0,paddingRight:'0.25rem'}}>›</div>
+                </div>
+              ))}
+            </div>
+        }
+      </div>
+
       {/* Charts */}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
         <div className="page-card">
@@ -194,31 +219,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
-      {/* Daily widget */}
-      <div className="page-card">
-        <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>
-          📅 אירועי היום — {today.toLocaleDateString('he-IL', { weekday:'long', day:'numeric', month:'long' })}
-        </h3>
-        {todayEvents.length === 0
-          ? <div style={{padding:'1rem 0',textAlign:'center',color:'#475569',fontSize:'0.875rem'}}>אין אירועים להיום 🎉</div>
-          : <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
-              {todayEvents.map((ev, i) => (
-                <div key={i} onClick={() => navigate(ev.route)}
-                  style={{display:'flex',alignItems:'center',gap:'0.875rem',padding:'0.75rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',cursor:'pointer',transition:'all 0.15s'}}
-                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.07)'}
-                  onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
-                  <div style={{width:36,height:36,borderRadius:'0.75rem',background:`${ev.color}20`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.1rem',flexShrink:0}}>{ev.icon}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:500,color:'#e2e8f0',fontSize:'0.875rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ev.label}</div>
-                    <div style={{fontSize:'0.75rem',color:'#64748b',marginTop:'0.1rem'}}>{ev.sub}</div>
-                  </div>
-                  <div style={{fontSize:'0.7rem',color:ev.color,fontWeight:600,flexShrink:0,paddingRight:'0.25rem'}}>›</div>
-                </div>
-              ))}
-            </div>
-        }
-      </div>
 
       {/* Add Transaction Modal */}
       <Modal open={showAddTx} onClose={() => setShowAddTx(false)} title="טרנזקציה חדשה">
