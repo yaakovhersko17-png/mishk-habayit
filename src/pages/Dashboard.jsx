@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, cached, invalidate, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Mic, Bell, Receipt, CreditCard as LoanIcon } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2 } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import Modal from '../components/ui/Modal'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
@@ -107,8 +107,8 @@ export default function Dashboard() {
       {/* Greeting */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div>
-          <h1 style={{margin:0,fontSize:'2rem',fontWeight:900,letterSpacing:'0.12em',background:'linear-gradient(135deg,#a78bfa,#6c63ff,#60a5fa)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
-            HERSKO
+          <h1 style={{margin:0,fontSize:'2rem',fontWeight:900,letterSpacing:'0.05em',background:'linear-gradient(135deg,#a78bfa,#6c63ff,#60a5fa)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
+            סקירה כללית
           </h1>
           <p style={{margin:'0.25rem 0 0',color:'#64748b',fontSize:'0.875rem'}}>
             {today.toLocaleDateString('he-IL', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
@@ -168,6 +168,29 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Quick links */}
+      <div className="page-card" style={{padding:0,overflow:'hidden'}}>
+        <div style={{padding:'0.875rem 1rem',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+          <span style={{fontSize:'0.8rem',fontWeight:600,color:'#64748b'}}>כלים</span>
+        </div>
+        {[
+          { icon: <BarChart2 size={18}/>, label: 'דוחות וייצוא', sub: 'גרפים, תרשימים וייצוא נתונים', color: '#a78bfa', route: '/reports' },
+          { icon: <Settings size={18}/>, label: 'הגדרות', sub: 'ניהול משתמשים והעדפות', color: '#60a5fa', route: '/settings' },
+        ].map((item, i, arr) => (
+          <div key={item.route} onClick={() => navigate(item.route)}
+            style={{display:'flex',alignItems:'center',gap:'0.875rem',padding:'0.875rem 1rem',cursor:'pointer',transition:'background 0.15s',borderBottom: i < arr.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none'}}
+            onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.04)'}
+            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+            <div style={{width:38,height:38,borderRadius:'0.75rem',background:`${item.color}20`,display:'flex',alignItems:'center',justifyContent:'center',color:item.color,flexShrink:0}}>{item.icon}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#e2e8f0'}}>{item.label}</div>
+              <div style={{fontSize:'0.75rem',color:'#64748b',marginTop:'0.1rem'}}>{item.sub}</div>
+            </div>
+            <div style={{color:'#475569',fontSize:'0.8rem'}}>›</div>
+          </div>
+        ))}
+      </div>
 
       {/* Add Transaction Modal */}
       <Modal open={showAddTx} onClose={() => setShowAddTx(false)} title="טרנזקציה חדשה">

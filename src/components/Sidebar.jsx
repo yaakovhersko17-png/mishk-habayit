@@ -3,11 +3,11 @@ import { useAuth } from '../context/AuthContext'
 import {
   LayoutDashboard, Wallet, ArrowLeftRight, ScanLine, Archive,
   Tag, Lightbulb, Bell, Calendar, StickyNote, History,
-  BarChart2, Settings, Shield, LogOut, X
+  Shield, LogOut, X
 } from 'lucide-react'
 
 const navItems = [
-  { to: '/',             icon: LayoutDashboard, label: 'דשבורד' },
+  { to: '/',             icon: LayoutDashboard, label: 'סקירה כללית' },
   { to: '/wallets',      icon: Wallet,          label: 'ארנקים' },
   { to: '/transactions', icon: ArrowLeftRight,  label: 'טרנזקציות' },
   { to: '/scanner',      icon: ScanLine,        label: 'סריקת חשבונית' },
@@ -18,8 +18,6 @@ const navItems = [
   { to: '/calendar',     icon: Calendar,        label: 'לוח שנה' },
   { to: '/notes',        icon: StickyNote,      label: 'פתקים' },
   { to: '/history',      icon: History,         label: 'היסטוריה' },
-  { to: '/reports',      icon: BarChart2,       label: 'דוחות וייצוא' },
-  { to: '/settings',     icon: Settings,        label: 'הגדרות' },
 ]
 
 export default function Sidebar({ isOpen, onClose }) {
