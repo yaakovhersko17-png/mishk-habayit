@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   LayoutDashboard, Wallet, ArrowLeftRight, ScanLine, Archive,
-  Tag, Lightbulb, Bell, Calendar, StickyNote,
+  Tag, Lightbulb, Bell, Calendar, StickyNote, Map,
   Shield, LogOut, X
 } from 'lucide-react'
 
@@ -17,6 +17,7 @@ const navItems = [
   { to: '/reminders',    icon: Bell,            label: 'תזכורות' },
   { to: '/calendar',     icon: Calendar,        label: 'לוח שנה' },
   { to: '/notes',        icon: StickyNote,      label: 'פתקים' },
+  { to: '/trips',        icon: Map,             label: 'טיולים ויציאות' },
 ]
 
 export default function Sidebar({ isOpen, onClose }) {

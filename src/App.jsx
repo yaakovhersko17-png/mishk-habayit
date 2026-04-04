@@ -16,6 +16,7 @@ import History from './pages/History'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 import AdminPanel from './pages/AdminPanel'
+import Trips from './pages/Trips'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="calendar"     element={<CalendarPage />} />
           <Route path="notes"        element={<Notes />} />
           <Route path="history"      element={<History />} />
+          <Route path="trips"        element={<Trips />} />
           <Route path="reports"      element={<Reports />} />
           <Route path="settings"     element={<Settings />} />
           <Route path="admin"        element={<AdminRoute><AdminPanel /></AdminRoute>} />
