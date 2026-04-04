@@ -9,7 +9,7 @@ import toast from 'react-hot-toast'
 
 const COLORS = ['#4CAF50','#2196F3','#FF9800','#E91E63','#00BCD4','#9C27B0','#FF5722','#607D8B','#8BC34A','#6c63ff','#f87171','#fbbf24','#60a5fa','#f472b6','#34d399']
 
-const emptyForm = { name:'', icon:'', color:'#6c63ff', type:'expense' }
+const emptyForm = { name:'', icon:'', color:'#6c63ff', type:'expense', parent_id:'' }
 
 export default function Categories() {
   const { user, profile } = useAuth()
@@ -42,7 +42,7 @@ export default function Categories() {
   }
 
   function openAdd()   { setEditing(null); setForm(emptyForm); setModal(true) }
-  function openEdit(c) { setEditing(c); setForm({ name:c.name, icon:c.icon, color:c.color, type:c.type }); setModal(true) }
+  function openEdit(c) { setEditing(c); setForm({ name:c.name, icon:c.icon, color:c.color, type:c.type, parent_id:c.parent_id||'' }); setModal(true) }
 
   async function handleSave() {
     if (!form.name) { toast.error('שם קטגוריה נדרש'); return }
@@ -76,26 +76,27 @@ export default function Categories() {
         <button className="btn-primary" onClick={openAdd}><Plus size={15}/>קטגוריה חדשה</button>
       </div>
 
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:'1rem'}}>
-        {cats.map(c => (
-          <div key={c.id} className="stat-card" style={{position:'relative'}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'0.75rem'}}>
-              <div style={{width:44,height:44,borderRadius:'0.75rem',background:`${c.color}25`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.4rem',border:`1px solid ${c.color}40`}}>{c.icon}</div>
-              <div style={{display:'flex',gap:'0.25rem'}}>
-                <button onClick={()=>openEdit(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.25rem'}}><Edit2 size={13}/></button>
-                <button onClick={()=>handleDelete(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.25rem'}}><Trash2 size={13}/></button>
+      <div className="page-card" style={{padding:0,overflow:'hidden'}}>
+        {cats.map((c, i) => {
+          const parent = c.parent_id ? cats.find(p => p.id === c.parent_id) : null
+          return (
+            <div key={c.id} style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.625rem 1rem',borderBottom: i < cats.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none'}}>
+              <div style={{width:34,height:34,borderRadius:'0.625rem',background:`${c.color}25`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.1rem',flexShrink:0,border:`1px solid ${c.color}30`}}>{c.icon}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:'0.875rem',fontWeight:600,color:'#e2e8f0'}}>{c.name}</div>
+                {parent && <div style={{fontSize:'0.7rem',color:'#64748b',marginTop:'0.1rem'}}>↳ {parent.icon} {parent.name}</div>}
+              </div>
+              <div style={{textAlign:'left',flexShrink:0}}>
+                <div style={{fontSize:'0.8rem',fontWeight:600,color: c.type==='income'?'#4ade80':'#f87171'}}>₪{(txCounts[c.id]?.total||0).toLocaleString()}</div>
+                <div style={{fontSize:'0.7rem',color:'#64748b'}}>{txCounts[c.id]?.count||0} טרנ׳</div>
+              </div>
+              <div style={{display:'flex',gap:'0.125rem',flexShrink:0}}>
+                <button onClick={()=>openEdit(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.3rem'}}><Edit2 size={13}/></button>
+                <button onClick={()=>handleDelete(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.3rem'}}><Trash2 size={13}/></button>
               </div>
             </div>
-            <div style={{fontWeight:600,color:'#e2e8f0',marginBottom:'0.25rem'}}>{c.name}</div>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <span style={{fontSize:'0.75rem',color:'#64748b'}}>{txCounts[c.id]?.count || 0} טרנזקציות</span>
-              <span style={{fontSize:'0.8rem',fontWeight:600,color: c.type==='income'?'#4ade80':'#f87171'}}>₪{(txCounts[c.id]?.total || 0).toLocaleString()}</span>
-            </div>
-            <div style={{marginTop:'0.5rem',width:'100%',height:3,borderRadius:2,background:`${c.color}20'}}`}}>
-              <div style={{height:'100%',borderRadius:2,background:c.color,width:`${Math.min(100,(txCounts[c.id]?.count||0)*5)}%`}}/>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <Modal open={modal} onClose={()=>setModal(false)} title={editing?'ערוך קטגוריה':'קטגוריה חדשה'}>
@@ -111,6 +112,15 @@ export default function Categories() {
                 <button key={k} onClick={()=>setForm({...form,type:k})} style={{flex:1,padding:'0.4rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${form.type===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:form.type===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:form.type===k?'#a78bfa':'#94a3b8'}}>{v}</button>
               ))}
             </div>
+          </div>
+          <div>
+            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>קטגוריית הורה</label>
+            <select className="input-field" value={form.parent_id} onChange={e=>setForm({...form,parent_id:e.target.value})}>
+              <option value="">ללא הורה</option>
+              {cats.filter(c => !editing || c.id !== editing.id).map(c=>(
+                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.5rem'}}>אייקון</label>
