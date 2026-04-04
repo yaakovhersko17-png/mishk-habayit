@@ -47,12 +47,13 @@ export default function Categories() {
   async function handleSave() {
     if (!form.name) { toast.error('שם קטגוריה נדרש'); return }
     setSaving(true)
+    const saveData = { ...form, parent_id: form.parent_id || null }
     if (editing) {
-      await supabase.from('categories').update(form).eq('id', editing.id)
+      await supabase.from('categories').update(saveData).eq('id', editing.id)
       await logActivity({ userId:user.id, userName:profile.name, actionType:ACTION_TYPES.UPDATE, entityType:ENTITY_TYPES.CATEGORY, description:`עדכן/ה קטגוריה: ${form.name}`, entityId:editing.id })
       toast.success('עודכן!')
     } else {
-      await supabase.from('categories').insert({ ...form, created_by: user.id })
+      await supabase.from('categories').insert({ ...saveData, created_by: user.id })
       await logActivity({ userId:user.id, userName:profile.name, actionType:ACTION_TYPES.CREATE, entityType:ENTITY_TYPES.CATEGORY, description:`הוסיף/ה קטגוריה: ${form.name}` })
       toast.success('נוסף!')
     }
