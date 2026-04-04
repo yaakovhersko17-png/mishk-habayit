@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase, cached, withRetry, invalidate } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Search, Mic, MicOff, Edit2, Trash2, Filter } from 'lucide-react'
+import { Plus, Search, Mic, MicOff, Edit2, Trash2, SlidersHorizontal, X } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import EmptyState from '../components/ui/EmptyState'
@@ -25,6 +25,7 @@ export default function Transactions() {
   const [search, setSearch]     = useState('')
   const [filter, setFilter]     = useState({ type:'', category:'', wallet:'', user:'', dateFrom:'', dateTo:'' })
   const [listening, setListening] = useState(false)
+  const [filterOpen, setFilterOpen] = useState(false)
   const recognitionRef = useRef(null)
 
   useEffect(() => { loadAll() }, [])
@@ -179,30 +180,10 @@ export default function Transactions() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap'}}>
-        <div style={{position:'relative',flex:1,minWidth:200}}>
-          <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'#64748b'}}/>
-          <input className="input-field" placeholder="חיפוש..." value={search} onChange={e=>setSearch(e.target.value)} style={{paddingRight:'2.25rem'}}/>
-        </div>
-        <select className="input-field" style={{width:'auto'}} value={filter.type} onChange={e=>setFilter({...filter,type:e.target.value})}>
-          <option value="">כל הסוגים</option>
-          {Object.entries(TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}
-        </select>
-        <select className="input-field" style={{width:'auto'}} value={filter.category} onChange={e=>setFilter({...filter,category:e.target.value})}>
-          <option value="">כל הקטגוריות</option>
-          {categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-        </select>
-        <select className="input-field" style={{width:'auto'}} value={filter.wallet} onChange={e=>setFilter({...filter,wallet:e.target.value})}>
-          <option value="">כל הארנקים</option>
-          {wallets.map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
-        </select>
-        <select className="input-field" style={{width:'auto'}} value={filter.user} onChange={e=>setFilter({...filter,user:e.target.value})}>
-          <option value="">כל המשתמשים</option>
-          {profiles.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <input className="input-field" type="date" style={{width:'auto'}} value={filter.dateFrom} onChange={e=>setFilter({...filter,dateFrom:e.target.value})} title="מתאריך" dir="ltr"/>
-        <input className="input-field" type="date" style={{width:'auto'}} value={filter.dateTo} onChange={e=>setFilter({...filter,dateTo:e.target.value})} title="עד תאריך" dir="ltr"/>
+      {/* Search bar only */}
+      <div style={{position:'relative'}}>
+        <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'#64748b'}}/>
+        <input className="input-field" placeholder="חיפוש..." value={search} onChange={e=>setSearch(e.target.value)} style={{paddingRight:'2.25rem'}}/>
       </div>
 
       {/* Table */}
@@ -252,6 +233,70 @@ export default function Transactions() {
           </div>
         )
       }
+
+      {/* Floating filter button */}
+      <button onClick={() => setFilterOpen(true)}
+        style={{position:'fixed',bottom:'2rem',left:'2rem',width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(108,99,255,0.4)',zIndex:50,transition:'transform 0.2s'}}
+        onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
+        onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+        <SlidersHorizontal size={22} color="#fff"/>
+      </button>
+
+      {/* Filter panel */}
+      {filterOpen && (
+        <div style={{position:'fixed',inset:0,zIndex:60,display:'flex',alignItems:'flex-end'}} onClick={()=>setFilterOpen(false)}>
+          <div style={{width:'100%',background:'#1a1a2e',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',boxShadow:'0 -8px 40px rgba(0,0,0,0.5)'}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem'}}>
+              <span style={{fontWeight:700,fontSize:'1rem',color:'#e2e8f0'}}>סינון</span>
+              <button onClick={()=>setFilterOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b'}}><X size={20}/></button>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
+              <div>
+                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>סוג</label>
+                <select className="input-field" value={filter.type} onChange={e=>setFilter({...filter,type:e.target.value})}>
+                  <option value="">הכל</option>
+                  {Object.entries(TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>קטגוריה</label>
+                <select className="input-field" value={filter.category} onChange={e=>setFilter({...filter,category:e.target.value})}>
+                  <option value="">הכל</option>
+                  {categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>ארנק</label>
+                <select className="input-field" value={filter.wallet} onChange={e=>setFilter({...filter,wallet:e.target.value})}>
+                  <option value="">הכל</option>
+                  {wallets.map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>משתמש</label>
+                <select className="input-field" value={filter.user} onChange={e=>setFilter({...filter,user:e.target.value})}>
+                  <option value="">הכל</option>
+                  {profiles.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem'}}>
+                <div>
+                  <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>מתאריך</label>
+                  <input className="input-field" type="date" value={filter.dateFrom} onChange={e=>setFilter({...filter,dateFrom:e.target.value})} dir="ltr"/>
+                </div>
+                <div>
+                  <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>עד תאריך</label>
+                  <input className="input-field" type="date" value={filter.dateTo} onChange={e=>setFilter({...filter,dateTo:e.target.value})} dir="ltr"/>
+                </div>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:'0.75rem',marginTop:'1.25rem'}}>
+              <button className="btn-ghost" onClick={()=>{setFilter({type:'',category:'',wallet:'',user:'',dateFrom:'',dateTo:''});setSearch('');}} style={{flex:1,justifyContent:'center'}}>נקה הכל</button>
+              <button className="btn-primary" onClick={()=>setFilterOpen(false)} style={{flex:1,justifyContent:'center'}}>החל</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Modal open={modal} onClose={()=>setModal(false)} title={editing?'ערוך טרנזקציה':'טרנזקציה חדשה'} size="lg">
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
