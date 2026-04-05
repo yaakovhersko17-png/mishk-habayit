@@ -9,9 +9,6 @@ import {
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import toast from 'react-hot-toast'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
-import * as XLSX from 'xlsx'
 
 const COLORS = ['#6c63ff','#f87171','#fbbf24','#4ade80','#60a5fa','#f472b6','#a78bfa','#34d399']
 
@@ -91,6 +88,8 @@ export default function Reports() {
 
   async function exportPDF() {
     try {
+      const { default: jsPDF } = await import('jspdf')
+      const { default: autoTable } = await import('jspdf-autotable')
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
       doc.setFont('helvetica')
       doc.setFontSize(16)
@@ -121,6 +120,7 @@ export default function Reports() {
 
   async function exportExcel() {
     try {
+      const XLSX = await import('xlsx')
       const rows = filtered.map(t => ({
         תאריך: t.date, תיאור: t.description,
         סכום: Number(t.amount), מטבע: t.currency,

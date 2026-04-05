@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { createWorker } from 'tesseract.js'
 import { supabase, cached, withRetry, rateLimited } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Upload, Camera, ScanLine, Check, X, Plus, Trash2, AlertCircle } from 'lucide-react'
@@ -136,6 +135,7 @@ export default function InvoiceScanner() {
     setCats(cData || [])
 
     try {
+      const { createWorker } = await import('tesseract.js')
       const worker = await createWorker(['heb', 'eng'], 1, {
         logger: m => { if (m.status === 'recognizing text') setOcrProgress(Math.round(m.progress * 100)) },
       })
