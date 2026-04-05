@@ -1,0 +1,9 @@
+{
+  "name": "HERSKO APP",
+  "short_name": "HERSKO",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#6c63ff",
+  "icons": []
+}
