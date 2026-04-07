@@ -1,7 +1,8 @@
 {
   "name": "HERSKO APP",
   "short_name": "HERSKO",
-  "start_url": "/",
+  "start_url": "/mishk-habayit/",
+  "scope": "/mishk-habayit/",
   "display": "standalone",
   "background_color": "#0f1117",
   "theme_color": "#6c63ff",
