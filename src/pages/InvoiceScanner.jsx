@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { supabase, cached, withRetry, rateLimited } from '../lib/supabase'
 
-const VISION_KEY = 'AIzaSyAisSeu-eXkFb9cfGvsV8t9kLmBsC7mebw'
+const VISION_KEY = 'K89798312188957'
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.readAsDataURL(file)
-    reader.onload  = () => resolve(reader.result.split(',')[1])
+    reader.onload  = () => resolve(reader.result) // full data URL with prefix
     reader.onerror = reject
   })
 }
@@ -147,22 +147,25 @@ export default function InvoiceScanner() {
 
     try {
       setOcrProgress(20)
-      const base64 = await fileToBase64(file)
+      const dataUrl = await fileToBase64(file)
       setOcrProgress(40)
 
-      const res = await fetch(
-        `https://vision.googleapis.com/v1/images:annotate?key=${VISION_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            requests: [{ image: { content: base64 }, features: [{ type: 'DOCUMENT_TEXT_DETECTION' }] }]
-          })
-        }
-      )
+      const formData = new FormData()
+      formData.append('apikey', VISION_KEY)
+      formData.append('base64Image', dataUrl)
+      formData.append('language', 'heb')
+      formData.append('detectOrientation', 'true')
+      formData.append('scale', 'true')
+      formData.append('isTable', 'true')
+      formData.append('OCREngine', '2')
+
+      const res = await fetch('https://api.ocr.space/parse/image', {
+        method: 'POST',
+        body: formData,
+      })
       setOcrProgress(80)
       const json = await res.json()
-      const text = json.responses?.[0]?.fullTextAnnotation?.text || ''
+      const text = json.ParsedResults?.[0]?.ParsedText || ''
       setOcrProgress(100)
 
       await logActivity({ userId: user.id, userName: profile.name, actionType: ACTION_TYPES.SCAN, entityType: ENTITY_TYPES.INVOICE, description: `סרק/ה חשבונית: ${file.name}` })
