@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase, cached, withRetry, rateLimited } from '../lib/supabase'
 
-const VISION_KEY = import.meta.env.VITE_OCR_KEY
+const VISION_KEY = import.meta.env.VITE_OCR_KEY || 'K89798312188957'
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -157,7 +157,7 @@ export default function InvoiceScanner() {
       formData.append('detectOrientation', 'true')
       formData.append('scale', 'true')
       formData.append('isTable', 'true')
-      formData.append('OCREngine', '2')
+      formData.append('OCREngine', '1')
 
       const res = await fetch('https://api.ocr.space/parse/image', {
         method: 'POST',
@@ -165,12 +165,21 @@ export default function InvoiceScanner() {
       })
       setOcrProgress(80)
       const json = await res.json()
+
+      if (json.IsErroredOnProcessing || json.OCRExitCode !== 1) {
+        console.error('OCR.space error:', json)
+        toast.error(json.ErrorMessage?.[0] || 'שגיאת OCR — נסה תמונה קטנה יותר')
+        setStep('upload')
+        return
+      }
+
       const text = json.ParsedResults?.[0]?.ParsedText || ''
       setOcrProgress(100)
 
       await logActivity({ userId: user.id, userName: profile.name, actionType: ACTION_TYPES.SCAN, entityType: ENTITY_TYPES.INVOICE, description: `סרק/ה חשבונית: ${file.name}` })
 
-      if (!text || text.trim().length < 5 || !isValidInvoice(text)) {
+      if (!text || text.trim().length < 5) {
+        toast.error('לא זוהה טקסט — נסה תמונה ברורה יותר')
         setStep('not_invoice')
         return
       }
