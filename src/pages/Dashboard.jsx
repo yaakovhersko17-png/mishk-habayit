@@ -119,15 +119,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:'1rem'}}>
-        <StatCard icon={<Wallet size={18}/>}      label="יתרה כוללת"         value={`₪${totalBalance.toLocaleString()}`}          color="#6c63ff" />
-        <StatCard icon={<TrendingUp size={18}/>}  label="הכנסות החודש"        value={`₪${monthlyData.income.toLocaleString()}`}   color="#4ade80" />
-        <StatCard icon={<TrendingDown size={18}/>} label="הוצאות החודש"       value={`₪${monthlyData.expense.toLocaleString()}`}  color="#f87171" />
-        <StatCard icon={<CreditCard size={18}/>}  label="הלוואות פתוחות"      value={openLoans.length} color="#fbbf24"
-          sub={openLoans.length > 0 ? `₪${openLoans.reduce((s,l)=>s+Number(l.amount)-Number(l.loan_returned||0),0).toLocaleString()} סה"כ` : 'אין הלוואות פתוחות'} />
-      </div>
-
       {/* Daily widget */}
       <div className="page-card">
         <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>
@@ -151,6 +142,15 @@ export default function Dashboard() {
               ))}
             </div>
         }
+      </div>
+
+      {/* Stats */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:'1rem'}}>
+        <StatCard icon={<Wallet size={18}/>}      label="יתרה כוללת"         value={`₪${totalBalance.toLocaleString()}`}          color="#6c63ff" />
+        <StatCard icon={<TrendingUp size={18}/>}  label="הכנסות החודש"        value={`₪${monthlyData.income.toLocaleString()}`}   color="#4ade80" />
+        <StatCard icon={<TrendingDown size={18}/>} label="הוצאות החודש"       value={`₪${monthlyData.expense.toLocaleString()}`}  color="#f87171" />
+        <StatCard icon={<CreditCard size={18}/>}  label="הלוואות פתוחות"      value={openLoans.length} color="#fbbf24"
+          sub={openLoans.length > 0 ? `₪${openLoans.reduce((s,l)=>s+Number(l.amount)-Number(l.loan_returned||0),0).toLocaleString()} סה"כ` : 'אין הלוואות פתוחות'} />
       </div>
 
       {/* Wallets quick view */}
