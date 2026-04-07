@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase, cached, withRetry, rateLimited } from '../lib/supabase'
 
-const GCLOUD_KEY = 'AIzaSyAisSeu-eXkFb9cfGvsV8t9kLmBsC7mebw'
+const GCLOUD_KEY = import.meta.env.VITE_GCLOUD_KEY
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
