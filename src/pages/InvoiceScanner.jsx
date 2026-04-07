@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase, cached, withRetry, rateLimited } from '../lib/supabase'
 
-const VISION_KEY = 'K89798312188957'
+const VISION_KEY = import.meta.env.VITE_OCR_KEY
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
