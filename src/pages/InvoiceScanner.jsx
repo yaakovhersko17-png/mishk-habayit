@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { supabase, cached, withRetry, rateLimited } from '../lib/supabase'
 
-const VISION_KEY = import.meta.env.VITE_OCR_KEY || 'K89798312188957'
+const GCLOUD_KEY = 'AIzaSyAisSeu-eXkFb9cfGvsV8t9kLmBsC7mebw'
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.readAsDataURL(file)
-    reader.onload  = () => resolve(reader.result) // full data URL with prefix
+    reader.onload  = () => resolve(reader.result.split(',')[1]) // raw base64 without prefix
     reader.onerror = reject
   })
 }
@@ -150,30 +150,31 @@ export default function InvoiceScanner() {
       const dataUrl = await fileToBase64(file)
       setOcrProgress(40)
 
-      const formData = new FormData()
-      formData.append('apikey', VISION_KEY)
-      formData.append('base64Image', dataUrl)
-      formData.append('language', 'eng')
-      formData.append('detectOrientation', 'true')
-      formData.append('scale', 'true')
-      formData.append('isTable', 'true')
-      formData.append('OCREngine', '1')
-
-      const res = await fetch('https://api.ocr.space/parse/image', {
-        method: 'POST',
-        body: formData,
-      })
+      const base64 = dataUrl
+      const res = await fetch(
+        `https://vision.googleapis.com/v1/images:annotate?key=${GCLOUD_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            requests: [{
+              image: { content: base64 },
+              features: [{ type: 'DOCUMENT_TEXT_DETECTION' }]
+            }]
+          })
+        }
+      )
       setOcrProgress(80)
       const json = await res.json()
 
-      if (json.IsErroredOnProcessing || json.OCRExitCode !== 1) {
-        console.error('OCR.space error:', json)
-        toast.error(json.ErrorMessage?.[0] || 'שגיאת OCR — נסה תמונה קטנה יותר')
+      if (json.error) {
+        console.error('Vision API error:', json.error)
+        toast.error(json.error.message || 'שגיאת OCR')
         setStep('upload')
         return
       }
 
-      const text = json.ParsedResults?.[0]?.ParsedText || ''
+      const text = json.responses?.[0]?.fullTextAnnotation?.text || ''
       setOcrProgress(100)
 
       await logActivity({ userId: user.id, userName: profile.name, actionType: ACTION_TYPES.SCAN, entityType: ENTITY_TYPES.INVOICE, description: `סרק/ה חשבונית: ${file.name}` })
