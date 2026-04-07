@@ -153,7 +153,7 @@ export default function InvoiceScanner() {
       const formData = new FormData()
       formData.append('apikey', VISION_KEY)
       formData.append('base64Image', dataUrl)
-      formData.append('language', 'heb')
+      formData.append('language', 'eng')
       formData.append('detectOrientation', 'true')
       formData.append('scale', 'true')
       formData.append('isTable', 'true')
