@@ -107,8 +107,8 @@ export default function Dashboard() {
       {/* Greeting */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div>
-          <h1 style={{margin:0,fontSize:'3.2rem',fontWeight:100,letterSpacing:'0.05em',fontFamily:'"Noto Serif Hebrew", serif',fontStyle:'italic',background:'linear-gradient(90deg,#e040fb,#f44336,#ff9800,#fdd835,#43a047,#1e88e5)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
-            הרשקו
+          <h1 style={{margin:0,fontSize:'3.5rem',fontWeight:400,fontFamily:'"Pacifico", cursive',background:'linear-gradient(90deg,#e040fb,#f44336,#ff9800,#fdd835,#43a047,#1e88e5)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',lineHeight:1.1}}>
+            Hersko.
           </h1>
           <p style={{margin:'0.25rem 0 0',color:'#64748b',fontSize:'0.875rem'}}>
             {today.toLocaleDateString('he-IL', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
