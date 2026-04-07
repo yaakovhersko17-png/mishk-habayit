@@ -107,8 +107,8 @@ export default function Dashboard() {
       {/* Greeting */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div>
-          <h1 style={{margin:0,fontSize:'2rem',fontWeight:900,letterSpacing:'0.05em',background:'linear-gradient(135deg,#a78bfa,#6c63ff,#60a5fa)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
-            סקירה כללית
+          <h1 style={{margin:0,fontSize:'2.8rem',fontWeight:100,letterSpacing:'-0.02em',color:'#e2e8f0',fontFamily:'-apple-system, "SF Pro Display", "Helvetica Neue", sans-serif'}}>
+            הרשקו
           </h1>
           <p style={{margin:'0.25rem 0 0',color:'#64748b',fontSize:'0.875rem'}}>
             {today.toLocaleDateString('he-IL', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
