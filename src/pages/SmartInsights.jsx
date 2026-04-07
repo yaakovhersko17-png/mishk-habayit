@@ -338,15 +338,11 @@ export default function SmartInsights() {
         </div>
       )}
 
-      {/* Floating filter */}
-      <button onClick={()=>setFilterOpen(true)}
-        style={{position:'fixed',bottom:'2rem',left:'2rem',width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(108,99,255,0.4)',zIndex:50,transition:'transform 0.2s'}}
-        onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
-        onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
-        <SlidersHorizontal size={22} color="#fff"/>
+      {/* Filter panel trigger — inline button */}
+      <button onClick={()=>setFilterOpen(true)} className="btn-ghost" style={{alignSelf:'flex-start',fontSize:'0.82rem'}}>
+        <SlidersHorizontal size={15}/>הגדרות ניתוח
       </button>
 
-      {/* Filter panel */}
       {filterOpen && (
         <div style={{position:'fixed',inset:0,zIndex:60,display:'flex',alignItems:'flex-end'}} onClick={()=>setFilterOpen(false)}>
           <div style={{width:'100%',background:'#1a1a2e',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',boxShadow:'0 -8px 40px rgba(0,0,0,0.5)'}} onClick={e=>e.stopPropagation()}>
