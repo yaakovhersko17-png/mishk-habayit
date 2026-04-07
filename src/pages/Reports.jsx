@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, cached, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { FileText, Download } from 'lucide-react'
+import { FileText, Download, SlidersHorizontal, X } from 'lucide-react'
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, Legend
@@ -31,6 +31,7 @@ export default function Reports() {
   const [filterCat, setFilterCat] = useState('')
   const [filterWallet, setFilterWallet] = useState('')
   const [filterType, setFilterType] = useState('')
+  const [filterOpen, setFilterOpen] = useState(false)
 
   useEffect(() => { loadBase() }, [])
 
@@ -143,43 +144,6 @@ export default function Reports() {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>דוחות וייצוא</h1>
-
-      {/* Filters */}
-      <div className="page-card">
-        <h2 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>סינון</h2>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:'0.75rem'}}>
-          <div>
-            <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>מתאריך</label>
-            <input className="input-field" type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} dir="ltr"/>
-          </div>
-          <div>
-            <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>עד תאריך</label>
-            <input className="input-field" type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} dir="ltr"/>
-          </div>
-          <div>
-            <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>קטגוריה</label>
-            <select className="input-field" value={filterCat} onChange={e=>setFilterCat(e.target.value)}>
-              <option value="">הכל</option>
-              {cats.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>ארנק</label>
-            <select className="input-field" value={filterWallet} onChange={e=>setFilterWallet(e.target.value)}>
-              <option value="">הכל</option>
-              {wallets.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>סוג</label>
-            <select className="input-field" value={filterType} onChange={e=>setFilterType(e.target.value)}>
-              <option value="">הכל</option>
-              <option value="income">הכנסה</option>
-              <option value="expense">הוצאה</option>
-            </select>
-          </div>
-        </div>
-      </div>
 
       {/* Summary cards */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'1rem'}}>
@@ -321,6 +285,76 @@ export default function Reports() {
           <Download size={16}/>ייצוא Excel
         </button>
       </div>
+
+      {/* Floating filter button */}
+      {(() => {
+        const active = [filterCat, filterWallet, filterType].filter(Boolean).length
+        return (
+          <button onClick={() => setFilterOpen(true)}
+            style={{position:'fixed',bottom:'2rem',left:'2rem',width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(108,99,255,0.4)',zIndex:50,transition:'transform 0.2s'}}
+            onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
+            onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+            <SlidersHorizontal size={22} color="#fff"/>
+            {active > 0 && (
+              <span style={{position:'absolute',top:2,right:2,width:18,height:18,borderRadius:'50%',background:'#f87171',fontSize:'0.65rem',fontWeight:700,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>{active}</span>
+            )}
+          </button>
+        )
+      })()}
+
+      {/* Filter panel */}
+      {filterOpen && (
+        <div style={{position:'fixed',inset:0,zIndex:60,display:'flex',alignItems:'flex-end'}} onClick={()=>setFilterOpen(false)}>
+          <div style={{width:'100%',background:'#1a1a2e',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',boxShadow:'0 -8px 40px rgba(0,0,0,0.5)'}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem'}}>
+              <span style={{fontWeight:700,fontSize:'1rem',color:'#e2e8f0'}}>סינון דוח</span>
+              <button onClick={()=>setFilterOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b'}}><X size={20}/></button>
+            </div>
+
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem',marginBottom:'1rem'}}>
+              <div>
+                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>מתאריך</label>
+                <input className="input-field" type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} dir="ltr"/>
+              </div>
+              <div>
+                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>עד תאריך</label>
+                <input className="input-field" type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} dir="ltr"/>
+              </div>
+            </div>
+
+            <div style={{marginBottom:'1rem'}}>
+              <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>סוג</div>
+              <div style={{display:'flex',gap:'0.5rem'}}>
+                {[['','הכל'],['income','הכנסה'],['expense','הוצאה']].map(([k,v])=>(
+                  <button key={k} onClick={()=>setFilterType(k)}
+                    style={{flex:1,padding:'0.4rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${filterType===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:filterType===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:filterType===k?'#a78bfa':'#94a3b8'}}>{v}</button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{marginBottom:'1rem'}}>
+              <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>קטגוריה</div>
+              <select className="input-field" value={filterCat} onChange={e=>setFilterCat(e.target.value)}>
+                <option value="">הכל</option>
+                {cats.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+
+            <div style={{marginBottom:'1rem'}}>
+              <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>ארנק</div>
+              <select className="input-field" value={filterWallet} onChange={e=>setFilterWallet(e.target.value)}>
+                <option value="">הכל</option>
+                {wallets.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
+              </select>
+            </div>
+
+            <button onClick={()=>{setFilterCat('');setFilterWallet('');setFilterType('');setDateFrom(new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().split('T')[0]);setDateTo(new Date().toISOString().split('T')[0])}}
+              style={{width:'100%',padding:'0.6rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',color:'#94a3b8',cursor:'pointer',fontSize:'0.85rem'}}>
+              נקה סינון
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

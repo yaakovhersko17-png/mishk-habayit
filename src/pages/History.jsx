@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Search, Filter } from 'lucide-react'
+import { Search, SlidersHorizontal, X } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import EmptyState from '../components/ui/EmptyState'
 
@@ -11,12 +11,13 @@ const ACTION_ICONS = {
 }
 
 export default function History() {
-  const [logs, setLogs]       = useState([])
+  const [logs, setLogs]         = useState([])
   const [profiles, setProfiles] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch]   = useState('')
-  const [filter, setFilter]   = useState({ user:'', action:'', entity:'' })
-  const [sortAsc, setSortAsc] = useState(false)
+  const [loading, setLoading]   = useState(true)
+  const [search, setSearch]     = useState('')
+  const [filter, setFilter]     = useState({ user:'', action:'', entity:'' })
+  const [sortAsc, setSortAsc]   = useState(false)
+  const [filterOpen, setFilterOpen] = useState(false)
 
   useEffect(() => { load() }, [])
 
@@ -30,14 +31,14 @@ export default function History() {
     setLoading(false)
   }
 
-  const allActions = [...new Set(logs.map(l => l.action_type))]
+  const allActions  = [...new Set(logs.map(l => l.action_type))]
   const allEntities = [...new Set(logs.map(l => l.entity_type))]
 
   const filtered = logs
     .filter(l => {
       const q = search.toLowerCase()
       if (q && !l.description?.toLowerCase().includes(q) && !l.user_name?.toLowerCase().includes(q)) return false
-      if (filter.user && l.user_id !== filter.user) return false
+      if (filter.user   && l.user_id     !== filter.user)   return false
       if (filter.action && l.action_type !== filter.action) return false
       if (filter.entity && l.entity_type !== filter.entity) return false
       return true
@@ -46,6 +47,8 @@ export default function History() {
       const diff = new Date(a.created_at) - new Date(b.created_at)
       return sortAsc ? diff : -diff
     })
+
+  const activeFilters = [filter.user, filter.action, filter.entity, search].filter(Boolean).length
 
   if (loading) return <LoadingSpinner />
 
@@ -56,29 +59,6 @@ export default function History() {
           <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>היסטוריה</h1>
           <p style={{margin:'0.25rem 0 0',color:'#64748b',fontSize:'0.875rem'}}>{filtered.length} פעולות</p>
         </div>
-        <button className="btn-ghost" onClick={() => setSortAsc(!sortAsc)} style={{fontSize:'0.8rem'}}>
-          {sortAsc ? '↑ ישן לחדש' : '↓ חדש לישן'}
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap'}}>
-        <div style={{position:'relative',flex:1,minWidth:180}}>
-          <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'#64748b'}}/>
-          <input className="input-field" placeholder="חיפוש..." value={search} onChange={e=>setSearch(e.target.value)} style={{paddingRight:'2.25rem'}}/>
-        </div>
-        <select className="input-field" style={{width:'auto'}} value={filter.user} onChange={e=>setFilter({...filter,user:e.target.value})}>
-          <option value="">כל המשתמשים</option>
-          {profiles.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <select className="input-field" style={{width:'auto'}} value={filter.action} onChange={e=>setFilter({...filter,action:e.target.value})}>
-          <option value="">כל הפעולות</option>
-          {allActions.map(a=><option key={a} value={a}>{a}</option>)}
-        </select>
-        <select className="input-field" style={{width:'auto'}} value={filter.entity} onChange={e=>setFilter({...filter,entity:e.target.value})}>
-          <option value="">כל הסוגים</option>
-          {allEntities.map(e=><option key={e} value={e}>{e}</option>)}
-        </select>
       </div>
 
       {filtered.length === 0
@@ -121,6 +101,73 @@ export default function History() {
           </div>
         )
       }
+
+      {/* Floating filter button */}
+      <button onClick={() => setFilterOpen(true)}
+        style={{position:'fixed',bottom:'2rem',left:'2rem',width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(108,99,255,0.4)',zIndex:50,transition:'transform 0.2s'}}
+        onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
+        onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+        <SlidersHorizontal size={22} color="#fff"/>
+        {activeFilters > 0 && (
+          <span style={{position:'absolute',top:2,right:2,width:18,height:18,borderRadius:'50%',background:'#f87171',fontSize:'0.65rem',fontWeight:700,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>{activeFilters}</span>
+        )}
+      </button>
+
+      {/* Filter panel */}
+      {filterOpen && (
+        <div style={{position:'fixed',inset:0,zIndex:60,display:'flex',alignItems:'flex-end'}} onClick={()=>setFilterOpen(false)}>
+          <div style={{width:'100%',background:'#1a1a2e',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',boxShadow:'0 -8px 40px rgba(0,0,0,0.5)'}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem'}}>
+              <span style={{fontWeight:700,fontSize:'1rem',color:'#e2e8f0'}}>סינון ומיון</span>
+              <button onClick={()=>setFilterOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b'}}><X size={20}/></button>
+            </div>
+
+            {/* Search */}
+            <div style={{position:'relative',marginBottom:'1rem'}}>
+              <Search size={15} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'#64748b'}}/>
+              <input className="input-field" placeholder="חיפוש..." value={search} onChange={e=>setSearch(e.target.value)} style={{paddingRight:'2.25rem'}}/>
+            </div>
+
+            {/* User */}
+            <div style={{marginBottom:'1rem'}}>
+              <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>משתמש</div>
+              <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
+                {[['','הכל'],...profiles.map(p=>[p.id,p.name])].map(([k,v])=>(
+                  <button key={k} onClick={()=>setFilter(f=>({...f,user:k}))}
+                    style={{padding:'0.35rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${filter.user===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:filter.user===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:filter.user===k?'#a78bfa':'#94a3b8'}}>{v}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Action */}
+            <div style={{marginBottom:'1rem'}}>
+              <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>פעולה</div>
+              <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
+                {[['','הכל'],...allActions.map(a=>[a,a])].map(([k,v])=>(
+                  <button key={k} onClick={()=>setFilter(f=>({...f,action:k}))}
+                    style={{padding:'0.35rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${filter.action===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:filter.action===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:filter.action===k?'#a78bfa':'#94a3b8'}}>{v}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Sort */}
+            <div style={{marginBottom:'1rem'}}>
+              <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>מיון</div>
+              <div style={{display:'flex',gap:'0.5rem'}}>
+                {[[false,'חדש לישן'],[true,'ישן לחדש']].map(([k,v])=>(
+                  <button key={String(k)} onClick={()=>setSortAsc(k)}
+                    style={{flex:1,padding:'0.4rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${sortAsc===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:sortAsc===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:sortAsc===k?'#a78bfa':'#94a3b8'}}>{v}</button>
+                ))}
+              </div>
+            </div>
+
+            <button onClick={()=>{setFilter({user:'',action:'',entity:''});setSearch('');setSortAsc(false)}}
+              style={{width:'100%',padding:'0.6rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',color:'#94a3b8',cursor:'pointer',fontSize:'0.85rem'}}>
+              נקה סינון
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
