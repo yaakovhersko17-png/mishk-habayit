@@ -1,5 +1,16 @@
 import { useState } from 'react'
 import { supabase, cached, withRetry, rateLimited } from '../lib/supabase'
+
+const VISION_KEY = 'AIzaSyAisSeu-eXkFb9cfGvsV8t9kLmBsC7mebw'
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload  = () => resolve(reader.result.split(',')[1])
+    reader.onerror = reject
+  })
+}
 import { useAuth } from '../context/AuthContext'
 import { Upload, Camera, ScanLine, Check, X, Plus, Trash2, AlertCircle } from 'lucide-react'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
@@ -135,12 +146,24 @@ export default function InvoiceScanner() {
     setCats(cData || [])
 
     try {
-      const { createWorker } = await import('tesseract.js')
-      const worker = await createWorker(['heb', 'eng'], 1, {
-        logger: m => { if (m.status === 'recognizing text') setOcrProgress(Math.round(m.progress * 100)) },
-      })
-      const { data: { text } } = await worker.recognize(file)
-      await worker.terminate()
+      setOcrProgress(20)
+      const base64 = await fileToBase64(file)
+      setOcrProgress(40)
+
+      const res = await fetch(
+        `https://vision.googleapis.com/v1/images:annotate?key=${VISION_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            requests: [{ image: { content: base64 }, features: [{ type: 'DOCUMENT_TEXT_DETECTION' }] }]
+          })
+        }
+      )
+      setOcrProgress(80)
+      const json = await res.json()
+      const text = json.responses?.[0]?.fullTextAnnotation?.text || ''
+      setOcrProgress(100)
 
       await logActivity({ userId: user.id, userName: profile.name, actionType: ACTION_TYPES.SCAN, entityType: ENTITY_TYPES.INVOICE, description: `סרק/ה חשבונית: ${file.name}` })
 
@@ -154,7 +177,7 @@ export default function InvoiceScanner() {
       setStep('review')
       if (parsed.total === 0) toast('לא זוהה סכום — בדוק ידנית', { icon: '⚠️' })
     } catch (err) {
-      console.error('OCR failed:', err)
+      console.error('Vision API failed:', err)
       setStep('not_invoice')
     }
   }
