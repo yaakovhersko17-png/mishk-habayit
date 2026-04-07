@@ -107,7 +107,7 @@ export default function Dashboard() {
       {/* Greeting */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div>
-          <h1 style={{margin:0,fontSize:'2.8rem',fontWeight:100,letterSpacing:'-0.02em',color:'#e2e8f0',fontFamily:'-apple-system, "SF Pro Display", "Helvetica Neue", sans-serif'}}>
+          <h1 style={{margin:0,fontSize:'3.2rem',fontWeight:100,letterSpacing:'0.05em',fontFamily:'"Noto Serif Hebrew", serif',fontStyle:'italic',background:'linear-gradient(90deg,#e040fb,#f44336,#ff9800,#fdd835,#43a047,#1e88e5)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
             הרשקו
           </h1>
           <p style={{margin:'0.25rem 0 0',color:'#64748b',fontSize:'0.875rem'}}>
