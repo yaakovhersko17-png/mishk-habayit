@@ -146,6 +146,11 @@ export default function InvoiceScanner() {
     setCats(cData || [])
 
     try {
+      if (!GCLOUD_KEY) {
+        toast.error('מפתח Google Vision לא הוגדר — פנה למנהל')
+        setStep('upload')
+        return
+      }
       setOcrProgress(20)
       const dataUrl = await fileToBase64(file)
       setOcrProgress(40)
