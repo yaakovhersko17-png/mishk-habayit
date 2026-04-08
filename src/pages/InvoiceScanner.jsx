@@ -136,6 +136,7 @@ export default function InvoiceScanner() {
 
     try {
       setOcrProgress(10)
+      // Dynamic import so tesseract doesn't crash on page load
       const { createWorker } = await import('tesseract.js')
       setOcrProgress(20)
 
@@ -146,6 +147,7 @@ export default function InvoiceScanner() {
           }
         },
       })
+      setOcrProgress(30)
 
       const { data: { text } } = await worker.recognize(file)
       await worker.terminate()
@@ -165,7 +167,7 @@ export default function InvoiceScanner() {
       if (parsed.total === 0) toast('לא זוהה סכום — בדוק ידנית', { icon: '⚠️' })
     } catch (err) {
       console.error('Tesseract failed:', err)
-      toast.error('שגיאה בסריקה')
+      toast.error('שגיאה בסריקה: ' + err.message)
       setStep('not_invoice')
     }
   }
