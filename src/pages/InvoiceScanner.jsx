@@ -356,17 +356,6 @@ export default function InvoiceScanner() {
               </div>
             </div>
 
-            {/* מע"מ + לפני מע"מ — row */}
-            <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap'}}>
-              <div style={{flex:1,minWidth:100}}>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>מע"מ (₪)</label>
-                <input className="input-field" type="number" value={result.vat} onChange={e=>setResult({...result,vat:Number(e.target.value)})} dir="ltr" style={{width:'100%'}}/>
-              </div>
-              <div style={{flex:1,minWidth:100}}>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>לפני מע"מ (₪)</label>
-                <input className="input-field" type="number" value={result.vat > 0 ? +(result.total - result.vat).toFixed(2) : result.total} readOnly dir="ltr" style={{width:'100%',opacity:0.5}}/>
-              </div>
-            </div>
           </div>
 
           {/* Items table */}
@@ -399,8 +388,11 @@ export default function InvoiceScanner() {
                       <td style={{padding:'0.375rem 0.5rem',width:80}}>
                         <input className="input-field" type="number" style={{fontSize:'0.8rem',padding:'0.3rem 0.5rem',width:'100%'}} value={item.price} onChange={e=>updateItem(i,'price',Number(e.target.value))} min={0} step="0.01" dir="ltr"/>
                       </td>
-                      <td style={{padding:'0.375rem 0.5rem',fontSize:'0.8rem',fontWeight:600,color:'#e2e8f0',whiteSpace:'nowrap'}}>
-                        ₪{(Number(item.price)*Number(item.quantity)).toFixed(2)}
+                      <td style={{padding:'0.375rem 0.5rem',width:80}}>
+                        <input className="input-field" type="number" style={{fontSize:'0.8rem',padding:'0.3rem 0.5rem',width:'100%'}}
+                          value={+(Number(item.price)*Number(item.quantity)).toFixed(2)}
+                          onChange={e=>{const total=Number(e.target.value);const qty=Number(item.quantity)||1;updateItem(i,'price',+(total/qty).toFixed(4))}}
+                          min={0} step="0.01" dir="ltr"/>
                       </td>
                       <td style={{padding:'0.375rem 0.5rem'}}>
                         <select className="input-field" style={{fontSize:'0.75rem',padding:'0.3rem 0.5rem',minWidth:110}} value={item.category_id||''} onChange={e=>updateItem(i,'category_id',e.target.value)}>
