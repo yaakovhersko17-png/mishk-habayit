@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   LayoutDashboard, Wallet, ArrowLeftRight, ScanLine, Archive,
-  Tag, Lightbulb, Bell, Calendar, StickyNote, Map,
+  Tag, Lightbulb, Bell, Calendar, StickyNote, Map, Utensils,
   Shield, LogOut, X
 } from 'lucide-react'
 
@@ -14,6 +14,7 @@ const navItems = [
   { to: '/invoices',     icon: Archive,         label: 'ארכיון חשבוניות' },
   { to: '/categories',   icon: Tag,             label: 'קטגוריות' },
   { to: '/insights',     icon: Lightbulb,       label: 'תובנות חכמות' },
+  { to: '/dinners',      icon: Utensils,        label: 'ארוחות ערב' },
   { to: '/reminders',    icon: Bell,            label: 'תזכורות' },
   { to: '/calendar',     icon: Calendar,        label: 'לוח שנה' },
   { to: '/notes',        icon: StickyNote,      label: 'פתקים' },

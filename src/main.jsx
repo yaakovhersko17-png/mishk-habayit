@@ -32,6 +32,13 @@ class ErrorBoundary extends Component {
   }
 }
 
+// Register Service Worker for push notifications
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/mishk-habayit/sw.js').catch(() => {})
+  })
+}
+
 createRoot(document.getElementById('root')).render(
   <ErrorBoundary>
     <AuthProvider>
