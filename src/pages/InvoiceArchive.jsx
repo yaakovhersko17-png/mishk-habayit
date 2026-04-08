@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase, cached, withRetry } from '../lib/supabase'
-import { Search, Download, FileText, ChevronUp, ChevronDown } from 'lucide-react'
+import { Search, Download, FileText, ChevronUp, ChevronDown, SlidersHorizontal, X } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import EmptyState from '../components/ui/EmptyState'
 import Modal from '../components/ui/Modal'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import toast from 'react-hot-toast'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
-import * as XLSX from 'xlsx'
 
 export default function InvoiceArchive() {
   const { user, profile } = useAuth()
@@ -27,6 +24,7 @@ export default function InvoiceArchive() {
   const [sortDir, setSortDir]     = useState('desc')
   const [selected, setSelected]   = useState(null)
   const [items, setItems]         = useState([])
+  const [filterOpen, setFilterOpen] = useState(false)
 
   useEffect(() => { load() }, [])
 
@@ -86,6 +84,8 @@ export default function InvoiceArchive() {
 
   async function exportPDF() {
     try {
+      const { default: jsPDF } = await import('jspdf')
+      const { default: autoTable } = await import('jspdf-autotable')
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
       doc.setFont('helvetica')
       doc.setFontSize(14)
@@ -105,6 +105,7 @@ export default function InvoiceArchive() {
 
   async function exportExcel() {
     try {
+      const XLSX = await import('xlsx')
       const rows = sorted.map(inv => ({ תאריך: inv.date, עסק: inv.business_name || '', סכום: Number(inv.total||0), מטבע: inv.currency||'₪', מעמ: Number(inv.vat||0), ארנק: inv.wallets?.name||'', קטגוריה: inv.categories?.name||'' }))
       const ws = XLSX.utils.json_to_sheet(rows)
       const wb = XLSX.utils.book_new()
@@ -124,36 +125,6 @@ export default function InvoiceArchive() {
         <div style={{display:'flex',gap:'0.5rem'}}>
           <button className="btn-ghost" onClick={exportPDF} style={{fontSize:'0.8rem',padding:'0.4rem 0.875rem'}}><FileText size={14}/>PDF</button>
           <button className="btn-ghost" onClick={exportExcel} style={{fontSize:'0.8rem',padding:'0.4rem 0.875rem'}}><Download size={14}/>Excel</button>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="page-card" style={{padding:'1rem'}}>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:'0.625rem'}}>
-          <div style={{position:'relative'}}>
-            <Search size={13} style={{position:'absolute',right:'0.625rem',top:'50%',transform:'translateY(-50%)',color:'#64748b'}}/>
-            <input className="input-field" style={{paddingRight:'2rem',fontSize:'0.8rem'}} placeholder="שם עסק..." value={search} onChange={e=>setSearch(e.target.value)}/>
-          </div>
-          <div style={{position:'relative'}}>
-            <Search size={13} style={{position:'absolute',right:'0.625rem',top:'50%',transform:'translateY(-50%)',color:'#64748b'}}/>
-            <input className="input-field" style={{paddingRight:'2rem',fontSize:'0.8rem'}} placeholder="שם מוצר..." value={searchItem} onChange={e=>setSearchItem(e.target.value)}/>
-          </div>
-          <input className="input-field" type="date" style={{fontSize:'0.8rem'}} value={dateFrom} onChange={e=>setDateFrom(e.target.value)} dir="ltr" placeholder="מתאריך"/>
-          <input className="input-field" type="date" style={{fontSize:'0.8rem'}} value={dateTo}   onChange={e=>setDateTo(e.target.value)}   dir="ltr" placeholder="עד תאריך"/>
-          <select className="input-field" style={{fontSize:'0.8rem'}} value={filterCat} onChange={e=>setFilterCat(e.target.value)}>
-            <option value="">כל הקטגוריות</option>
-            {cats.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-          </select>
-          <select className="input-field" style={{fontSize:'0.8rem'}} value={filterWallet} onChange={e=>setFilterWallet(e.target.value)}>
-            <option value="">כל הארנקים</option>
-            {wallets.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
-          </select>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:'0.25rem',marginTop:'0.625rem',flexWrap:'wrap'}}>
-          <span style={{fontSize:'0.75rem',color:'#64748b',marginLeft:'0.5rem'}}>מיון:</span>
-          <SortBtn field="date"  label="תאריך"/>
-          <SortBtn field="total" label="סכום"/>
-          <SortBtn field="name"  label="שם עסק"/>
         </div>
       </div>
 
@@ -180,6 +151,72 @@ export default function InvoiceArchive() {
           </div>
         )
       }
+
+      {/* Floating filter button */}
+      {(() => {
+        const active = [search, searchItem, dateFrom, dateTo, filterCat, filterWallet].filter(Boolean).length
+        return (
+          <button onClick={()=>setFilterOpen(true)}
+            style={{position:'fixed',bottom:'2rem',left:'2rem',width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(108,99,255,0.4)',zIndex:50,transition:'transform 0.2s'}}
+            onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
+            onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+            <SlidersHorizontal size={22} color="#fff"/>
+            {active > 0 && <span style={{position:'absolute',top:2,right:2,width:18,height:18,borderRadius:'50%',background:'#f87171',fontSize:'0.65rem',fontWeight:700,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>{active}</span>}
+          </button>
+        )
+      })()}
+
+      {/* Filter panel */}
+      {filterOpen && (
+        <div style={{position:'fixed',inset:0,zIndex:60,display:'flex',alignItems:'flex-end'}} onClick={()=>setFilterOpen(false)}>
+          <div style={{width:'100%',background:'#1a1a2e',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',boxShadow:'0 -8px 40px rgba(0,0,0,0.5)'}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem'}}>
+              <span style={{fontWeight:700,fontSize:'1rem',color:'#e2e8f0'}}>סינון ומיון</span>
+              <button onClick={()=>setFilterOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b'}}><X size={20}/></button>
+            </div>
+
+            <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
+              <div style={{position:'relative'}}>
+                <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'#64748b'}}/>
+                <input className="input-field" style={{paddingRight:'2.25rem'}} placeholder="שם עסק..." value={search} onChange={e=>setSearch(e.target.value)}/>
+              </div>
+              <div style={{position:'relative'}}>
+                <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'#64748b'}}/>
+                <input className="input-field" style={{paddingRight:'2.25rem'}} placeholder="שם מוצר..." value={searchItem} onChange={e=>setSearchItem(e.target.value)}/>
+              </div>
+              <div style={{display:'flex',gap:'0.625rem'}}>
+                <input className="input-field" type="date" style={{flex:1}} value={dateFrom} onChange={e=>setDateFrom(e.target.value)} dir="ltr"/>
+                <input className="input-field" type="date" style={{flex:1}} value={dateTo}   onChange={e=>setDateTo(e.target.value)}   dir="ltr"/>
+              </div>
+              <select className="input-field" value={filterCat} onChange={e=>setFilterCat(e.target.value)}>
+                <option value="">כל הקטגוריות</option>
+                {cats.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+              </select>
+              <select className="input-field" value={filterWallet} onChange={e=>setFilterWallet(e.target.value)}>
+                <option value="">כל הארנקים</option>
+                {wallets.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
+              </select>
+
+              <div>
+                <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>מיון לפי</div>
+                <div style={{display:'flex',gap:'0.5rem'}}>
+                  {[['date','תאריך'],['total','סכום'],['name','שם עסק']].map(([f,l])=>(
+                    <button key={f} onClick={()=>toggleSort(f)}
+                      style={{flex:1,padding:'0.4rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${sortBy===f?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:sortBy===f?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:sortBy===f?'#a78bfa':'#94a3b8'}}>
+                      {l} {sortBy===f?(sortDir==='asc'?'↑':'↓'):''}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={()=>{setSearch('');setSearchItem('');setDateFrom('');setDateTo('');setFilterCat('');setFilterWallet('');setSortBy('date');setSortDir('desc')}}
+                style={{width:'100%',padding:'0.6rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',color:'#94a3b8',cursor:'pointer',fontSize:'0.85rem'}}>
+                נקה סינון
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Modal open={!!selected} onClose={()=>setSelected(null)} title={selected?.business_name || 'חשבונית'} size="lg">
         {selected && (
