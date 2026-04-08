@@ -337,26 +337,34 @@ export default function InvoiceScanner() {
           {/* Header fields */}
           <div className="page-card">
             <h2 style={{margin:'0 0 1rem',fontSize:'1rem',fontWeight:600,color:'#e2e8f0'}}>✅ אישור נתוני סריקה — בדוק ותקן</h2>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
-              <div style={{gridColumn:'1/-1'}}>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>שם עסק</label>
-                <input className="input-field" value={result.business_name} onChange={e=>setResult({...result,business_name:e.target.value})} placeholder="שם העסק..."/>
-              </div>
-              <div>
+
+            {/* שם עסק — full width */}
+            <div style={{marginBottom:'0.75rem'}}>
+              <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>שם עסק</label>
+              <input className="input-field" value={result.business_name} onChange={e=>setResult({...result,business_name:e.target.value})} placeholder="שם העסק..."/>
+            </div>
+
+            {/* תאריך + סה"כ — row */}
+            <div style={{display:'flex',gap:'0.75rem',marginBottom:'0.75rem',flexWrap:'wrap'}}>
+              <div style={{flex:1,minWidth:120}}>
                 <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>תאריך</label>
-                <input className="input-field" type="date" value={result.date} onChange={e=>setResult({...result,date:e.target.value})} dir="ltr"/>
+                <input className="input-field" type="date" value={result.date} onChange={e=>setResult({...result,date:e.target.value})} dir="ltr" style={{width:'100%'}}/>
               </div>
-              <div>
+              <div style={{flex:1,minWidth:100}}>
                 <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>סה"כ לתשלום (₪)</label>
-                <input className="input-field" type="number" value={result.total} onChange={e=>setResult({...result,total:Number(e.target.value)})} dir="ltr"/>
+                <input className="input-field" type="number" value={result.total} onChange={e=>setResult({...result,total:Number(e.target.value)})} dir="ltr" style={{width:'100%',border:'1px solid rgba(108,99,255,0.4)'}}/>
               </div>
-              <div>
+            </div>
+
+            {/* מע"מ + לפני מע"מ — row */}
+            <div style={{display:'flex',gap:'0.75rem',flexWrap:'wrap'}}>
+              <div style={{flex:1,minWidth:100}}>
                 <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>מע"מ (₪)</label>
-                <input className="input-field" type="number" value={result.vat} onChange={e=>setResult({...result,vat:Number(e.target.value)})} dir="ltr"/>
+                <input className="input-field" type="number" value={result.vat} onChange={e=>setResult({...result,vat:Number(e.target.value)})} dir="ltr" style={{width:'100%'}}/>
               </div>
-              <div>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>סכום לפני מע"מ (₪)</label>
-                <input className="input-field" type="number" value={result.vat > 0 ? +(result.total - result.vat).toFixed(2) : result.total} readOnly dir="ltr" style={{opacity:0.6}}/>
+              <div style={{flex:1,minWidth:100}}>
+                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>לפני מע"מ (₪)</label>
+                <input className="input-field" type="number" value={result.vat > 0 ? +(result.total - result.vat).toFixed(2) : result.total} readOnly dir="ltr" style={{width:'100%',opacity:0.5}}/>
               </div>
             </div>
           </div>
