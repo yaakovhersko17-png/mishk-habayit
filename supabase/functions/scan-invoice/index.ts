@@ -91,7 +91,6 @@ Deno.serve(async (req: Request) => {
           ],
         }],
         generationConfig: {
-          responseMimeType: 'application/json',
           temperature: 0.1,
           maxOutputTokens: 2048,
         },
@@ -111,12 +110,15 @@ Deno.serve(async (req: Request) => {
   const geminiData = await geminiRes.json()
   const rawText: string = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 
+  // Strip markdown code blocks if model wrapped the JSON in ```json ... ```
+  const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+
   let parsed: Record<string, unknown>
   try {
-    parsed = JSON.parse(rawText)
+    parsed = JSON.parse(cleaned)
   } catch (_e) {
-    console.error('Failed to parse Gemini response:', rawText)
-    return ok({ error: 'parse_failed', raw: rawText.slice(0, 200) })
+    console.error('Failed to parse response:', cleaned.slice(0, 300))
+    return ok({ error: 'parse_failed', raw: cleaned.slice(0, 200) })
   }
 
   return ok(parsed)
