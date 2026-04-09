@@ -148,20 +148,19 @@ export default function Dashboard() {
       {/* Finance summary — collapsed by default */}
       <div>
         <button
+          className="finance-toggle-btn"
           onClick={() => setShowFinance(v => !v)}
-          style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0.875rem 1.125rem',borderRadius:'0.875rem',background:'rgba(108,99,255,0.08)',border:'1px solid rgba(108,99,255,0.18)',cursor:'pointer',transition:'all 0.2s'}}
-          onMouseEnter={e=>e.currentTarget.style.background='rgba(108,99,255,0.14)'}
-          onMouseLeave={e=>e.currentTarget.style.background='rgba(108,99,255,0.08)'}>
+        >
           <div style={{display:'flex',alignItems:'center',gap:'0.75rem'}}>
-            <div style={{width:34,height:34,borderRadius:'0.625rem',background:'rgba(108,99,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <Wallet size={16} color="#a78bfa"/>
+            <div style={{width:34,height:34,borderRadius:'0.625rem',background:'rgba(20,184,166,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <Wallet size={16} color="#2dd4bf"/>
             </div>
             <div style={{textAlign:'right'}}>
-              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#e2e8f0'}}>סקירה פיננסית</div>
-              <div style={{fontSize:'0.72rem',color:'#64748b',marginTop:'0.1rem'}}>יתרה, הכנסות, הוצאות והלוואות</div>
+              <div style={{fontSize:'0.875rem',fontWeight:600}}>סקירה פיננסית</div>
+              <div style={{fontSize:'0.72rem',color:'#94a3b8',marginTop:'0.1rem'}}>יתרה, הכנסות, הוצאות והלוואות</div>
             </div>
           </div>
-          <ChevronDown size={18} color="#64748b" style={{transition:'transform 0.25s',transform: showFinance ? 'rotate(180deg)' : 'rotate(0deg)'}}/>
+          <ChevronDown size={18} style={{transition:'transform 0.25s',transform: showFinance ? 'rotate(180deg)' : 'rotate(0deg)'}}/>
         </button>
 
         {showFinance && (

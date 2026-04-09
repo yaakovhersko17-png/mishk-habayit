@@ -159,6 +159,71 @@
   }
   select.input-field option { background: #1e1e3a; color: #e2e8f0; }
 
+  /* ── Finance toggle (UIverse teal) ──────────── */
+  .finance-toggle-btn {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1.125rem;
+    background: #0f172a;
+    border: 2px solid #0d9488;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.5s;
+    font-family: inherit;
+  }
+  .finance-toggle-btn:hover {
+    transform: scale(1.015);
+    border-color: #34d399;
+    color: #6ee7b7;
+  }
+  .finance-toggle-btn::before {
+    content: '';
+    position: absolute;
+    width: 2.5rem;
+    height: 2.5rem;
+    right: 0.5rem;
+    top: 0.5rem;
+    z-index: 0;
+    background: #6366f1;
+    border-radius: 9999px;
+    filter: blur(1rem);
+    transition: all 0.5s;
+  }
+  .finance-toggle-btn::after {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    width: 4rem;
+    height: 4rem;
+    background: #2dd4bf;
+    right: 1.5rem;
+    top: 1rem;
+    border-radius: 9999px;
+    filter: blur(1rem);
+    transition: all 0.5s;
+  }
+  .finance-toggle-btn:hover::before {
+    right: 2.5rem;
+    top: auto;
+    bottom: -1rem;
+    filter: blur(0.4rem);
+  }
+  .finance-toggle-btn:hover::after {
+    right: -1.5rem;
+    transform: scale(1.1);
+  }
+  .finance-toggle-btn > * {
+    position: relative;
+    z-index: 10;
+  }
+
   /* ── Responsive layout helpers ──────────────── */
   /* 2-column grid that collapses to 1 on mobile */
   .form-2col {
