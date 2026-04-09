@@ -175,21 +175,6 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Wallets quick view */}
-      {wallets.length > 0 && (
-        <div className="page-card">
-          <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>ארנקים</h3>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:'0.75rem'}}>
-            {wallets.map(w => (
-              <div key={w.id} onClick={() => navigate('/wallets')} style={{cursor:'pointer',padding:'1rem',borderRadius:'0.75rem',background:`${w.color || '#6c63ff'}15`,border:`1px solid ${w.color || '#6c63ff'}30`,transition:'all 0.2s'}}>
-                <div style={{fontSize:'1.25rem',marginBottom:'0.5rem'}}>{w.icon}</div>
-                <div style={{fontSize:'0.8rem',color:'#94a3b8',marginBottom:'0.25rem'}}>{w.name}</div>
-                <div style={{fontWeight:700,color:'#e2e8f0'}}>{w.currency}{Number(w.balance).toLocaleString()}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Quick links */}
       <div className="page-card" style={{padding:0,overflow:'hidden'}}>
