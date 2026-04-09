@@ -1,5 +1,6 @@
 import { Menu } from 'lucide-react'
 import PresenceIndicator from './PresenceIndicator'
+import NotificationBell from './NotificationBell'
 
 export default function Header({ onMenuClick }) {
   return (
@@ -22,7 +23,8 @@ export default function Header({ onMenuClick }) {
         <Menu size={22} />
       </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <NotificationBell />
         <PresenceIndicator />
       </div>
     </header>

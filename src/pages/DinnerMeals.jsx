@@ -22,7 +22,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Bell, Star, ChefHat, X, SlidersHorizontal, Edit2, BarChart2, GitMerge, TrendingDown } from 'lucide-react'
+import { Plus, Star, ChefHat, X, SlidersHorizontal, Edit2, BarChart2, GitMerge, TrendingDown, SkipForward } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import toast from 'react-hot-toast'
 
@@ -252,51 +252,40 @@ function MealModal({ meal, defaultDate, onSave, onDelete, onClose }) {
 
 // ─── MissingDaysModal ─────────────────────────────────────────────────────────
 
-function MissingDaysModal({ missing, onFill, onClose }) {
+function MissingDaysModal({ missing, onFill, onSkip, onClose }) {
+  const [skipping, setSkipping] = useState(null)
+
   function handleOverlayClick(e) {
     if (e.target === e.currentTarget) onClose()
+  }
+
+  async function handleSkip(date) {
+    setSkipping(date)
+    await onSkip(date)
+    setSkipping(null)
   }
 
   return (
     <div
       onClick={handleOverlayClick}
       style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 1000,
-        background: 'rgba(0,0,0,0.6)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        paddingTop: '3rem',
-        paddingLeft: '1rem',
-        paddingRight: '1rem',
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+        display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
+        paddingTop: '3rem', paddingLeft: '1rem', paddingRight: '1rem',
       }}
     >
-      <div
-        style={{
-          background: '#1e1e3a',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 16,
-          padding: '1.5rem',
-          width: '100%',
-          maxWidth: 420,
-          direction: 'rtl',
-          maxHeight: '80vh',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+      <div style={{
+        background: '#1e1e3a', border: '1px solid rgba(255,255,255,0.12)',
+        borderRadius: 16, padding: '1.5rem', width: '100%', maxWidth: 420,
+        direction: 'rtl', maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+      }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexShrink: 0 }}>
           <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#e2e8f0' }}>
             ימים חסרים ({missing.length})
           </h3>
-          <button
-            onClick={onClose}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 4 }}
-          >
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 4 }}>
             <X size={20} />
           </button>
         </div>
@@ -304,25 +293,33 @@ function MissingDaysModal({ missing, onFill, onClose }) {
         {/* List */}
         <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {missing.map(date => (
-            <button
-              key={date}
-              onClick={() => onFill(date)}
-              style={{
-                background: 'rgba(239,68,68,0.08)',
-                border: '1px solid rgba(239,68,68,0.25)',
-                borderRadius: 10,
-                padding: '0.65rem 1rem',
-                cursor: 'pointer',
-                textAlign: 'right',
-                color: '#fca5a5',
-                fontSize: '0.95rem',
-                transition: 'background 0.15s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.15)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
-            >
-              {formatDateHebrew(date)}
-            </button>
+            <div key={date} style={{
+              background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
+              borderRadius: 10, padding: '0.65rem 1rem',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+            }}>
+              <span style={{ color: '#fca5a5', fontSize: '0.9rem' }}>{formatDateHebrew(date)}</span>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button
+                  onClick={() => onFill(date)}
+                  style={{
+                    padding: '4px 12px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                    background: 'rgba(108,99,255,0.2)', border: '1px solid rgba(108,99,255,0.3)', color: '#a78bfa',
+                  }}>
+                  מלא
+                </button>
+                <button
+                  onClick={() => handleSkip(date)}
+                  disabled={skipping === date}
+                  style={{
+                    padding: '4px 12px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600,
+                    cursor: skipping === date ? 'default' : 'pointer', opacity: skipping === date ? 0.5 : 1,
+                    background: 'rgba(100,116,139,0.1)', border: '1px solid rgba(100,116,139,0.2)', color: '#64748b',
+                  }}>
+                  {skipping === date ? '...' : 'דלג'}
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -617,39 +614,7 @@ export default function DinnerMeals() {
   const today = israeliToday()
   const todayIsWeekend = isWeekend(today)
 
-  useEffect(() => {
-    load()
-    // Request notification permission
-    try {
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission()
-      }
-    } catch (_) {}
-    // Schedule 20:00 reminder
-    try {
-      const { hour, minute } = getIsraeliTime()
-      const msUntil20 = ((20 - hour) * 60 - minute) * 60 * 1000
-      if (msUntil20 > 0) {
-        const timerId = setTimeout(() => {
-          try {
-            if ('Notification' in window && Notification.permission === 'granted') {
-              setMeals(current => {
-                const hasTodayMeal = current.some(m => m.meal_date === israeliToday())
-                if (!hasTodayMeal && !isWeekend(israeliToday())) {
-                  new Notification('📝 ארוחת ערב חסרה', {
-                    body: 'עוד לא מילאת מה אכלת הערב',
-                    icon: '/mishk-habayit/favicon.svg',
-                  })
-                }
-                return current
-              })
-            }
-          } catch (_) {}
-        }, msUntil20)
-        return () => clearTimeout(timerId)
-      }
-    } catch (_) {}
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load() }, [])
 
   async function load() {
     setLoading(true)
@@ -675,6 +640,7 @@ export default function DinnerMeals() {
 
   const filteredMeals = useMemo(() => {
     return meals.filter(m => {
+      if (m.skipped) return false
       if (filterText && !m.meal_text.toLowerCase().includes(filterText.toLowerCase())) return false
       if (filterFrom && m.meal_date < filterFrom) return false
       if (filterTo && m.meal_date > filterTo) return false
@@ -684,7 +650,8 @@ export default function DinnerMeals() {
 
   const hasFilters = Boolean(filterText || filterFrom || filterTo)
 
-  const todayMeal = meals.find(m => m.meal_date === today)
+  const todayMeal    = meals.find(m => m.meal_date === today && !m.skipped)
+  const todaySkipped = meals.find(m => m.meal_date === today && m.skipped)
 
   async function saveMeal(data) {
     let error
@@ -738,6 +705,21 @@ export default function DinnerMeals() {
       return
     }
     toast.success(`מוזג ל: ${toText}`)
+    load()
+  }
+
+  async function skipDay(date) {
+    const { error } = await supabase
+      .from('dinner_meals')
+      .insert({ meal_date: date, meal_text: 'דולג', skipped: true })
+    if (error) { toast.error('שגיאה בדילוג'); return }
+    toast.success(`${date} — סומן כדולג`)
+    setShowMissing(false)
+    load()
+  }
+
+  async function undoSkip(date) {
+    await supabase.from('dinner_meals').delete().eq('meal_date', date).eq('skipped', true)
     load()
   }
 
@@ -798,18 +780,14 @@ export default function DinnerMeals() {
               background: 'rgba(239,68,68,0.12)',
               border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: 20,
-              padding: '4px 10px',
+              padding: '4px 12px',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
               color: '#fca5a5',
               fontSize: '0.82rem',
               fontWeight: 600,
             }}
           >
-            <Bell size={14} />
-            {missingDays.length} חסרות
+            {missingDays.length} ימים חסרים
           </button>
         )}
       </div>
@@ -834,8 +812,8 @@ export default function DinnerMeals() {
       {!todayIsWeekend && (
         <div
           style={{
-            background: todayMeal ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-            border: `1px solid ${todayMeal ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+            background: todayMeal ? 'rgba(34,197,94,0.1)' : todaySkipped ? 'rgba(100,116,139,0.1)' : 'rgba(239,68,68,0.1)',
+            border: `1px solid ${todayMeal ? 'rgba(34,197,94,0.3)' : todaySkipped ? 'rgba(100,116,139,0.25)' : 'rgba(239,68,68,0.3)'}`,
             borderRadius: 14,
             padding: '0.9rem 1.1rem',
             marginBottom: '1rem',
@@ -846,24 +824,44 @@ export default function DinnerMeals() {
           }}
         >
           <div>
-            <div style={{ fontSize: '0.78rem', color: todayMeal ? '#86efac' : '#fca5a5', marginBottom: 2 }}>
+            <div style={{ fontSize: '0.78rem', color: todayMeal ? '#86efac' : todaySkipped ? '#94a3b8' : '#fca5a5', marginBottom: 2 }}>
               ארוחת היום
             </div>
             {todayMeal ? (
               <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.95rem' }}>{todayMeal.meal_text}</div>
+            ) : todaySkipped ? (
+              <div style={{ color: '#64748b', fontSize: '0.88rem' }}>דולג — לא בישלנו הערב</div>
             ) : (
               <div style={{ color: '#94a3b8', fontSize: '0.88rem' }}>לא מולא עדיין</div>
             )}
           </div>
-          {!todayMeal && (
-            <button
-              className="btn-primary"
-              onClick={() => { setAddForDate(today); setShowAdd(true) }}
-              style={{ flexShrink: 0, fontSize: '0.85rem', padding: '6px 14px' }}
-            >
-              מלא עכשיו
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            {!todayMeal && !todaySkipped && (
+              <>
+                <button
+                  className="btn-primary"
+                  onClick={() => { setAddForDate(today); setShowAdd(true) }}
+                  style={{ fontSize: '0.85rem', padding: '6px 14px' }}
+                >
+                  מלא עכשיו
+                </button>
+                <button
+                  onClick={() => skipDay(today)}
+                  style={{ fontSize: '0.82rem', padding: '6px 12px', borderRadius: 8, background: 'rgba(100,116,139,0.12)', border: '1px solid rgba(100,116,139,0.25)', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                >
+                  <SkipForward size={13} />דלג
+                </button>
+              </>
+            )}
+            {todaySkipped && (
+              <button
+                onClick={() => undoSkip(today)}
+                style={{ fontSize: '0.8rem', padding: '5px 12px', borderRadius: 8, background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.2)', color: '#a78bfa', cursor: 'pointer' }}
+              >
+                בטל דילוג
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -1029,6 +1027,7 @@ export default function DinnerMeals() {
         <MissingDaysModal
           missing={missingDays}
           onFill={handleFillMissing}
+          onSkip={skipDay}
           onClose={() => setShowMissing(false)}
         />
       )}
