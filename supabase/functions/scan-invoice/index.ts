@@ -1,10 +1,7 @@
 /**
  * Supabase Edge Function: scan-invoice
- * Receives a base64-encoded invoice image/PDF from the authenticated frontend,
- * calls Google Gemini Vision API, and returns structured JSON data.
- *
- * The GEMINI_API_KEY is stored ONLY as a Supabase secret — never in frontend code.
- * Set it via: supabase secrets set GEMINI_API_KEY=your_key_here
+ * Calls Google Gemini Vision API to extract invoice data.
+ * GEMINI_API_KEY is stored only as a Supabase secret — never in frontend code.
  */
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? ''
@@ -49,25 +46,24 @@ Rules:
 `.trim()
 
 Deno.serve(async (req: Request) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return ok(null)
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
+    return ok({ error: 'method_not_allowed' })
   }
 
   // Require authenticated Supabase user
   const authHeader = req.headers.get('Authorization') ?? ''
   if (!authHeader.startsWith('Bearer ')) {
-    return json({ error: 'Unauthorized' }, 401)
+    return ok({ error: 'unauthorized' })
   }
 
-  // Verify API key is configured
+  // Check API key is configured
   if (!GEMINI_API_KEY) {
     console.error('GEMINI_API_KEY secret is not set')
-    return json({ error: 'Service not configured' }, 500)
+    return ok({ error: 'not_configured', message: 'GEMINI_API_KEY secret is missing' })
   }
 
   // Parse request body
@@ -77,8 +73,8 @@ Deno.serve(async (req: Request) => {
     image = body.image
     mimeType = body.mimeType || 'image/jpeg'
     if (!image) throw new Error('Missing image')
-  } catch (e) {
-    return json({ error: 'Invalid request body' }, 400)
+  } catch (_e) {
+    return ok({ error: 'bad_request', message: 'Missing image in request body' })
   }
 
   // Call Gemini Vision API
@@ -103,13 +99,13 @@ Deno.serve(async (req: Request) => {
     })
   } catch (e) {
     console.error('Gemini fetch error:', e)
-    return json({ error: 'Failed to reach Gemini API' }, 502)
+    return ok({ error: 'gemini_unreachable', message: String(e) })
   }
 
   if (!geminiRes.ok) {
     const errText = await geminiRes.text()
     console.error('Gemini API error:', geminiRes.status, errText)
-    return json({ error: 'Gemini API error', status: geminiRes.status }, 502)
+    return ok({ error: 'gemini_api_error', status: geminiRes.status, message: errText })
   }
 
   const geminiData = await geminiRes.json()
@@ -118,17 +114,17 @@ Deno.serve(async (req: Request) => {
   let parsed: Record<string, unknown>
   try {
     parsed = JSON.parse(rawText)
-  } catch {
+  } catch (_e) {
     console.error('Failed to parse Gemini response:', rawText)
-    return json({ error: 'Failed to parse invoice data' }, 500)
+    return ok({ error: 'parse_failed', raw: rawText.slice(0, 200) })
   }
 
-  return json(parsed, 200)
+  return ok(parsed)
 })
 
-function json(data: unknown, status = 200) {
+function ok(data: unknown) {
   return new Response(JSON.stringify(data), {
-    status,
+    status: 200,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 }

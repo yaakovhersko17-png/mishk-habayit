@@ -94,7 +94,7 @@ export default function InvoiceScanner() {
       })
       setScanProgress(90)
 
-      if (fnError) throw new Error(fnError.message || 'שגיאה בניתוח')
+      if (fnError) throw new Error('שגיאה בקריאה לפונקציה: ' + fnError.message)
 
       if (data?.error === 'not_invoice') {
         await logActivity({ userId: user.id, userName: profile.name, actionType: ACTION_TYPES.SCAN, entityType: ENTITY_TYPES.INVOICE, description: `ניסיון סריקה (לא חשבונית): ${file.name}` })
@@ -102,7 +102,9 @@ export default function InvoiceScanner() {
         return
       }
 
-      if (data?.error) throw new Error(data.error)
+      if (data?.error === 'not_configured') throw new Error('מפתח Gemini לא מוגדר בשרת')
+      if (data?.error === 'gemini_api_error') throw new Error(`Gemini API שגיאה ${data.status}: ${data.message?.slice(0,120)}`)
+      if (data?.error) throw new Error('שגיאה: ' + (data.message || data.error))
 
       const parsed = {
         business_name:  String(data.business_name || ''),
