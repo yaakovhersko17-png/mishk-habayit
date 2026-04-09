@@ -6,7 +6,7 @@
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? ''
 const GEMINI_URL =
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${GEMINI_API_KEY}`
+  `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${GEMINI_API_KEY}`
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
