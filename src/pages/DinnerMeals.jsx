@@ -640,7 +640,7 @@ export default function DinnerMeals() {
 
   const filteredMeals = useMemo(() => {
     return meals.filter(m => {
-      if (m.skipped) return false
+      if (m.meal_text === '__skip__') return false
       if (filterText && !m.meal_text.toLowerCase().includes(filterText.toLowerCase())) return false
       if (filterFrom && m.meal_date < filterFrom) return false
       if (filterTo && m.meal_date > filterTo) return false
@@ -650,8 +650,8 @@ export default function DinnerMeals() {
 
   const hasFilters = Boolean(filterText || filterFrom || filterTo)
 
-  const todayMeal    = meals.find(m => m.meal_date === today && !m.skipped)
-  const todaySkipped = meals.find(m => m.meal_date === today && m.skipped)
+  const todayMeal    = meals.find(m => m.meal_date === today && m.meal_text !== '__skip__')
+  const todaySkipped = meals.find(m => m.meal_date === today && m.meal_text === '__skip__')
 
   async function saveMeal(data) {
     let error
@@ -711,7 +711,7 @@ export default function DinnerMeals() {
   async function skipDay(date) {
     const { error } = await supabase
       .from('dinner_meals')
-      .insert({ meal_date: date, meal_text: 'דולג', skipped: true })
+      .insert({ meal_date: date, meal_text: '__skip__' })
     if (error) { toast.error('שגיאה בדילוג'); return }
     toast.success(`${date} — סומן כדולג`)
     setShowMissing(false)
@@ -719,7 +719,7 @@ export default function DinnerMeals() {
   }
 
   async function undoSkip(date) {
-    await supabase.from('dinner_meals').delete().eq('meal_date', date).eq('skipped', true)
+    await supabase.from('dinner_meals').delete().eq('meal_date', date).eq('meal_text', '__skip__')
     load()
   }
 

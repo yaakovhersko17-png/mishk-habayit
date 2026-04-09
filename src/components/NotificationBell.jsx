@@ -124,7 +124,7 @@ export default function NotificationBell() {
   async function loadDinners() {
     const { data } = await supabase
       .from('dinner_meals')
-      .select('meal_date, skipped')
+      .select('meal_date, meal_text')
       .order('meal_date', { ascending: true })
     setMissingDinners(computeMissingDays(data || []))
   }
@@ -169,7 +169,7 @@ export default function NotificationBell() {
     setSkipping(date)
     const { error } = await supabase
       .from('dinner_meals')
-      .insert({ meal_date: date, meal_text: 'דולג', skipped: true })
+      .insert({ meal_date: date, meal_text: '__skip__' })
     if (error) { toast.error('שגיאה בדילוג'); setSkipping(null); return }
     toast.success(`${formatDateHebrew(date)} — סומן כדולג`)
     await loadDinners()
