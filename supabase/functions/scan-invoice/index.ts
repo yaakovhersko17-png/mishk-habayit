@@ -1,12 +1,13 @@
 /**
  * Supabase Edge Function: scan-invoice
- * Calls Google Gemini Vision API to extract invoice data.
+ * Uses Gemma 4 27B (vision) to extract invoice data.
  * GEMINI_API_KEY is stored only as a Supabase secret — never in frontend code.
  */
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? ''
-const GEMINI_URL =
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`
+const MODEL = 'gemma-4-27b-it'
+const MODEL_URL =
+  `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,36 +15,71 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-const EXTRACTION_PROMPT = `
-You are an expert at reading invoices, receipts, and bills written in any language (especially Hebrew and English).
-
-Analyze the attached document image and extract structured data.
-Return ONLY valid JSON — no markdown, no code blocks, no explanation.
-
-Required JSON format:
-{
-  "business_name": "name of the business or store",
-  "date": "YYYY-MM-DD",
-  "invoice_number": "invoice/receipt number or null",
-  "total": 123.45,
-  "vat": 0.00,
-  "currency": "₪",
-  "items": [
-    { "name": "item description", "quantity": 1, "price": 10.00 }
-  ]
-}
-
-Rules:
-- business_name: main business name at the top of the document
-- date: invoice/receipt date in YYYY-MM-DD format; if not visible use today
-- total: the final amount due (look for: סה"כ לתשלום, grand total, total due) — must be a number
-- vat: VAT/tax amount (look for: מע"מ, VAT, tax) — 0 if not visible
-- currency: "₪" for Israeli Shekel, "$" for USD, "€" for EUR
-- items: each line item with name (string), quantity (number), price (unit price, number)
-- All numeric fields must be numbers, not strings
-- Do NOT include currency symbols inside numeric fields
-- If this image is NOT an invoice or receipt, return exactly: {"error":"not_invoice"}
+// ── System instruction ────────────────────────────────────────────────────────
+// Tells the model WHO it is before it even sees the image.
+const SYSTEM_INSTRUCTION = `
+You are an expert OCR system for Israeli receipts and invoices.
+You read Hebrew (right-to-left) and English.
+You always respond with a single valid JSON object and nothing else — no markdown, no code fences, no explanation.
 `.trim()
+
+// ── Extraction prompt ─────────────────────────────────────────────────────────
+// Step-by-step guide so the model doesn't guess — it follows clear rules.
+const EXTRACTION_PROMPT = `
+Look carefully at the receipt/invoice image below and extract the data.
+
+OUTPUT: One JSON object only. Schema:
+{"business_name":"...","date":"YYYY-MM-DD","invoice_number":null,"total":0.00,"vat":0.00,"currency":"₪","items":[{"name":"...","quantity":1,"price":0.00}]}
+
+--- EXTRACTION GUIDE ---
+
+BUSINESS NAME:
+- The largest text at the TOP of the receipt — store/restaurant/business name
+- Hebrew label: שם העסק / שם החנות / בית עסק
+- Write it exactly as it appears (Hebrew or English)
+
+DATE:
+- Find: תאריך / Date
+- Israeli date format is DD/MM/YYYY → always convert to YYYY-MM-DD
+- Example: 07/04/2025 → "2025-04-07"
+
+INVOICE NUMBER:
+- Find: מספר חשבונית / מספר קבלה / מס' / No. / Invoice #
+- Use null if not present
+
+ITEMS (every product/service line):
+- Hebrew column headers: פריט/תיאור = item name, כמות = quantity, מחיר ליחידה = unit price
+- Use the UNIT price per item (not the line total) for "price"
+- If only a line total is shown and qty=1, use that as price
+- quantity must be a number (default 1)
+- price must be a number (no currency symbol)
+
+VAT (מע"מ):
+- Find: מע"מ / מס ערך מוסף / VAT
+- In Israel VAT is 17% or 18% — it will be shown separately near the bottom
+- Use 0 if not shown
+
+TOTAL:
+- The FINAL amount to pay — always at the BOTTOM of the receipt
+- Hebrew labels: סה"כ לתשלום / סכום לתשלום / סה"כ / סך הכל / לתשלום
+- English: Total / Amount Due / Grand Total
+- This number INCLUDES VAT unless marked "לפני מע"מ" (before VAT)
+- Ignore thousands separators: "1,234.50" → 1234.50
+
+CURRENCY:
+- ₪ or ש"ח or NIS → use "₪"  (default for Israeli receipts)
+- $ or USD → use "$"
+- € or EUR → use "€"
+
+STRICT RULES:
+1. All number fields (total, vat, price, quantity) must be NUMERIC — never strings
+2. Do NOT put ₪ or $ or € inside a number value
+3. If the image is NOT a receipt/invoice → return exactly: {"error":"not_invoice"}
+4. If a field is unreadable → null for text fields, 0 for number fields
+5. Return ONLY the JSON — no words before or after it
+`.trim()
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -54,19 +90,16 @@ Deno.serve(async (req: Request) => {
     return ok({ error: 'method_not_allowed' })
   }
 
-  // Require authenticated Supabase user
   const authHeader = req.headers.get('Authorization') ?? ''
   if (!authHeader.startsWith('Bearer ')) {
     return ok({ error: 'unauthorized' })
   }
 
-  // Check API key is configured
   if (!GEMINI_API_KEY) {
     console.error('GEMINI_API_KEY secret is not set')
     return ok({ error: 'not_configured', message: 'GEMINI_API_KEY secret is missing' })
   }
 
-  // Parse request body
   let image: string, mimeType: string
   try {
     const body = await req.json()
@@ -77,49 +110,61 @@ Deno.serve(async (req: Request) => {
     return ok({ error: 'bad_request', message: 'Missing image in request body' })
   }
 
-  // Call Gemini Vision API
-  let geminiRes: Response
+  let modelRes: Response
   try {
-    geminiRes = await fetch(GEMINI_URL, {
+    modelRes = await fetch(MODEL_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        // System instruction — sets context BEFORE the image
+        system_instruction: {
+          parts: [{ text: SYSTEM_INSTRUCTION }],
+        },
         contents: [{
+          role: 'user',
           parts: [
+            // Image first so the model can "see" before reading instructions
             { inlineData: { mimeType, data: image } },
+            // Then the step-by-step extraction guide
             { text: EXTRACTION_PROMPT },
           ],
         }],
         generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.1,
+          temperature: 0.0,   // 0 = fully deterministic, no hallucination
           maxOutputTokens: 2048,
         },
       }),
     })
   } catch (e) {
-    console.error('Gemini fetch error:', e)
-    return ok({ error: 'gemini_unreachable', message: String(e) })
+    console.error('Model fetch error:', e)
+    return ok({ error: 'model_unreachable', message: String(e) })
   }
 
-  if (!geminiRes.ok) {
-    const errText = await geminiRes.text()
-    console.error('Gemini API error:', geminiRes.status, errText)
-    return ok({ error: 'gemini_api_error', status: geminiRes.status, message: errText })
+  if (!modelRes.ok) {
+    const errText = await modelRes.text()
+    console.error('Model API error:', modelRes.status, errText)
+    return ok({ error: 'gemini_api_error', status: modelRes.status, message: errText })
   }
 
-  const geminiData = await geminiRes.json()
-  const rawText: string = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+  const modelData = await modelRes.json()
+  const rawText: string = modelData?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 
-  // Strip markdown code blocks if model wrapped the JSON in ```json ... ```
-  const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+  // Strip markdown code blocks (```json ... ```) in case model adds them
+  const cleaned = rawText
+    .replace(/^```(?:json)?\s*/im, '')
+    .replace(/\s*```\s*$/im, '')
+    .trim()
+
+  // Extract the JSON object — handles any stray text before/after
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
+  const jsonStr = jsonMatch ? jsonMatch[0] : cleaned
 
   let parsed: Record<string, unknown>
   try {
-    parsed = JSON.parse(cleaned)
+    parsed = JSON.parse(jsonStr)
   } catch (_e) {
-    console.error('Failed to parse response:', cleaned.slice(0, 300))
-    return ok({ error: 'parse_failed', raw: cleaned.slice(0, 200) })
+    console.error('Failed to parse response:', rawText.slice(0, 400))
+    return ok({ error: 'parse_failed', raw: rawText.slice(0, 200) })
   }
 
   return ok(parsed)

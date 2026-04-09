@@ -12,11 +12,11 @@
  * --   rating INTEGER CHECK (rating >= 1 AND rating <= 5),
  * --   notes TEXT,
  * --   created_at TIMESTAMPTZ DEFAULT now(),
- * --   UNIQUE(user_id, meal_date)
+ * --   UNIQUE(meal_date)
  * -- );
- * -- CREATE INDEX ON dinner_meals(user_id, meal_date);
+ * -- CREATE INDEX ON dinner_meals(meal_date);
  * -- ALTER TABLE dinner_meals ENABLE ROW LEVEL SECURITY;
- * -- CREATE POLICY "Users manage own meals" ON dinner_meals FOR ALL USING (auth.uid() = user_id);
+ * -- CREATE POLICY "auth_all" ON dinner_meals FOR ALL TO authenticated USING (true) WITH CHECK (true);
  */
 
 import { useState, useEffect, useMemo } from 'react'
@@ -656,7 +656,6 @@ export default function DinnerMeals() {
     const { data, error } = await supabase
       .from('dinner_meals')
       .select('*')
-      .eq('user_id', user.id)
       .order('meal_date', { ascending: false })
     if (error) {
       console.error('DinnerMeals load error:', error)
@@ -693,8 +692,7 @@ export default function DinnerMeals() {
       ;({ error } = await supabase
         .from('dinner_meals')
         .update(data)
-        .eq('id', editMeal.id)
-        .eq('user_id', user.id))
+        .eq('id', editMeal.id))
     } else {
       ;({ error } = await supabase
         .from('dinner_meals')
@@ -721,7 +719,6 @@ export default function DinnerMeals() {
       .from('dinner_meals')
       .delete()
       .eq('id', id)
-      .eq('user_id', user.id)
     if (error) {
       toast.error('שגיאה במחיקה')
       return
@@ -735,7 +732,6 @@ export default function DinnerMeals() {
     const { error } = await supabase
       .from('dinner_meals')
       .update({ meal_text: toText })
-      .eq('user_id', user.id)
       .eq('meal_text', fromText)
     if (error) {
       toast.error('שגיאה במיזוג')
