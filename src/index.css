@@ -159,69 +159,71 @@
   }
   select.input-field option { background: #1e1e3a; color: #e2e8f0; }
 
-  /* ── Finance toggle (UIverse teal) ──────────── */
-  .finance-toggle-btn {
-    position: relative;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.875rem 1.125rem;
-    background: #0f172a;
-    border: 2px solid #0d9488;
-    color: #fff;
-    font-size: 0.875rem;
-    font-weight: 700;
-    border-radius: 0.75rem;
-    overflow: hidden;
+  /* ── Finance circular button (UIverse) ──────── */
+  .finance-btn {
     cursor: pointer;
-    transition: all 0.5s;
+    border: 2px solid #0d9488;
+    background: #0f172a;
+    color: #fff;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    display: grid;
+    place-content: center;
+    transition: background 300ms, transform 200ms, border-color 300ms;
+    font-weight: 600;
     font-family: inherit;
   }
-  .finance-toggle-btn:hover {
-    transform: scale(1.015);
+  .finance-btn__text {
+    position: absolute;
+    inset: 0;
+    animation: finance-text-spin 8s linear infinite;
+  }
+  .finance-btn__text > span {
+    position: absolute;
+    font-size: 0.58rem;
+    transform: rotate(calc(27.7deg * var(--index)));
+    inset: 5px;
+    color: #94a3b8;
+    letter-spacing: 0;
+  }
+  .finance-btn__circle {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    overflow: hidden;
+    background: #2dd4bf;
+    color: #0f172a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .finance-btn__icon--copy {
+    position: absolute;
+    transform: translate(-150%, 150%);
+  }
+  .finance-btn:hover {
+    background: #134e4a;
     border-color: #34d399;
+    transform: scale(1.05);
+  }
+  .finance-btn:hover .finance-btn__text > span {
     color: #6ee7b7;
   }
-  .finance-toggle-btn::before {
-    content: '';
-    position: absolute;
-    width: 2.5rem;
-    height: 2.5rem;
-    right: 0.5rem;
-    top: 0.5rem;
-    z-index: 0;
-    background: #6366f1;
-    border-radius: 9999px;
-    filter: blur(1rem);
-    transition: all 0.5s;
+  .finance-btn:hover .finance-btn__icon:first-child {
+    transition: transform 0.3s ease-in-out;
+    transform: translate(150%, -150%);
   }
-  .finance-toggle-btn::after {
-    content: '';
-    position: absolute;
-    z-index: 0;
-    width: 4rem;
-    height: 4rem;
-    background: #2dd4bf;
-    right: 1.5rem;
-    top: 1rem;
-    border-radius: 9999px;
-    filter: blur(1rem);
-    transition: all 0.5s;
+  .finance-btn:hover .finance-btn__icon--copy {
+    transition: transform 0.3s ease-in-out 0.1s;
+    transform: translate(0);
   }
-  .finance-toggle-btn:hover::before {
-    right: 2.5rem;
-    top: auto;
-    bottom: -1rem;
-    filter: blur(0.4rem);
-  }
-  .finance-toggle-btn:hover::after {
-    right: -1.5rem;
-    transform: scale(1.1);
-  }
-  .finance-toggle-btn > * {
-    position: relative;
-    z-index: 10;
+  @keyframes finance-text-spin {
+    to { rotate: 360deg; }
   }
 
   /* ── Responsive layout helpers ──────────────── */

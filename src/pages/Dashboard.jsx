@@ -147,21 +147,22 @@ export default function Dashboard() {
 
       {/* Finance summary — collapsed by default */}
       <div>
-        <button
-          className="finance-toggle-btn"
-          onClick={() => setShowFinance(v => !v)}
-        >
-          <div style={{display:'flex',alignItems:'center',gap:'0.75rem'}}>
-            <div style={{width:34,height:34,borderRadius:'0.625rem',background:'rgba(20,184,166,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <Wallet size={16} color="#2dd4bf"/>
+        <div style={{display:'flex',justifyContent:'center'}}>
+          <button
+            className="finance-btn"
+            onClick={() => setShowFinance(v => !v)}
+          >
+            <div className="finance-btn__text">
+              {'סקירה · פיננסית ·'.split('').map((char, i) => (
+                <span key={i} style={{'--index': i}}>{char}</span>
+              ))}
             </div>
-            <div style={{textAlign:'right'}}>
-              <div style={{fontSize:'0.875rem',fontWeight:600}}>סקירה פיננסית</div>
-              <div style={{fontSize:'0.72rem',color:'#94a3b8',marginTop:'0.1rem'}}>יתרה, הכנסות, הוצאות והלוואות</div>
+            <div className="finance-btn__circle">
+              <Wallet size={17} className="finance-btn__icon" />
+              <ChevronDown size={17} className="finance-btn__icon--copy" style={{transform: showFinance ? 'rotate(180deg) translate(150%,-150%)' : undefined}} />
             </div>
-          </div>
-          <ChevronDown size={18} style={{transition:'transform 0.25s',transform: showFinance ? 'rotate(180deg)' : 'rotate(0deg)'}}/>
-        </button>
+          </button>
+        </div>
 
         {showFinance && (
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:'1rem',marginTop:'0.875rem'}}>
