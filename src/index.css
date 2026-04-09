@@ -159,71 +159,120 @@
   }
   select.input-field option { background: #1e1e3a; color: #e2e8f0; }
 
-  /* ── Finance circular button (UIverse) ──────── */
+  /* ── Finance starfield button (UIverse) ──────── */
   .finance-btn {
-    cursor: pointer;
-    border: 2px solid #0d9488;
-    background: #0f172a;
-    color: #fff;
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 13rem;
     overflow: hidden;
+    height: 3rem;
+    background-size: 300% 300%;
+    cursor: pointer;
+    backdrop-filter: blur(1rem);
+    border-radius: 5rem;
+    transition: 0.5s;
+    animation: gradient_301 5s ease infinite;
+    border: double 4px transparent;
+    background-image: linear-gradient(#212121, #212121),
+      linear-gradient(137.48deg, #ffdb3b 10%, #fe53bb 45%, #8f51ea 67%, #0044ff 87%);
+    background-origin: border-box;
+    background-clip: content-box, border-box;
     position: relative;
-    display: grid;
-    place-content: center;
-    transition: background 300ms, transform 200ms, border-color 300ms;
-    font-weight: 600;
     font-family: inherit;
   }
-  .finance-btn__text {
+  .finance-btn__stars-container {
     position: absolute;
-    inset: 0;
-    animation: finance-text-spin 8s linear infinite;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    transition: 0.5s;
+    backdrop-filter: blur(1rem);
+    border-radius: 5rem;
   }
-  .finance-btn__text > span {
+  .finance-btn__label {
+    z-index: 2;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #ffffff;
+    text-shadow: 0 0 4px white;
+    font-weight: 700;
+    font-family: inherit;
+    position: relative;
+  }
+  .finance-btn__glow {
     position: absolute;
-    font-size: 0.58rem;
-    transform: rotate(calc(27.7deg * var(--index)));
-    inset: 5px;
-    color: #94a3b8;
-    letter-spacing: 0;
+    display: flex;
+    width: 12rem;
   }
   .finance-btn__circle {
+    width: 100%;
+    height: 30px;
+    filter: blur(2rem);
+    animation: pulse_3011 4s infinite;
+    z-index: -1;
+  }
+  .finance-btn__circle:nth-of-type(1) { background: rgba(254,83,186,0.636); }
+  .finance-btn__circle:nth-of-type(2) { background: rgba(142,81,234,0.704); }
+  .finance-btn:hover .finance-btn__stars-container {
+    z-index: 1;
+    background-color: #212121;
+  }
+  .finance-btn:hover { transform: scale(1.1); }
+  .finance-btn:active {
+    border: double 4px #fe53bb;
+    background-origin: border-box;
+    background-clip: content-box, border-box;
+    animation: none;
+  }
+  .finance-btn:active .finance-btn__circle { background: #fe53bb; }
+  .finance-btn__stars {
     position: relative;
-    width: 46px;
-    height: 46px;
-    overflow: hidden;
-    background: #2dd4bf;
-    color: #0f172a;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    background: transparent;
+    width: 200rem;
+    height: 200rem;
   }
-  .finance-btn__icon--copy {
+  .finance-btn__stars::after {
+    content: '';
     position: absolute;
-    transform: translate(-150%, 150%);
+    top: -10rem;
+    left: -100rem;
+    width: 100%;
+    height: 100%;
+    animation: animStarRotate 90s linear infinite;
+    background-image: radial-gradient(#ffffff 1px, transparent 1%);
+    background-size: 50px 50px;
   }
-  .finance-btn:hover {
-    background: #134e4a;
-    border-color: #34d399;
-    transform: scale(1.05);
+  .finance-btn__stars::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -50%;
+    width: 170%;
+    height: 500%;
+    animation: animStar 60s linear infinite;
+    background-image: radial-gradient(#ffffff 1px, transparent 1%);
+    background-size: 50px 50px;
+    opacity: 0.5;
   }
-  .finance-btn:hover .finance-btn__text > span {
-    color: #6ee7b7;
+  @keyframes animStar {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-135rem); }
   }
-  .finance-btn:hover .finance-btn__icon:first-child {
-    transition: transform 0.3s ease-in-out;
-    transform: translate(150%, -150%);
+  @keyframes animStarRotate {
+    from { transform: rotate(360deg); }
+    to   { transform: rotate(0); }
   }
-  .finance-btn:hover .finance-btn__icon--copy {
-    transition: transform 0.3s ease-in-out 0.1s;
-    transform: translate(0);
+  @keyframes gradient_301 {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
-  @keyframes finance-text-spin {
-    to { rotate: 360deg; }
+  @keyframes pulse_3011 {
+    0%   { transform: scale(0.75); box-shadow: 0 0 0 0 rgba(0,0,0,0.7); }
+    70%  { transform: scale(1);    box-shadow: 0 0 0 10px rgba(0,0,0,0); }
+    100% { transform: scale(0.75); box-shadow: 0 0 0 0 rgba(0,0,0,0); }
   }
 
   /* ── Responsive layout helpers ──────────────── */

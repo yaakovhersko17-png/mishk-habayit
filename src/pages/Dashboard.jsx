@@ -148,18 +148,14 @@ export default function Dashboard() {
       {/* Finance summary — collapsed by default */}
       <div>
         <div style={{display:'flex',justifyContent:'center'}}>
-          <button
-            className="finance-btn"
-            onClick={() => setShowFinance(v => !v)}
-          >
-            <div className="finance-btn__text">
-              {'סקירה · פיננסית ·'.split('').map((char, i) => (
-                <span key={i} style={{'--index': i}}>{char}</span>
-              ))}
+          <button className="finance-btn" onClick={() => setShowFinance(v => !v)}>
+            <strong className="finance-btn__label">סקירה פיננסית</strong>
+            <div className="finance-btn__stars-container">
+              <div className="finance-btn__stars" />
             </div>
-            <div className="finance-btn__circle">
-              <Wallet size={17} className="finance-btn__icon" />
-              <ChevronDown size={17} className="finance-btn__icon--copy" style={{transform: showFinance ? 'rotate(180deg) translate(150%,-150%)' : undefined}} />
+            <div className="finance-btn__glow">
+              <div className="finance-btn__circle" />
+              <div className="finance-btn__circle" />
             </div>
           </button>
         </div>
