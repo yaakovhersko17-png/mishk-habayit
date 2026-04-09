@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, cached, invalidate, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2, History, Lightbulb, ScanLine, Archive } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2, History, Lightbulb, ScanLine, Archive, ChevronDown } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import Modal from '../components/ui/Modal'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
@@ -97,6 +97,7 @@ export default function Dashboard() {
     setSaving(false)
   }
 
+  const [showFinance, setShowFinance] = useState(false)
   const totalBalance = wallets.reduce((s, w) => s + Number(w.balance), 0)
   const openLoans = monthlyData.loans.filter(l => Number(l.loan_returned || 0) < Number(l.amount))
 
@@ -144,13 +145,34 @@ export default function Dashboard() {
         }
       </div>
 
-      {/* Stats */}
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:'1rem'}}>
-        <StatCard icon={<Wallet size={18}/>}      label="יתרה כוללת"         value={`₪${totalBalance.toLocaleString()}`}          color="#6c63ff" />
-        <StatCard icon={<TrendingUp size={18}/>}  label="הכנסות החודש"        value={`₪${monthlyData.income.toLocaleString()}`}   color="#4ade80" />
-        <StatCard icon={<TrendingDown size={18}/>} label="הוצאות החודש"       value={`₪${monthlyData.expense.toLocaleString()}`}  color="#f87171" />
-        <StatCard icon={<CreditCard size={18}/>}  label="הלוואות פתוחות"      value={openLoans.length} color="#fbbf24"
-          sub={openLoans.length > 0 ? `₪${openLoans.reduce((s,l)=>s+Number(l.amount)-Number(l.loan_returned||0),0).toLocaleString()} סה"כ` : 'אין הלוואות פתוחות'} />
+      {/* Finance summary — collapsed by default */}
+      <div>
+        <button
+          onClick={() => setShowFinance(v => !v)}
+          style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0.875rem 1.125rem',borderRadius:'0.875rem',background:'rgba(108,99,255,0.08)',border:'1px solid rgba(108,99,255,0.18)',cursor:'pointer',transition:'all 0.2s'}}
+          onMouseEnter={e=>e.currentTarget.style.background='rgba(108,99,255,0.14)'}
+          onMouseLeave={e=>e.currentTarget.style.background='rgba(108,99,255,0.08)'}>
+          <div style={{display:'flex',alignItems:'center',gap:'0.75rem'}}>
+            <div style={{width:34,height:34,borderRadius:'0.625rem',background:'rgba(108,99,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <Wallet size={16} color="#a78bfa"/>
+            </div>
+            <div style={{textAlign:'right'}}>
+              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#e2e8f0'}}>סקירה פיננסית</div>
+              <div style={{fontSize:'0.72rem',color:'#64748b',marginTop:'0.1rem'}}>יתרה, הכנסות, הוצאות והלוואות</div>
+            </div>
+          </div>
+          <ChevronDown size={18} color="#64748b" style={{transition:'transform 0.25s',transform: showFinance ? 'rotate(180deg)' : 'rotate(0deg)'}}/>
+        </button>
+
+        {showFinance && (
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:'1rem',marginTop:'0.875rem'}}>
+            <StatCard icon={<Wallet size={18}/>}       label="יתרה כוללת"    value={`₪${totalBalance.toLocaleString()}`}         color="#6c63ff" />
+            <StatCard icon={<TrendingUp size={18}/>}   label="הכנסות החודש"   value={`₪${monthlyData.income.toLocaleString()}`}  color="#4ade80" />
+            <StatCard icon={<TrendingDown size={18}/>} label="הוצאות החודש"   value={`₪${monthlyData.expense.toLocaleString()}`} color="#f87171" />
+            <StatCard icon={<CreditCard size={18}/>}   label="הלוואות פתוחות" value={openLoans.length} color="#fbbf24"
+              sub={openLoans.length > 0 ? `₪${openLoans.reduce((s,l)=>s+Number(l.amount)-Number(l.loan_returned||0),0).toLocaleString()} סה"כ` : 'אין הלוואות פתוחות'} />
+          </div>
+        )}
       </div>
 
       {/* Wallets quick view */}
