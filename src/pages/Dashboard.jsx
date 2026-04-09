@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, cached, invalidate, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2, History, Lightbulb } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2, History, Lightbulb, ScanLine, Archive } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import Modal from '../components/ui/Modal'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
@@ -175,8 +175,10 @@ export default function Dashboard() {
           <span style={{fontSize:'0.8rem',fontWeight:600,color:'#64748b'}}>כלים</span>
         </div>
         {[
+          { icon: <ScanLine size={18}/>, label: 'סריקת חשבונית', sub: 'סרוק חשבונית עם Gemma AI', color: '#6c63ff', route: '/scanner' },
+          { icon: <Archive size={18}/>, label: 'ארכיון חשבוניות', sub: 'כל החשבוניות השמורות', color: '#a78bfa', route: '/invoices' },
           { icon: <Lightbulb size={18}/>, label: 'דף חכם', sub: 'השוואת מחירים וניתוח הוצאות', color: '#fbbf24', route: '/insights' },
-          { icon: <BarChart2 size={18}/>, label: 'דוחות וייצוא', sub: 'גרפים, תרשימים וייצוא נתונים', color: '#a78bfa', route: '/reports' },
+          { icon: <BarChart2 size={18}/>, label: 'דוחות וייצוא', sub: 'גרפים, תרשימים וייצוא נתונים', color: '#34d399', route: '/reports' },
           { icon: <History size={18}/>, label: 'היסטוריה', sub: 'יומן פעילות ושינויים', color: '#4ade80', route: '/history' },
           { icon: <Settings size={18}/>, label: 'הגדרות', sub: 'ניהול משתמשים והעדפות', color: '#60a5fa', route: '/settings' },
         ].map((item, i, arr) => (

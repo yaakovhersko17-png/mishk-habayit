@@ -6,6 +6,7 @@ import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import EmptyState from '../components/ui/EmptyState'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
+import { useRealtime } from '../hooks/useRealtime'
 import toast from 'react-hot-toast'
 
 const TYPE_LABELS = { income:'הכנסה', expense:'הוצאה', loan_given:'הלוואה נתתי', loan_received:'הלוואה קיבלתי' }
@@ -29,6 +30,7 @@ export default function Transactions() {
   const recognitionRef = useRef(null)
 
   useEffect(() => { loadAll() }, [])
+  useRealtime(['transactions', 'wallets'], loadAll)
 
   async function loadAll() {
     const [{ data: txData }, { data: wData }, { data: cData }, { data: pData }] = await Promise.all([

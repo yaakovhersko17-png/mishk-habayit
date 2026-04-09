@@ -5,6 +5,7 @@ import { Plus, Edit2, Trash2 } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
+import { useRealtime } from '../hooks/useRealtime'
 import toast from 'react-hot-toast'
 
 const COLORS = ['#4CAF50','#2196F3','#FF9800','#E91E63','#00BCD4','#9C27B0','#FF5722','#607D8B','#8BC34A','#6c63ff','#f87171','#fbbf24','#60a5fa','#f472b6','#34d399']
@@ -22,6 +23,7 @@ export default function Categories() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => { load() }, [])
+  useRealtime('categories', load)
 
   async function load() {
     const [{ data: cData }, { data: txData }] = await Promise.all([

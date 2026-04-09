@@ -200,6 +200,7 @@ export default function InvoiceScanner() {
       user_id:     user.id,
       date:        result.date,
       notes:       'חשבונית סרוקה',
+      invoice_id:  invoice.id,
     })
     if (wallet) {
       await supabase.from('wallets').update({ balance: wallet.balance - result.total }).eq('id', selectedWallet)

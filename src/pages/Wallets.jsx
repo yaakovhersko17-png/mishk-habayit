@@ -6,6 +6,7 @@ import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import EmptyState from '../components/ui/EmptyState'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
+import { useRealtime } from '../hooks/useRealtime'
 import toast from 'react-hot-toast'
 
 const COLORS = ['#6c63ff','#4ade80','#f87171','#fbbf24','#60a5fa','#f472b6','#a78bfa','#34d399','#fb923c','#94a3b8']
@@ -25,6 +26,7 @@ export default function Wallets() {
   const [walletTxs, setWalletTxs] = useState([])
 
   useEffect(() => { load() }, [])
+  useRealtime('wallets', load)
 
   async function load() {
     const { data } = await supabase.from('wallets').select('*').order('created_at')
