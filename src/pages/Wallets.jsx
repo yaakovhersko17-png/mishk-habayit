@@ -90,19 +90,19 @@ export default function Wallets() {
       {wallets.length === 0
         ? <EmptyState icon="💳" title="אין ארנקים עדיין" subtitle="הוסף ארנק ראשון כדי להתחיל" action={<button className="btn-primary" onClick={openAdd}><Plus size={14}/>הוסף ארנק</button>}/>
         : (
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:'1rem'}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:'0.75rem'}}>
             {wallets.map(w => (
-              <div key={w.id} className="stat-card" style={{position:'relative',overflow:'hidden',cursor:'pointer'}} onClick={()=>openHistory(w)}>
-                <div style={{position:'absolute',top:0,left:0,right:0,height:4,background:w.color}}/>
-                <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'1rem',paddingTop:'0.5rem'}}>
-                  <div style={{fontSize:'2rem'}}>{w.icon}</div>
-                  <div style={{display:'flex',gap:'0.375rem'}}>
-                    <button onClick={e => { e.stopPropagation(); openEdit(w) }} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.25rem',borderRadius:'0.5rem'}}><Edit2 size={14}/></button>
-                    <button onClick={e => { e.stopPropagation(); handleDelete(w) }} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.25rem',borderRadius:'0.5rem'}}><Trash2 size={14}/></button>
+              <div key={w.id} className="stat-card" style={{position:'relative',overflow:'hidden',cursor:'pointer',padding:'0.75rem'}} onClick={()=>openHistory(w)}>
+                <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:w.color}}/>
+                <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'0.625rem',paddingTop:'0.25rem'}}>
+                  <div style={{fontSize:'1.5rem'}}>{w.icon}</div>
+                  <div style={{display:'flex',gap:'0.25rem'}}>
+                    <button onClick={e => { e.stopPropagation(); openEdit(w) }} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.2rem',borderRadius:'0.375rem'}}><Edit2 size={13}/></button>
+                    <button onClick={e => { e.stopPropagation(); handleDelete(w) }} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.2rem',borderRadius:'0.375rem'}}><Trash2 size={13}/></button>
                   </div>
                 </div>
-                <div style={{fontSize:'0.85rem',color:'#94a3b8',marginBottom:'0.375rem'}}>{w.name}</div>
-                <div style={{fontSize:'1.75rem',fontWeight:700,color:'#e2e8f0'}}>{w.currency}{Number(w.balance).toLocaleString()}</div>
+                <div style={{fontSize:'0.78rem',color:'#94a3b8',marginBottom:'0.25rem'}}>{w.name}</div>
+                <div style={{fontSize:'1.35rem',fontWeight:700,color:'#e2e8f0'}}>{w.currency}{Number(w.balance).toLocaleString()}</div>
               </div>
             ))}
           </div>
