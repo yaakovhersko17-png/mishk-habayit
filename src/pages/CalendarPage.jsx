@@ -133,7 +133,9 @@ export default function CalendarPage() {
           {tx.map((t,i)=>(
             <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
               <div style={{fontSize:'0.8rem',color:'#e2e8f0'}}>{t.description}</div>
-              <div style={{fontSize:'0.75rem',color:t.type==='income'?'#4ade80':'#f87171',fontWeight:600}}>{t.currency||'₪'}{Number(t.amount).toLocaleString()}</div>
+              <div style={{fontSize:'0.75rem',fontWeight:600,color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>
+                {t.type==='income'?'+':t.type==='transfer'?'↔':'-'}{t.currency||'₪'}{Number(t.amount).toLocaleString()}
+              </div>
             </div>
           ))}
         </div>

@@ -153,7 +153,7 @@ export default function Wallets() {
                     <tr key={t.id} style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
                       <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'#64748b',whiteSpace:'nowrap'}}>{new Date(t.date).toLocaleDateString('he-IL')}</td>
                       <td style={{padding:'0.625rem 0.75rem',fontSize:'0.85rem',color:'#e2e8f0'}}>{t.description}</td>
-                      <td style={{padding:'0.625rem 0.75rem',fontWeight:600,whiteSpace:'nowrap',color:t.type==='income'?'#4ade80':'#f87171'}}>{t.type==='income'?'+':'-'}{t.currency}{Number(t.amount).toLocaleString()}</td>
+                      <td style={{padding:'0.625rem 0.75rem',fontWeight:600,whiteSpace:'nowrap',color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>{t.type==='income'?'+':t.type==='transfer'?'↔':t.type.startsWith('loan')?'':'-'}{t.currency}{Number(t.amount).toLocaleString()}</td>
                       <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'#94a3b8'}}>{t.categories ? `${t.categories.icon||''} ${t.categories.name}` : '—'}</td>
                     </tr>
                   ))}

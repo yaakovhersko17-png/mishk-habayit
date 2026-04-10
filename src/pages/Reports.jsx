@@ -279,10 +279,18 @@ export default function Reports() {
                   <tr key={t.id} style={{borderBottom:'1px solid rgba(255,255,255,0.03)'}}>
                     <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',color:'#64748b'}}>{t.date}</td>
                     <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',color:'#e2e8f0',maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.description}</td>
-                    <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',fontWeight:600,color:t.type==='income'?'#4ade80':'#f87171'}}>{t.currency}{Number(t.amount).toLocaleString()}</td>
+                    <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',fontWeight:600,color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>
+                      {t.type==='income'?'+':t.type==='transfer'?'↔':'-'}{t.currency}{Number(t.amount).toLocaleString()}
+                    </td>
                     <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',color:'#94a3b8'}}>{t.categories?.name||'—'}</td>
                     <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',color:'#94a3b8'}}>{t.wallets?.name||'—'}</td>
-                    <td style={{padding:'0.625rem 1rem'}}><span style={{fontSize:'0.7rem',padding:'0.2rem 0.5rem',borderRadius:'0.375rem',background:t.type==='income'?'#4ade8020':'#f8717120',color:t.type==='income'?'#4ade80':'#f87171'}}>{t.type==='income'?'הכנסה':'הוצאה'}</span></td>
+                    <td style={{padding:'0.625rem 1rem'}}>
+                      <span style={{fontSize:'0.7rem',padding:'0.2rem 0.5rem',borderRadius:'0.375rem',
+                        background:t.type==='income'?'#4ade8020':t.type==='transfer'?'#22d3ee20':t.type.startsWith('loan')?'#fbbf2420':'#f8717120',
+                        color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>
+                        {t.type==='income'?'הכנסה':t.type==='transfer'?'↔ מארנק לארנק':t.type.startsWith('loan')?'הלוואה':'הוצאה'}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

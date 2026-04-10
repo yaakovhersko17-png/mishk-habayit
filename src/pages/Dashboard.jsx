@@ -62,7 +62,7 @@ export default function Dashboard() {
     const todayStr = now.toISOString().split('T')[0]
     const events = []
     ;(txData || []).filter(t => t.date === todayStr).forEach(t => {
-      events.push({ type: 'transaction', icon: t.type === 'income' ? '💰' : t.type.startsWith('loan') ? '🏦' : '💸', label: t.description, sub: `${t.type === 'income' ? '+' : '-'}₪${Number(t.amount).toLocaleString()}`, route: '/transactions', color: t.type === 'income' ? '#4ade80' : t.type.startsWith('loan') ? '#fbbf24' : '#f87171' })
+      events.push({ type: 'transaction', icon: t.type === 'income' ? '💰' : t.type === 'transfer' ? '↔️' : t.type.startsWith('loan') ? '🏦' : '💸', label: t.description, sub: `${t.type === 'income' ? '+' : t.type === 'transfer' ? '↔' : '-'}₪${Number(t.amount).toLocaleString()}`, route: '/transactions', color: t.type === 'income' ? '#4ade80' : t.type === 'transfer' ? '#22d3ee' : t.type.startsWith('loan') ? '#fbbf24' : '#f87171' })
     })
     const { data: remData } = await supabase.from('reminders').select('*').eq('due_date', todayStr)
     ;(remData || []).forEach(r => {
