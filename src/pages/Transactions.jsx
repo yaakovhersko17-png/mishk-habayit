@@ -101,7 +101,7 @@ export default function Transactions() {
 
     if (editing) {
       const { error } = await supabase.from('transactions').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editing.id)
-      if (error) { toast.error('שגיאה'); setSaving(false); return }
+      if (error) { toast.error(error.message || 'שגיאה בשמירה'); setSaving(false); return }
       if (editing.type === 'transfer') {
         // reverse old transfer then apply new
         await applyTransferWallets(editing.wallet_id, editing.to_wallet_id, editing.amount, true)
@@ -125,7 +125,7 @@ export default function Transactions() {
       toast.success('עודכן!')
     } else {
       const { error } = await supabase.from('transactions').insert(payload)
-      if (error) { toast.error('שגיאה'); setSaving(false); return }
+      if (error) { toast.error(error.message || 'שגיאה בשמירה'); setSaving(false); return }
       if (form.type === 'transfer') {
         await applyTransferWallets(form.wallet_id, form.to_wallet_id, form.amount, false)
       } else if (form.wallet_id) {
@@ -346,7 +346,14 @@ export default function Transactions() {
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סוג</label>
             <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
               {Object.entries(TYPE_LABELS).map(([k,v])=>(
-                <button key={k} onClick={()=>setForm({...form,type:k})} style={{padding:'0.4rem 0.875rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${form.type===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:form.type===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:form.type===k?'#a78bfa':'#94a3b8'}}>
+                <button key={k} onClick={()=>setForm({...form,type:k,to_wallet_id:''})}
+                  style={{
+                    padding:'0.375rem 1rem', borderRadius:'9999px', fontSize:'0.8rem',
+                    cursor:'pointer', transition:'all 0.15s', fontWeight: form.type===k?600:400,
+                    border:`1px solid ${form.type===k ? (k==='transfer'?'rgba(34,211,238,0.5)':'rgba(108,99,255,0.5)') : 'rgba(255,255,255,0.08)'}`,
+                    background: form.type===k ? (k==='transfer'?'rgba(34,211,238,0.15)':'rgba(108,99,255,0.2)') : 'rgba(255,255,255,0.03)',
+                    color: form.type===k ? (k==='transfer'?'#22d3ee':'#a78bfa') : '#94a3b8',
+                  }}>
                   {v}
                 </button>
               ))}
