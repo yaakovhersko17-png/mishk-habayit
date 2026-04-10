@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Edit2, Trash2, ChevronDown, ChevronLeft } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
@@ -13,13 +13,14 @@ const emptyForm = { name:'', icon:'', color:'#6c63ff', type:'expense', parent_id
 
 export default function Categories() {
   const { user, profile } = useAuth()
-  const [cats, setCats]     = useState([])
+  const [cats, setCats]       = useState([])
   const [txCounts, setCounts] = useState({})
   const [loading, setLoading] = useState(true)
-  const [modal, setModal]   = useState(false)
+  const [modal, setModal]     = useState(false)
   const [editing, setEditing] = useState(null)
-  const [form, setForm]     = useState(emptyForm)
-  const [saving, setSaving] = useState(false)
+  const [form, setForm]       = useState(emptyForm)
+  const [saving, setSaving]   = useState(false)
+  const [expanded, setExpanded] = useState(new Set())
 
   useEffect(() => { load() }, [])
 
@@ -39,6 +40,15 @@ export default function Categories() {
     })
     setCounts(counts)
     setLoading(false)
+  }
+
+  function toggleExpand(id) {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   function openAdd()   { setEditing(null); setForm(emptyForm); setModal(true) }
@@ -70,6 +80,33 @@ export default function Categories() {
 
   if (loading) return <LoadingSpinner />
 
+  // Build hierarchy
+  const parents = cats.filter(c => !c.parent_id)
+  const childrenByParent = {}
+  cats.filter(c => c.parent_id).forEach(c => {
+    if (!childrenByParent[c.parent_id]) childrenByParent[c.parent_id] = []
+    childrenByParent[c.parent_id].push(c)
+  })
+
+  function renderCatRow(c, isChild) {
+    return (
+      <div key={c.id} style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.625rem 1rem',paddingRight:isChild?'2.75rem':'1rem',borderTop:'1px solid rgba(255,255,255,0.04)',background:isChild?'rgba(255,255,255,0.025)':'transparent'}}>
+        <div style={{width:32,height:32,borderRadius:'0.625rem',background:`${c.color}25`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',flexShrink:0,border:`1px solid ${c.color}30`}}>{c.icon}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:'0.875rem',fontWeight:500,color:'#e2e8f0'}}>{c.name}</div>
+        </div>
+        <div style={{textAlign:'left',flexShrink:0}}>
+          <div style={{fontSize:'0.8rem',fontWeight:600,color:c.type==='income'?'#4ade80':'#f87171'}}>₪{(txCounts[c.id]?.total||0).toLocaleString()}</div>
+          <div style={{fontSize:'0.7rem',color:'#64748b'}}>{txCounts[c.id]?.count||0} טרנ׳</div>
+        </div>
+        <div style={{display:'flex',gap:'0.125rem',flexShrink:0}}>
+          <button onClick={()=>openEdit(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.3rem'}}><Edit2 size={13}/></button>
+          <button onClick={()=>handleDelete(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.3rem'}}><Trash2 size={13}/></button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -78,23 +115,36 @@ export default function Categories() {
       </div>
 
       <div className="page-card" style={{padding:0,overflow:'hidden'}}>
-        {cats.map((c, i) => {
-          const parent = c.parent_id ? cats.find(p => p.id === c.parent_id) : null
+        {parents.map((c, i) => {
+          const kids = childrenByParent[c.id] || []
+          const isOpen = expanded.has(c.id)
           return (
-            <div key={c.id} style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.625rem 1rem',borderBottom: i < cats.length-1 ? '1px solid rgba(255,255,255,0.04)' : 'none'}}>
-              <div style={{width:34,height:34,borderRadius:'0.625rem',background:`${c.color}25`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.1rem',flexShrink:0,border:`1px solid ${c.color}30`}}>{c.icon}</div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:'0.875rem',fontWeight:600,color:'#e2e8f0'}}>{c.name}</div>
-                {parent && <div style={{fontSize:'0.7rem',color:'#64748b',marginTop:'0.1rem'}}>↳ {parent.icon} {parent.name}</div>}
+            <div key={c.id}>
+              {/* Parent row */}
+              <div style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.625rem 1rem',borderTop:i>0?'1px solid rgba(255,255,255,0.04)':'none'}}>
+                {/* Chevron toggle */}
+                <button
+                  onClick={() => kids.length && toggleExpand(c.id)}
+                  style={{background:'none',border:'none',padding:'0.125rem',display:'flex',alignItems:'center',flexShrink:0,width:18,cursor:kids.length?'pointer':'default',color:kids.length?(isOpen?'#a78bfa':'#64748b'):'transparent'}}
+                >
+                  {kids.length > 0 && (isOpen ? <ChevronDown size={15}/> : <ChevronLeft size={15}/>)}
+                </button>
+                <div style={{width:32,height:32,borderRadius:'0.625rem',background:`${c.color}25`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',flexShrink:0,border:`1px solid ${c.color}30`}}>{c.icon}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:'0.875rem',fontWeight:600,color:'#e2e8f0'}}>{c.name}</div>
+                  {kids.length > 0 && <div style={{fontSize:'0.7rem',color:'#64748b',marginTop:'0.1rem'}}>{kids.length} תת-קטגוריות</div>}
+                </div>
+                <div style={{textAlign:'left',flexShrink:0}}>
+                  <div style={{fontSize:'0.8rem',fontWeight:600,color:c.type==='income'?'#4ade80':'#f87171'}}>₪{(txCounts[c.id]?.total||0).toLocaleString()}</div>
+                  <div style={{fontSize:'0.7rem',color:'#64748b'}}>{txCounts[c.id]?.count||0} טרנ׳</div>
+                </div>
+                <div style={{display:'flex',gap:'0.125rem',flexShrink:0}}>
+                  <button onClick={()=>openEdit(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.3rem'}}><Edit2 size={13}/></button>
+                  <button onClick={()=>handleDelete(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.3rem'}}><Trash2 size={13}/></button>
+                </div>
               </div>
-              <div style={{textAlign:'left',flexShrink:0}}>
-                <div style={{fontSize:'0.8rem',fontWeight:600,color: c.type==='income'?'#4ade80':'#f87171'}}>₪{(txCounts[c.id]?.total||0).toLocaleString()}</div>
-                <div style={{fontSize:'0.7rem',color:'#64748b'}}>{txCounts[c.id]?.count||0} טרנ׳</div>
-              </div>
-              <div style={{display:'flex',gap:'0.125rem',flexShrink:0}}>
-                <button onClick={()=>openEdit(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.3rem'}}><Edit2 size={13}/></button>
-                <button onClick={()=>handleDelete(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.3rem'}}><Trash2 size={13}/></button>
-              </div>
+              {/* Child rows */}
+              {isOpen && kids.map(k => renderCatRow(k, true))}
             </div>
           )
         })}
@@ -118,7 +168,7 @@ export default function Categories() {
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>קטגוריית הורה</label>
             <select className="input-field" value={form.parent_id} onChange={e=>setForm({...form,parent_id:e.target.value})}>
               <option value="">ללא הורה</option>
-              {cats.filter(c => !editing || c.id !== editing.id).map(c=>(
+              {cats.filter(c => (!editing || c.id !== editing.id) && !c.parent_id).map(c=>(
                 <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
               ))}
             </select>

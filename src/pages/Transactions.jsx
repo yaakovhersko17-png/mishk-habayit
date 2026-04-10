@@ -11,6 +11,24 @@ import toast from 'react-hot-toast'
 const TYPE_LABELS = { income:'הכנסה', expense:'הוצאה', loan_given:'הלוואה נתתי', loan_received:'הלוואה קיבלתי' }
 const emptyTx = { type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0], notes:'', loan_party:'', loan_due_date:'', loan_returned: false }
 
+function buildCatOptions(cats) {
+  const parents = cats.filter(c => !c.parent_id)
+  const byParent = {}
+  cats.filter(c => c.parent_id).forEach(c => {
+    if (!byParent[c.parent_id]) byParent[c.parent_id] = []
+    byParent[c.parent_id].push(c)
+  })
+  return parents.map(p => {
+    const kids = byParent[p.id] || []
+    if (kids.length === 0) return <option key={p.id} value={p.id}>{p.icon} {p.name}</option>
+    return (
+      <optgroup key={`g-${p.id}`} label={`${p.icon} ${p.name}`}>
+        {kids.map(k => <option key={k.id} value={k.id}>{k.icon} {k.name}</option>)}
+      </optgroup>
+    )
+  })
+}
+
 export default function Transactions() {
   const { user, profile } = useAuth()
   const [txs, setTxs]           = useState([])
@@ -262,7 +280,7 @@ export default function Transactions() {
                 <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>קטגוריה</label>
                 <select className="input-field" value={filter.category} onChange={e=>setFilter({...filter,category:e.target.value})}>
                   <option value="">הכל</option>
-                  {categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                  {buildCatOptions(categories)}
                 </select>
               </div>
               <div>
@@ -351,7 +369,7 @@ export default function Transactions() {
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>קטגוריה</label>
             <select className="input-field" value={form.category_id} onChange={e=>setForm({...form,category_id:e.target.value})}>
               <option value="">בחר קטגוריה</option>
-              {categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+              {buildCatOptions(categories)}
             </select>
           </div>
           {form.type.startsWith('loan') && (

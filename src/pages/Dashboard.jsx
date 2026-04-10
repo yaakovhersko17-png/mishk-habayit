@@ -10,6 +10,24 @@ import toast from 'react-hot-toast'
 
 const COLORS = ['#6c63ff','#f87171','#fbbf24','#4ade80','#60a5fa','#f472b6','#a78bfa','#34d399']
 
+function buildCatOptions(cats) {
+  const parents = cats.filter(c => !c.parent_id)
+  const byParent = {}
+  cats.filter(c => c.parent_id).forEach(c => {
+    if (!byParent[c.parent_id]) byParent[c.parent_id] = []
+    byParent[c.parent_id].push(c)
+  })
+  return parents.map(p => {
+    const kids = byParent[p.id] || []
+    if (kids.length === 0) return <option key={p.id} value={p.id}>{p.icon} {p.name}</option>
+    return (
+      <optgroup key={`g-${p.id}`} label={`${p.icon} ${p.name}`}>
+        {kids.map(k => <option key={k.id} value={k.id}>{k.icon} {k.name}</option>)}
+      </optgroup>
+    )
+  })
+}
+
 function StatCard({ icon, label, value, color, sub }) {
   return (
     <div className="stat-card">
@@ -238,7 +256,7 @@ export default function Dashboard() {
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>קטגוריה</label>
             <select className="input-field" value={tx.category_id} onChange={e => setTx({...tx, category_id: e.target.value})}>
               <option value="">בחר קטגוריה</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+              {buildCatOptions(categories)}
             </select>
           </div>
           <div style={{display:'flex',gap:'0.75rem',justifyContent:'flex-end',marginTop:'0.5rem'}}>
