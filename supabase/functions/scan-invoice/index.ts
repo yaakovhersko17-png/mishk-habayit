@@ -5,7 +5,7 @@
  */
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? ''
-const MODEL = 'gemini-1.5-flash'
+const MODEL = 'gemini-1.5-flash'  // vision-capable, stable
 const MODEL_URL =
   `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`
 
