@@ -219,7 +219,7 @@ export default function Dashboard() {
             <select className="input-field" value={tx.type} onChange={e => setTx({...tx, type: e.target.value, to_wallet_id:''})}>
               <option value="income">הכנסה</option>
               <option value="expense">הוצאה</option>
-              <option value="transfer">העברה בין ארנקים</option>
+              <option value="transfer">מארנק לארנק</option>
               <option value="loan_given">הלוואה שנתתי</option>
               <option value="loan_received">הלוואה שקיבלתי</option>
             </select>

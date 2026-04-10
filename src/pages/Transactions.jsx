@@ -34,7 +34,7 @@ export default function Transactions() {
 
   async function loadAll() {
     const [{ data: txData }, { data: wData }, { data: cData }, { data: pData }] = await Promise.all([
-      withRetry(() => supabase.from('transactions').select('*,categories(name,color,icon),wallets(name,icon),profiles(name)').order('date', { ascending: false }).order('created_at', { ascending: false })),
+      withRetry(() => supabase.from('transactions').select('*,categories(name,color,icon),wallets!wallet_id(name,icon),profiles!user_id(name)').order('date', { ascending: false }).order('created_at', { ascending: false })),
       withRetry(() => supabase.from('wallets').select('*')),
       cached('categories', () => supabase.from('categories').select('*'), 120_000),
       cached('profiles', () => supabase.from('profiles').select('*'), 120_000),
