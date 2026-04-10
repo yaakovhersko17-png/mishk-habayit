@@ -37,7 +37,7 @@ export default function Reports() {
 
   async function loadBase() {
     const [{ data: tData }, { data: wData }, { data: cData }] = await Promise.all([
-      withRetry(() => supabase.from('transactions').select('*,categories(name,color),wallets(name),profiles(name)').order('date', { ascending: false })),
+      withRetry(() => supabase.from('transactions').select('*,categories(name,color),wallets!wallet_id(name),profiles!user_id(name)').order('date', { ascending: false })),
       withRetry(() => supabase.from('wallets').select('*')),
       cached('categories', () => supabase.from('categories').select('*'), 120_000),
     ])
