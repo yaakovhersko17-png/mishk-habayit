@@ -42,21 +42,6 @@ export default function Sidebar({ isOpen, onClose }) {
         </button>
       </div>
 
-      {/* User badge */}
-      {profile && (
-        <div style={{ padding: '0.75rem 1rem', margin: '0.75rem', borderRadius: '0.75rem', background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.15)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#6c63ff,#a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-              {profile.name[0]}
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.name}</div>
-              <div style={{ fontSize: '0.65rem', color: '#64748b' }}>{profile.role === 'admin' ? 'אדמין' : 'משתמש'}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Nav */}
       <nav style={{ flex: 1, padding: '0.5rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.125rem', overflowY: 'auto' }}>
         {/* Home link */}
