@@ -9,7 +9,7 @@ import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import { useRealtime } from '../hooks/useRealtime'
 import toast from 'react-hot-toast'
 
-const TYPE_LABELS = { income:'הכנסה', expense:'הוצאה', loan_given:'הלוואה נתתי', loan_received:'הלוואה קיבלתי', transfer:'העברה' }
+const TYPE_LABELS = { income:'הכנסה', expense:'הוצאה', loan_given:'הלוואה שנתתי', loan_received:'הלוואה שקיבלתי', transfer:'מארנק לארנק' }
 const emptyTx = { type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', to_wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0], notes:'', loan_party:'', loan_due_date:'', loan_returned: false }
 
 export default function Transactions() {
@@ -344,20 +344,13 @@ export default function Transactions() {
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
           <div style={{gridColumn:'1/-1'}}>
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סוג</label>
-            <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
-              {Object.entries(TYPE_LABELS).map(([k,v])=>(
-                <button key={k} onClick={()=>setForm({...form,type:k,to_wallet_id:''})}
-                  style={{
-                    padding:'0.375rem 1rem', borderRadius:'9999px', fontSize:'0.8rem',
-                    cursor:'pointer', transition:'all 0.15s', fontWeight: form.type===k?600:400,
-                    border:`1px solid ${form.type===k ? (k==='transfer'?'rgba(34,211,238,0.5)':'rgba(108,99,255,0.5)') : 'rgba(255,255,255,0.08)'}`,
-                    background: form.type===k ? (k==='transfer'?'rgba(34,211,238,0.15)':'rgba(108,99,255,0.2)') : 'rgba(255,255,255,0.03)',
-                    color: form.type===k ? (k==='transfer'?'#22d3ee':'#a78bfa') : '#94a3b8',
-                  }}>
-                  {v}
-                </button>
-              ))}
-            </div>
+            <select className="input-field" value={form.type} onChange={e=>setForm({...form,type:e.target.value,to_wallet_id:''})}>
+              <option value="income">הכנסה</option>
+              <option value="expense">הוצאה</option>
+              <option value="transfer">מארנק לארנק</option>
+              <option value="loan_given">הלוואה שנתתי</option>
+              <option value="loan_received">הלוואה שקיבלתי</option>
+            </select>
           </div>
           <div style={{gridColumn:'1/-1'}}>
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תיאור</label>
