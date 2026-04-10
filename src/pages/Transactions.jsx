@@ -9,8 +9,8 @@ import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import { useRealtime } from '../hooks/useRealtime'
 import toast from 'react-hot-toast'
 
-const TYPE_LABELS = { income:'הכנסה', expense:'הוצאה', loan_given:'הלוואה נתתי', loan_received:'הלוואה קיבלתי' }
-const emptyTx = { type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0], notes:'', loan_party:'', loan_due_date:'', loan_returned: false }
+const TYPE_LABELS = { income:'הכנסה', expense:'הוצאה', loan_given:'הלוואה נתתי', loan_received:'הלוואה קיבלתי', transfer:'העברה' }
+const emptyTx = { type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', to_wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0], notes:'', loan_party:'', loan_due_date:'', loan_returned: false }
 
 export default function Transactions() {
   const { user, profile } = useAuth()
@@ -47,7 +47,7 @@ export default function Transactions() {
   }
 
   function openAdd()   { setEditing(null); setForm(emptyTx); setModal(true) }
-  function openEdit(t) { setEditing(t); setForm({ type:t.type, description:t.description, amount:t.amount, currency:t.currency, wallet_id:t.wallet_id||'', category_id:t.category_id||'', date:t.date, notes:t.notes||'', loan_party:t.loan_party||'', loan_due_date:t.loan_due_date||'', loan_returned:!!t.loan_returned }); setModal(true) }
+  function openEdit(t) { setEditing(t); setForm({ type:t.type, description:t.description, amount:t.amount, currency:t.currency, wallet_id:t.wallet_id||'', to_wallet_id:t.to_wallet_id||'', category_id:t.category_id||'', date:t.date, notes:t.notes||'', loan_party:t.loan_party||'', loan_due_date:t.loan_due_date||'', loan_returned:!!t.loan_returned }); setModal(true) }
 
   async function updateWalletBalance(walletId, amount, type, oldWalletId, oldAmount, oldType) {
     // For new transaction or wallet change: credit/debit the wallet
@@ -74,11 +74,26 @@ export default function Transactions() {
     }
   }
 
+  async function applyTransferWallets(srcId, dstId, amount, reverse = false) {
+    const sign = reverse ? 1 : -1
+    if (srcId) {
+      const { data: w } = await supabase.from('wallets').select('balance').eq('id', srcId).single()
+      if (w) await supabase.from('wallets').update({ balance: w.balance + sign * Number(amount) }).eq('id', srcId)
+    }
+    if (dstId) {
+      const { data: w } = await supabase.from('wallets').select('balance').eq('id', dstId).single()
+      if (w) await supabase.from('wallets').update({ balance: w.balance - sign * Number(amount) }).eq('id', dstId)
+    }
+  }
+
   async function handleSave() {
     if (!form.description || !form.amount) { toast.error('מלא תיאור וסכום'); return }
+    if (form.type === 'transfer' && !form.to_wallet_id) { toast.error('בחר ארנק יעד'); return }
+    if (form.type === 'transfer' && form.wallet_id === form.to_wallet_id) { toast.error('ארנק המקור והיעד חייבים להיות שונים'); return }
     setSaving(true)
     const payload = { ...form, amount: Number(form.amount), user_id: user.id }
     if (!payload.wallet_id) delete payload.wallet_id
+    if (!payload.to_wallet_id || payload.type !== 'transfer') delete payload.to_wallet_id
     if (!payload.category_id) delete payload.category_id
     if (!payload.loan_party) delete payload.loan_party
     if (!payload.loan_due_date) delete payload.loan_due_date
@@ -87,17 +102,33 @@ export default function Transactions() {
     if (editing) {
       const { error } = await supabase.from('transactions').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editing.id)
       if (error) { toast.error('שגיאה'); setSaving(false); return }
-      // Update wallet balance: reverse old, apply new
-      if (form.wallet_id || editing.wallet_id) {
-        await updateWalletBalance(form.wallet_id, form.amount, form.type, editing.wallet_id, editing.amount, editing.type)
+      if (editing.type === 'transfer') {
+        // reverse old transfer then apply new
+        await applyTransferWallets(editing.wallet_id, editing.to_wallet_id, editing.amount, true)
+        await applyTransferWallets(form.wallet_id, form.to_wallet_id, form.amount, false)
+      } else if (form.type === 'transfer') {
+        // was normal, now transfer: reverse old normal balance change then apply transfer
+        if (editing.wallet_id) {
+          const { data: w } = await supabase.from('wallets').select('balance').eq('id', editing.wallet_id).single()
+          if (w) {
+            const rev = editing.type === 'income' ? -Number(editing.amount) : Number(editing.amount)
+            await supabase.from('wallets').update({ balance: w.balance + rev }).eq('id', editing.wallet_id)
+          }
+        }
+        await applyTransferWallets(form.wallet_id, form.to_wallet_id, form.amount, false)
+      } else {
+        if (form.wallet_id || editing.wallet_id) {
+          await updateWalletBalance(form.wallet_id, form.amount, form.type, editing.wallet_id, editing.amount, editing.type)
+        }
       }
       await logActivity({ userId:user.id, userName:profile.name, actionType:ACTION_TYPES.UPDATE, entityType:ENTITY_TYPES.TRANSACTION, description:`עדכן/ה: ${form.description}`, entityId:editing.id })
       toast.success('עודכן!')
     } else {
       const { error } = await supabase.from('transactions').insert(payload)
       if (error) { toast.error('שגיאה'); setSaving(false); return }
-      // Update wallet balance for new transaction
-      if (form.wallet_id) {
+      if (form.type === 'transfer') {
+        await applyTransferWallets(form.wallet_id, form.to_wallet_id, form.amount, false)
+      } else if (form.wallet_id) {
         const { data: wallet } = await supabase.from('wallets').select('balance').eq('id', form.wallet_id).single()
         if (wallet) {
           const delta = form.type === 'income' ? Number(form.amount) : -Number(form.amount)
@@ -114,8 +145,9 @@ export default function Transactions() {
     if (!confirm(`למחוק "${t.description}"?`)) return
     const { error } = await supabase.from('transactions').delete().eq('id', t.id)
     if (error) { toast.error('שגיאה במחיקה'); return }
-    // Reverse wallet balance
-    if (t.wallet_id) {
+    if (t.type === 'transfer') {
+      await applyTransferWallets(t.wallet_id, t.to_wallet_id, t.amount, true)
+    } else if (t.wallet_id) {
       const { data: wallet } = await supabase.from('wallets').select('balance').eq('id', t.wallet_id).single()
       if (wallet) {
         const delta = t.type === 'income' ? -Number(t.amount) : Number(t.amount)
@@ -209,14 +241,22 @@ export default function Transactions() {
                         onMouseLeave={e=>e.currentTarget.style.background=''}>
                       <td style={{padding:'0.875rem 1rem',color:'#64748b',fontSize:'0.8rem',whiteSpace:'nowrap'}}>{new Date(t.date).toLocaleDateString('he-IL')}</td>
                       <td style={{padding:'0.875rem 1rem',color:'#e2e8f0',fontSize:'0.875rem',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.description}</td>
-                      <td style={{padding:'0.875rem 1rem',fontWeight:600,whiteSpace:'nowrap',color: t.type==='income'?'#4ade80':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>
-                        {t.type==='income'?'+':'-'}{t.currency}{Number(t.amount).toLocaleString()}
+                      <td style={{padding:'0.875rem 1rem',fontWeight:600,whiteSpace:'nowrap',color: t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>
+                        {t.type==='income'?'+':t.type==='transfer'?'↔':'-'}{t.currency}{Number(t.amount).toLocaleString()}
                       </td>
                       <td style={{padding:'0.875rem 1rem',fontSize:'0.8rem',color:'#94a3b8'}}>{t.categories ? `${t.categories.icon||''} ${t.categories.name}` : '—'}</td>
-                      <td style={{padding:'0.875rem 1rem',fontSize:'0.8rem',color:'#94a3b8'}}>{t.wallets ? `${t.wallets.icon||''} ${t.wallets.name}` : '—'}</td>
+                      <td style={{padding:'0.875rem 1rem',fontSize:'0.8rem',color:'#94a3b8'}}>
+                        {t.type === 'transfer'
+                          ? <>
+                              <span>{t.wallets?.icon||''} {t.wallets?.name||'—'}</span>
+                              <span style={{color:'#22d3ee',margin:'0 0.25rem'}}>→</span>
+                              <span>{wallets.find(w=>w.id===t.to_wallet_id)?.icon||''} {wallets.find(w=>w.id===t.to_wallet_id)?.name||'—'}</span>
+                            </>
+                          : t.wallets ? `${t.wallets.icon||''} ${t.wallets.name}` : '—'}
+                      </td>
                       <td style={{padding:'0.875rem 1rem',fontSize:'0.8rem',color:'#94a3b8'}}>{t.profiles?.name || '—'}</td>
                       <td style={{padding:'0.875rem 1rem'}}>
-                        <span className={t.type==='income'?'badge-income':t.type.startsWith('loan')?'badge-loan':'badge-expense'}>
+                        <span className={t.type==='income'?'badge-income':t.type==='transfer'?'badge-transfer':t.type.startsWith('loan')?'badge-loan':'badge-expense'}>
                           {TYPE_LABELS[t.type]}
                         </span>
                         {t.type.startsWith('loan') && t.loan_returned && <span style={{marginRight:'0.375rem',fontSize:'0.7rem',color:'#4ade80'}}>✓ הוחזר</span>}
@@ -343,19 +383,29 @@ export default function Transactions() {
             <input className="input-field" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} dir="ltr"/>
           </div>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>ארנק</label>
+            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>{form.type==='transfer'?'מארנק':'ארנק'}</label>
             <select className="input-field" value={form.wallet_id} onChange={e=>setForm({...form,wallet_id:e.target.value})}>
               <option value="">בחר ארנק</option>
               {wallets.map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
             </select>
           </div>
-          <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>קטגוריה</label>
-            <select className="input-field" value={form.category_id} onChange={e=>setForm({...form,category_id:e.target.value})}>
-              <option value="">בחר קטגוריה</option>
-              {categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-            </select>
-          </div>
+          {form.type === 'transfer' ? (
+            <div>
+              <label style={{fontSize:'0.8rem',color:'#22d3ee',display:'block',marginBottom:'0.375rem'}}>לארנק</label>
+              <select className="input-field" value={form.to_wallet_id} onChange={e=>setForm({...form,to_wallet_id:e.target.value})} style={{borderColor:'rgba(34,211,238,0.3)'}}>
+                <option value="">בחר ארנק יעד</option>
+                {wallets.filter(w=>w.id!==form.wallet_id).map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>קטגוריה</label>
+              <select className="input-field" value={form.category_id} onChange={e=>setForm({...form,category_id:e.target.value})}>
+                <option value="">בחר קטגוריה</option>
+                {categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+              </select>
+            </div>
+          )}
           {form.type.startsWith('loan') && (
             <>
               <div>

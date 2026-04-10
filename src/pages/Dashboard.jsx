@@ -30,7 +30,7 @@ export default function Dashboard() {
   const [wallets, setWallets]           = useState([])
   const [monthlyData, setMonthlyData]   = useState({ income: 0, expense: 0, loans: [] })
   const [showAddTx, setShowAddTx]       = useState(false)
-  const [tx, setTx] = useState({ type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0] })
+  const [tx, setTx] = useState({ type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', to_wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0] })
   const [categories, setCategories]     = useState([])
   const [saving, setSaving]             = useState(false)
   const [todayEvents, setTodayEvents]   = useState([])
@@ -78,11 +78,23 @@ export default function Dashboard() {
 
   async function handleAddTx() {
     if (!tx.description || !tx.amount) { toast.error('מלא תיאור וסכום'); return }
+    if (tx.type === 'transfer' && !tx.to_wallet_id) { toast.error('בחר ארנק יעד'); return }
+    if (tx.type === 'transfer' && tx.wallet_id === tx.to_wallet_id) { toast.error('ארנק המקור והיעד חייבים להיות שונים'); return }
     setSaving(true)
-    const { error } = await withRetry(() => supabase.from('transactions').insert({ ...tx, amount: Number(tx.amount), user_id: user.id }))
+    const payload = { ...tx, amount: Number(tx.amount), user_id: user.id }
+    if (!payload.to_wallet_id || payload.type !== 'transfer') delete payload.to_wallet_id
+    const { error } = await withRetry(() => supabase.from('transactions').insert(payload))
     if (error) { toast.error('שגיאה בשמירה'); setSaving(false); return }
-    // update wallet balance
-    if (tx.wallet_id) {
+    if (tx.type === 'transfer') {
+      if (tx.wallet_id) {
+        const src = wallets.find(w => w.id === tx.wallet_id)
+        if (src) await supabase.from('wallets').update({ balance: src.balance - Number(tx.amount) }).eq('id', src.id)
+      }
+      if (tx.to_wallet_id) {
+        const dst = wallets.find(w => w.id === tx.to_wallet_id)
+        if (dst) await supabase.from('wallets').update({ balance: dst.balance + Number(tx.amount) }).eq('id', dst.id)
+      }
+    } else if (tx.wallet_id) {
       const wallet = wallets.find(w => w.id === tx.wallet_id)
       if (wallet) {
         const delta = tx.type === 'income' ? Number(tx.amount) : -Number(tx.amount)
@@ -92,7 +104,7 @@ export default function Dashboard() {
     await logActivity({ userId: user.id, userName: profile.name, actionType: ACTION_TYPES.CREATE, entityType: ENTITY_TYPES.TRANSACTION, description: `הוסיף/ה טרנזקציה: ${tx.description} – ${tx.amount}₪` })
     toast.success('טרנזקציה נוספה!')
     setShowAddTx(false)
-    setTx({ type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0] })
+    setTx({ type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', to_wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0] })
     loadData()
     setSaving(false)
   }
@@ -204,9 +216,10 @@ export default function Dashboard() {
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
           <div>
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סוג</label>
-            <select className="input-field" value={tx.type} onChange={e => setTx({...tx, type: e.target.value})}>
+            <select className="input-field" value={tx.type} onChange={e => setTx({...tx, type: e.target.value, to_wallet_id:''})}>
               <option value="income">הכנסה</option>
               <option value="expense">הוצאה</option>
+              <option value="transfer">העברה בין ארנקים</option>
               <option value="loan_given">הלוואה שנתתי</option>
               <option value="loan_received">הלוואה שקיבלתי</option>
             </select>
@@ -234,19 +247,29 @@ export default function Dashboard() {
             </div>
           </div>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>ארנק</label>
+            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>{tx.type==='transfer'?'מארנק':'ארנק'}</label>
             <select className="input-field" value={tx.wallet_id} onChange={e => setTx({...tx, wallet_id: e.target.value})}>
               <option value="">בחר ארנק</option>
               {wallets.map(w => <option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
             </select>
           </div>
-          <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>קטגוריה</label>
-            <select className="input-field" value={tx.category_id} onChange={e => setTx({...tx, category_id: e.target.value})}>
-              <option value="">בחר קטגוריה</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-            </select>
-          </div>
+          {tx.type === 'transfer' ? (
+            <div>
+              <label style={{fontSize:'0.8rem',color:'#22d3ee',display:'block',marginBottom:'0.375rem'}}>לארנק</label>
+              <select className="input-field" value={tx.to_wallet_id} onChange={e => setTx({...tx, to_wallet_id: e.target.value})} style={{borderColor:'rgba(34,211,238,0.3)'}}>
+                <option value="">בחר ארנק יעד</option>
+                {wallets.filter(w => w.id !== tx.wallet_id).map(w => <option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>קטגוריה</label>
+              <select className="input-field" value={tx.category_id} onChange={e => setTx({...tx, category_id: e.target.value})}>
+                <option value="">בחר קטגוריה</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+              </select>
+            </div>
+          )}
           <div style={{display:'flex',gap:'0.75rem',justifyContent:'flex-end',marginTop:'0.5rem'}}>
             <button className="btn-ghost" onClick={() => setShowAddTx(false)}>ביטול</button>
             <button className="btn-primary" onClick={handleAddTx} disabled={saving}>{saving ? 'שומר...' : 'שמור'}</button>
