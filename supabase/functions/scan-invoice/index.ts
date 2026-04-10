@@ -5,7 +5,7 @@
  */
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? ''
-const MODEL = 'gemini-2.0-flash'
+const MODEL = 'gemini-1.5-flash'
 const MODEL_URL =
   `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`
 
@@ -142,7 +142,7 @@ Deno.serve(async (req: Request) => {
 
   if (!modelRes.ok) {
     const errText = await modelRes.text()
-    console.error('Model API error:', modelRes.status, errText)
+    console.error(`Model API error [${MODEL}]:`, modelRes.status, errText)
     return ok({ error: 'gemini_api_error', status: modelRes.status, message: errText })
   }
 
