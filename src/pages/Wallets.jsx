@@ -36,8 +36,15 @@ export default function Wallets() {
 
   async function openHistory(w) {
     setHistoryWallet(w)
-    const { data } = await supabase.from('transactions').select('*,categories(name,icon)').eq('wallet_id', w.id).order('date', { ascending: false }).limit(50)
-    setWalletTxs(data || [])
+    const [{ data: outData }, { data: inData }] = await Promise.all([
+      supabase.from('transactions').select('*,categories(name,icon)').eq('wallet_id', w.id).order('date', { ascending: false }).limit(50),
+      supabase.from('transactions').select('*,categories(name,icon)').eq('to_wallet_id', w.id).eq('type', 'transfer').order('date', { ascending: false }).limit(25)
+    ])
+    const merged = [
+      ...(outData || []).map(t => ({ ...t, _dir: 'out' })),
+      ...(inData || []).map(t => ({ ...t, _dir: 'in' }))
+    ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 50)
+    setWalletTxs(merged)
   }
 
   function openAdd()  { setEditing(null); setForm(emptyWallet); setModal(true) }
@@ -152,10 +159,10 @@ export default function Wallets() {
                 </thead>
                 <tbody>
                   {walletTxs.map(t=>(
-                    <tr key={t.id} style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                    <tr key={`${t.id}_${t._dir}`} style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
                       <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'#64748b',whiteSpace:'nowrap'}}>{new Date(t.date).toLocaleDateString('he-IL')}</td>
                       <td style={{padding:'0.625rem 0.75rem',fontSize:'0.85rem',color:'#e2e8f0'}}>{t.description}</td>
-                      <td style={{padding:'0.625rem 0.75rem',fontWeight:600,whiteSpace:'nowrap',color:t.type==='income'?'#4ade80':'#f87171'}}>{t.type==='income'?'+':'-'}{t.currency}{Number(t.amount).toLocaleString()}</td>
+                      <td style={{padding:'0.625rem 0.75rem',fontWeight:600,whiteSpace:'nowrap',color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>{t.type==='income'?'+':t.type==='transfer'?(t._dir==='in'?'+↔':'-↔'):t.type.startsWith('loan')?'':'-'}{t.currency}{Number(t.amount).toLocaleString()}</td>
                       <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'#94a3b8'}}>{t.categories ? `${t.categories.icon||''} ${t.categories.name}` : '—'}</td>
                     </tr>
                   ))}
