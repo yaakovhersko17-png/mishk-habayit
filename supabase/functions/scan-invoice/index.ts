@@ -1,11 +1,11 @@
 /**
  * Supabase Edge Function: scan-invoice
- * Uses Gemma 4 27B (vision) to extract invoice data.
+ * Uses Gemini 2.0 Flash (vision) to extract invoice data.
  * GEMINI_API_KEY is stored only as a Supabase secret — never in frontend code.
  */
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? ''
-const MODEL = 'gemma-4-27b-it'
+const MODEL = 'gemini-2.0-flash'
 const MODEL_URL =
   `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`
 
