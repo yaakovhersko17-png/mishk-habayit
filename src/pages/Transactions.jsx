@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase, cached, withRetry, invalidate } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Plus, Search, Mic, MicOff, Edit2, Trash2, SlidersHorizontal, X } from 'lucide-react'
-import Modal from '../components/ui/Modal'
+import AddTransactionSheet from '../components/AddTransactionSheet'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import EmptyState from '../components/ui/EmptyState'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
@@ -37,10 +37,10 @@ export default function Transactions() {
   const [categories, setCats]   = useState([])
   const [profiles, setProfiles] = useState([])
   const [loading, setLoading]   = useState(true)
-  const [modal, setModal]       = useState(false)
-  const [editing, setEditing]   = useState(null)
-  const [form, setForm]         = useState(emptyTx)
-  const [saving, setSaving]     = useState(false)
+  const [modal, setModal]         = useState(false)
+  const [editing, setEditing]     = useState(null)
+  const [form, setForm]           = useState(emptyTx)
+  const [sheetInitial, setSheetInitial] = useState(null)
   const [search, setSearch]     = useState('')
   const [filter, setFilter]     = useState({ type:'', category:'', wallet:'', user:'', dateFrom:'', dateTo:'' })
   const [listening, setListening] = useState(false)
@@ -186,13 +186,12 @@ export default function Transactions() {
     rec.onresult = (e) => {
       const text = e.results[0][0].transcript
       toast.success(`שמעתי: "${text}"`)
-      // simple parse: number → amount, rest → description
       const numMatch = text.match(/\d+/)
-      if (numMatch) {
-        setForm(f => ({ ...f, amount: numMatch[0], description: text.replace(numMatch[0], '').trim() }))
-      } else {
-        setForm(f => ({ ...f, description: text }))
-      }
+      setEditing(null)
+      setSheetInitial(numMatch
+        ? { amount: numMatch[0], description: text.replace(numMatch[0], '').trim() }
+        : { description: text }
+      )
       setModal(true)
       setListening(false)
     }
@@ -358,100 +357,13 @@ export default function Transactions() {
         </div>
       )}
 
-      <Modal open={modal} onClose={()=>setModal(false)} title={editing?'ערוך עסקה':'עסקה חדשה'} size="lg">
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-          <div style={{gridColumn:'1/-1'}}>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סוג</label>
-            <select className="input-field" value={form.type} onChange={e=>setForm({...form,type:e.target.value,to_wallet_id:''})}>
-              <option value="income">הכנסה</option>
-              <option value="expense">הוצאה</option>
-              <option value="transfer">מארנק לארנק</option>
-              <option value="loan_given">הלוואה שנתתי</option>
-              <option value="loan_received">הלוואה שקיבלתי</option>
-            </select>
-          </div>
-          <div style={{gridColumn:'1/-1'}}>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תיאור</label>
-            <input className="input-field" placeholder="תיאור..." value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/>
-          </div>
-          <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סכום</label>
-            <input className="input-field" type="number" placeholder="0.00" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} dir="ltr"/>
-            <label style={{display:'inline-flex',alignItems:'center',gap:'0.4rem',marginTop:'0.5rem',cursor:'pointer',fontSize:'0.78rem',color:'#64748b',userSelect:'none'}}>
-              <input
-                type="checkbox"
-                checked={form.currency !== '₪'}
-                onChange={e => setForm({...form, currency: e.target.checked ? '$' : '₪'})}
-                style={{accentColor:'#6c63ff',width:14,height:14,cursor:'pointer'}}
-              />
-              מטבע זר
-            </label>
-            {form.currency !== '₪' && (
-              <div style={{display:'flex',gap:'0.5rem',marginTop:'0.5rem'}}>
-                {['$','€','£'].map(c => (
-                  <button key={c} onClick={()=>setForm({...form,currency:c})} style={{padding:'0.3rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.9rem',fontWeight:600,cursor:'pointer',border:`1px solid ${form.currency===c?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.1)'}`,background:form.currency===c?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.04)',color:form.currency===c?'#a78bfa':'#94a3b8'}}>
-                    {c}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תאריך</label>
-            <input className="input-field" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} dir="ltr"/>
-          </div>
-          <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>{form.type==='transfer'?'מארנק':'ארנק'}</label>
-            <select className="input-field" value={form.wallet_id} onChange={e=>setForm({...form,wallet_id:e.target.value})}>
-              <option value="">בחר ארנק</option>
-              {wallets.map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
-            </select>
-          </div>
-          {form.type === 'transfer' ? (
-            <div>
-              <label style={{fontSize:'0.8rem',color:'#22d3ee',display:'block',marginBottom:'0.375rem'}}>לארנק</label>
-              <select className="input-field" value={form.to_wallet_id} onChange={e=>setForm({...form,to_wallet_id:e.target.value})} style={{borderColor:'rgba(34,211,238,0.3)'}}>
-                <option value="">בחר ארנק יעד</option>
-                {wallets.filter(w=>w.id!==form.wallet_id).map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
-              </select>
-            </div>
-          ) : (
-            <div>
-              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>קטגוריה</label>
-              <select className="input-field" value={form.category_id} onChange={e=>setForm({...form,category_id:e.target.value})}>
-                <option value="">בחר קטגוריה</option>
-                {buildCatOptions(categories)}
-              </select>
-            </div>
-          )}
-          {form.type.startsWith('loan') && (
-            <>
-              <div>
-                <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>גורם הלוואה</label>
-                <input className="input-field" placeholder="שם..." value={form.loan_party} onChange={e=>setForm({...form,loan_party:e.target.value})}/>
-              </div>
-              <div>
-                <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תאריך פירעון</label>
-                <input className="input-field" type="date" value={form.loan_due_date} onChange={e=>setForm({...form,loan_due_date:e.target.value})} dir="ltr"/>
-              </div>
-              <div style={{gridColumn:'1/-1'}}>
-                <label style={{display:'inline-flex',alignItems:'center',gap:'0.5rem',cursor:'pointer',fontSize:'0.85rem',color:form.loan_returned?'#4ade80':'#94a3b8'}}>
-                  <input type="checkbox" checked={form.loan_returned} onChange={e=>setForm({...form,loan_returned:e.target.checked})} style={{accentColor:'#4ade80',width:16,height:16,cursor:'pointer'}}/>
-                  הלוואה הוחזרה
-                </label>
-              </div>
-            </>
-          )}
-          <div style={{gridColumn:'1/-1'}}>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>הערות</label>
-            <textarea className="input-field" placeholder="הערות..." value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={2} style={{resize:'vertical'}}/>
-          </div>
-          <div style={{gridColumn:'1/-1',display:'flex',gap:'0.75rem',justifyContent:'flex-end'}}>
-            <button className="btn-ghost" onClick={()=>setModal(false)}>ביטול</button>
-            <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving?'שומר...':'שמור'}</button>
-          </div>
-        </div>
-      </Modal>
+      <AddTransactionSheet
+        open={modal}
+        onClose={() => { setModal(false); setSheetInitial(null) }}
+        onSaved={loadAll}
+        editingTx={editing}
+        initialData={editing ? null : sheetInitial}
+      />
     </div>
   )
 }

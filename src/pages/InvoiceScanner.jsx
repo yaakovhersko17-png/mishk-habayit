@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase, cached, withRetry, rateLimited } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Upload, Camera, ScanLine, Check, X, Plus, Trash2, AlertCircle } from 'lucide-react'
+import AddTransactionSheet from '../components/AddTransactionSheet'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import toast from 'react-hot-toast'
 
@@ -49,6 +50,7 @@ export default function InvoiceScanner() {
   const [categories, setCats]         = useState([])
   const [selectedWallet, setSelectedWallet] = useState('')
   const [scanProgress, setScanProgress] = useState(0)
+  const [txSheet, setTxSheet]         = useState(false)
 
   function onFileChange(e) {
     const f = e.target.files[0]
@@ -403,8 +405,11 @@ export default function InvoiceScanner() {
             </div>
             <div style={{display:'flex',gap:'0.75rem',marginTop:'1.25rem'}}>
               <button className="btn-ghost" onClick={reset}><X size={14}/>ביטול</button>
+              <button className="btn-ghost" onClick={() => setTxSheet(true)} style={{flexShrink:0}}>
+                <Plus size={14}/>הוסף עסקה
+              </button>
               <button className="btn-primary" onClick={saveInvoice} disabled={saving||!selectedWallet} style={{flex:1,justifyContent:'center'}}>
-                <Check size={14}/>{saving?'שומר...':'אשר ושמור'}
+                <Check size={14}/>{saving?'שומר...':'שמור חשבונית'}
               </button>
             </div>
           </div>
@@ -417,11 +422,29 @@ export default function InvoiceScanner() {
           <div style={{fontSize:'4rem',marginBottom:'1rem'}}>✅</div>
           <h2 style={{color:'#4ade80',margin:'0 0 0.5rem'}}>חשבונית נשמרה בהצלחה!</h2>
           <p style={{color:'#64748b',fontSize:'0.875rem',marginBottom:'2rem'}}>הנתונים נוספו לארכיון, לטרנזקציות ולאחסון</p>
-          <button className="btn-primary" onClick={reset} style={{margin:'0 auto',justifyContent:'center'}}>
-            <ScanLine size={14}/>סרוק חשבונית נוספת
-          </button>
+          <div style={{display:'flex',gap:'0.75rem',justifyContent:'center',flexWrap:'wrap'}}>
+            <button className="btn-ghost" onClick={() => setTxSheet(true)}>
+              <Plus size={14}/>הוסף גם כעסקה
+            </button>
+            <button className="btn-primary" onClick={reset} style={{justifyContent:'center'}}>
+              <ScanLine size={14}/>סרוק חשבונית נוספת
+            </button>
+          </div>
         </div>
       )}
+
+      <AddTransactionSheet
+        open={txSheet}
+        onClose={() => setTxSheet(false)}
+        initialData={result ? {
+          type: 'expense',
+          description: result.business_name || '',
+          amount: String(result.total || ''),
+          currency: result.currency || '₪',
+          date: result.date || new Date().toISOString().split('T')[0],
+          wallet_id: selectedWallet || '',
+        } : null}
+      />
     </div>
   )
 }
