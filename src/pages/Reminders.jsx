@@ -1,14 +1,48 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Bell, Check, Trash2, Clock, ShoppingCart, Edit2 } from 'lucide-react'
+import { Plus, Bell, Check, Trash2, Clock, ShoppingCart, Edit2, ChevronDown } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import EmptyState from '../components/ui/EmptyState'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import toast from 'react-hot-toast'
 
+const DAYS_HE = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת']
 const emptyForm = { title:'', description:'', due_date:'', is_shopping_list:false, shopping_items:[], assigned_to:'' }
+const emptySched = { freq: 'once', time: '09:00', days: [0], dayOfMonth: 1 }
+
+function computeNextDate(s) {
+  if (s.freq === 'once') return ''
+  const now = new Date()
+  const [h, m] = (s.time || '09:00').split(':').map(Number)
+  const d = new Date(now)
+
+  if (s.freq === 'daily') {
+    d.setHours(h, m, 0, 0)
+    if (d <= now) d.setDate(d.getDate() + 1)
+  } else if (s.freq === 'weekly') {
+    const targets = (s.days && s.days.length > 0) ? [...s.days].sort() : [0]
+    const nowDay = now.getDay()
+    let minDiff = 8
+    for (const td of targets) {
+      let diff = (td - nowDay + 7) % 7
+      if (diff === 0) {
+        const check = new Date(now); check.setHours(h, m, 0, 0)
+        diff = check > now ? 0 : 7
+      }
+      if (diff < minDiff) minDiff = diff
+    }
+    d.setDate(d.getDate() + minDiff)
+    d.setHours(h, m, 0, 0)
+  } else if (s.freq === 'monthly') {
+    const day = s.dayOfMonth || 1
+    d.setDate(day); d.setHours(h, m, 0, 0)
+    if (d <= now) { d.setMonth(d.getMonth() + 1); d.setDate(day) }
+  }
+
+  return d.toISOString().slice(0, 16)
+}
 
 export default function Reminders() {
   const { user, profile } = useAuth()
@@ -21,6 +55,8 @@ export default function Reminders() {
   const [saving, setSaving]       = useState(false)
   const [newItem, setNewItem]     = useState('')
   const [tab, setTab]             = useState('active')
+  const [schedOpen, setSchedOpen] = useState(false)
+  const [sched, setSched]         = useState(emptySched)
 
   useEffect(() => {
     load()
@@ -66,10 +102,11 @@ export default function Reminders() {
     })
   }
 
-  function openAdd()   { setEditing(null); setForm(emptyForm); setModal(true) }
+  function openAdd()   { setEditing(null); setForm(emptyForm); setSchedOpen(false); setSched(emptySched); setModal(true) }
   function openEdit(r) {
     setEditing(r)
     setForm({ title:r.title, description:r.description||'', due_date:r.due_date?r.due_date.slice(0,16):'', is_shopping_list:r.is_shopping_list, shopping_items:r.shopping_items||[], assigned_to:r.assigned_to||'' })
+    setSchedOpen(false); setSched(emptySched)
     setModal(true)
   }
 
@@ -185,6 +222,91 @@ export default function Reminders() {
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תיאור</label>
             <textarea className="input-field" placeholder="תיאור..." value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={2} style={{resize:'vertical'}}/>
           </div>
+          {/* Scheduling panel */}
+          <div style={{borderRadius:'0.75rem',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden'}}>
+            <button type="button" onClick={() => setSchedOpen(o => !o)} style={{width:'100%',display:'flex',alignItems:'center',gap:'0.5rem',padding:'0.75rem',background:'rgba(255,255,255,0.03)',border:'none',cursor:'pointer',color:'#94a3b8',fontSize:'0.85rem',fontFamily:'inherit',textAlign:'right'}}>
+              <Clock size={14} color="#6c63ff"/>
+              <span style={{flex:1}}>תזמון תזכורת</span>
+              <ChevronDown size={14} style={{transform:schedOpen?'rotate(180deg)':'none',transition:'transform 0.2s'}}/>
+            </button>
+
+            {schedOpen && (
+              <div style={{padding:'1rem',borderTop:'1px solid rgba(255,255,255,0.06)',display:'flex',flexDirection:'column',gap:'0.875rem'}}>
+                {/* Frequency */}
+                <div>
+                  <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.4rem'}}>תדירות</div>
+                  <div style={{display:'flex',gap:'0.375rem',flexWrap:'wrap'}}>
+                    {[['once','חד פעמי'],['daily','יומי'],['weekly','שבועי'],['monthly','חודשי']].map(([val,lbl]) => {
+                      const active = sched.freq === val
+                      return (
+                        <button key={val} type="button" onClick={() => setSched(s => ({...s, freq:val}))} style={{
+                          padding:'0.35rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',
+                          border:`1px solid ${active?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,
+                          background:active?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',
+                          color:active?'#a78bfa':'#64748b',fontWeight:active?600:400,
+                        }}>{lbl}</button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Time */}
+                {sched.freq !== 'once' && (
+                  <div>
+                    <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.4rem'}}>שעה</div>
+                    <input className="input-field" type="time" value={sched.time} onChange={e => setSched(s => ({...s,time:e.target.value}))} dir="ltr" style={{maxWidth:130}}/>
+                  </div>
+                )}
+
+                {/* Days of week */}
+                {sched.freq === 'weekly' && (
+                  <div>
+                    <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.4rem'}}>ימים בשבוע</div>
+                    <div style={{display:'flex',gap:'0.375rem',flexWrap:'wrap'}}>
+                      {DAYS_HE.map((d, i) => {
+                        const active = sched.days.includes(i)
+                        return (
+                          <button key={i} type="button" onClick={() => setSched(s => ({...s, days: s.days.includes(i) ? s.days.filter(x=>x!==i) : [...s.days,i].sort()}))} style={{
+                            padding:'0.35rem 0.625rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',
+                            border:`1px solid ${active?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,
+                            background:active?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',
+                            color:active?'#a78bfa':'#64748b',fontWeight:active?600:400,
+                          }}>{d}</button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Day of month */}
+                {sched.freq === 'monthly' && (
+                  <div>
+                    <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.4rem'}}>יום בחודש</div>
+                    <select className="input-field" value={sched.dayOfMonth} onChange={e => setSched(s => ({...s,dayOfMonth:Number(e.target.value)}))} style={{maxWidth:110}} dir="ltr">
+                      {Array.from({length:28}, (_,i) => i+1).map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                )}
+
+                {/* Computed next date + apply */}
+                {sched.freq !== 'once' && (() => {
+                  const next = computeNextDate(sched)
+                  return next ? (
+                    <div style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.625rem 0.75rem',borderRadius:'0.625rem',background:'rgba(108,99,255,0.08)',border:'1px solid rgba(108,99,255,0.15)'}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:'0.7rem',color:'#64748b',marginBottom:'0.125rem'}}>הפעם הבאה</div>
+                        <div style={{fontSize:'0.82rem',color:'#a78bfa',fontWeight:600}}>{new Date(next).toLocaleString('he-IL',{dateStyle:'medium',timeStyle:'short'})}</div>
+                      </div>
+                      <button type="button" onClick={() => setForm(f => ({...f, due_date: next}))} style={{padding:'0.4rem 0.875rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',border:'1px solid rgba(108,99,255,0.4)',background:'rgba(108,99,255,0.2)',color:'#a78bfa',fontWeight:600}}>
+                        קבע
+                      </button>
+                    </div>
+                  ) : null
+                })()}
+              </div>
+            )}
+          </div>
+
           <div className="form-2col">
             <div>
               <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תאריך ושעה (אופציונלי)</label>
