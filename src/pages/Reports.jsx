@@ -146,22 +146,30 @@ export default function Reports() {
       <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>דוחות וייצוא</h1>
 
       {/* Summary cards */}
-      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'1rem'}}>
-        {[['הכנסות','#4ade80',`₪${income.toLocaleString()}`],['הוצאות','#f87171',`₪${expense.toLocaleString()}`],['מאזן',net>=0?'#4ade80':'#f87171',`₪${Math.abs(net).toLocaleString()} ${net>=0?'חיובי':'שלילי'}`]].map(([l,c,v])=>(
-          <div key={l} className="stat-card">
-            <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>{l}</div>
-            <div style={{fontSize:'1.4rem',fontWeight:700,color:c}}>{v}</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'0.75rem'}}>
+        <div className="stat-card">
+          <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.375rem'}}>הכנסות</div>
+          <div style={{fontSize:'1.25rem',fontWeight:700,color:'#4ade80'}}>₪{income.toLocaleString()}</div>
+        </div>
+        <div className="stat-card">
+          <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.375rem'}}>הוצאות</div>
+          <div style={{fontSize:'1.25rem',fontWeight:700,color:'#f87171'}}>₪{expense.toLocaleString()}</div>
+        </div>
+        <div className="stat-card" style={{gridColumn:'span 2'}}>
+          <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.375rem'}}>מאזן</div>
+          <div style={{fontSize:'1.25rem',fontWeight:700,color:net>=0?'#4ade80':'#f87171'}}>
+            ₪{Math.abs(net).toLocaleString()} <span style={{fontSize:'0.85rem',fontWeight:400}}>{net>=0?'חיובי':'שלילי'}</span>
           </div>
-        ))}
+        </div>
       </div>
 
       {/* Tabs */}
-      <div style={{display:'flex',gap:'0.5rem',borderBottom:'1px solid rgba(255,255,255,0.06)',flexWrap:'wrap'}}>
+      <div style={{display:'flex',gap:'0',borderBottom:'1px solid rgba(255,255,255,0.06)',overflowX:'auto',flexWrap:'nowrap',WebkitOverflowScrolling:'touch'}}>
         {TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             style={{
-              padding:'0.625rem 1.1rem',
-              fontSize:'0.85rem',
+              padding:'0.625rem 1rem',
+              fontSize:'0.82rem',
               fontWeight: activeTab === tab.id ? 700 : 400,
               color: activeTab === tab.id ? '#a78bfa' : '#64748b',
               background:'none',
@@ -170,6 +178,8 @@ export default function Reports() {
               cursor:'pointer',
               transition:'all 0.15s',
               marginBottom:'-1px',
+              whiteSpace:'nowrap',
+              flexShrink:0,
             }}
           >{tab.label}</button>
         ))}
@@ -180,7 +190,7 @@ export default function Reports() {
         pieData.length > 0 ? (
           <div className="page-card">
             <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>הוצאות לפי קטגוריה</h3>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem',alignItems:'center'}}>
+            <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={90} dataKey="value" nameKey="name">
@@ -191,10 +201,10 @@ export default function Reports() {
               </ResponsiveContainer>
               <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
                 {pieData.map((d,i) => (
-                  <div key={d.name} style={{display:'flex',alignItems:'center',gap:'0.5rem',fontSize:'0.8rem'}}>
+                  <div key={d.name} style={{display:'flex',alignItems:'center',gap:'0.625rem',padding:'0.5rem 0.75rem',borderRadius:'0.625rem',background:'rgba(255,255,255,0.03)'}}>
                     <div style={{width:10,height:10,borderRadius:'50%',background:COLORS[i%COLORS.length],flexShrink:0}}/>
-                    <span style={{color:'#94a3b8',flex:1}}>{d.name}</span>
-                    <span style={{color:'#e2e8f0',fontWeight:600}}>₪{d.value.toLocaleString()}</span>
+                    <span style={{color:'#94a3b8',flex:1,fontSize:'0.82rem'}}>{d.name}</span>
+                    <span style={{color:'#e2e8f0',fontWeight:600,fontSize:'0.85rem'}}>₪{d.value.toLocaleString()}</span>
                   </div>
                 ))}
               </div>

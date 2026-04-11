@@ -221,7 +221,7 @@ export default function Transactions() {
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div>
-          <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>טרנזקציות</h1>
+          <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>עסקאות</h1>
           <p style={{margin:'0.25rem 0 0',color:'#64748b',fontSize:'0.875rem'}}>{filtered.length} רשומות</p>
         </div>
         <div style={{display:'flex',gap:'0.75rem'}}>
@@ -240,7 +240,7 @@ export default function Transactions() {
 
       {/* Table */}
       {filtered.length === 0
-        ? <EmptyState icon="📊" title="אין טרנזקציות" subtitle="הוסף טרנזקציה ראשונה" action={<button className="btn-primary" onClick={openAdd}><Plus size={14}/>הוסף</button>}/>
+        ? <EmptyState icon="📊" title="אין עסקאות" subtitle="הוסף עסקה ראשונה" action={<button className="btn-primary" onClick={openAdd}><Plus size={14}/>הוסף</button>}/>
         : (
           <div className="page-card" style={{padding:0,overflow:'hidden'}}>
             <div style={{overflowX:'auto'}}>
@@ -358,7 +358,7 @@ export default function Transactions() {
         </div>
       )}
 
-      <Modal open={modal} onClose={()=>setModal(false)} title={editing?'ערוך טרנזקציה':'טרנזקציה חדשה'} size="lg">
+      <Modal open={modal} onClose={()=>setModal(false)} title={editing?'ערוך עסקה':'עסקה חדשה'} size="lg">
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
           <div style={{gridColumn:'1/-1'}}>
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סוג</label>
