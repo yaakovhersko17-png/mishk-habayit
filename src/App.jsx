@@ -21,6 +21,7 @@ const Settings       = lazy(() => import('./pages/Settings'))
 const AdminPanel     = lazy(() => import('./pages/AdminPanel'))
 const Trips          = lazy(() => import('./pages/Trips'))
 const DinnerMeals    = lazy(() => import('./pages/DinnerMeals'))
+const FinancePage    = lazy(() => import('./pages/FinancePage'))
 
 function Spinner() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="reports"      element={<Reports />} />
             <Route path="settings"     element={<Settings />} />
             <Route path="dinners"      element={<DinnerMeals />} />
+            <Route path="finance"      element={<FinancePage />} />
             <Route path="admin"        element={<AdminRoute><AdminPanel /></AdminRoute>} />
           </Route>
         </Routes>

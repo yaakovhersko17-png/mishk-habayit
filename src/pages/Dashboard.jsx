@@ -48,6 +48,7 @@ export default function Dashboard() {
   const [wallets, setWallets]           = useState([])
   const [monthlyData, setMonthlyData]   = useState({ income: 0, expense: 0, loans: [] })
   const [showAddTx, setShowAddTx]       = useState(false)
+  const [txTab, setTxTab]               = useState('expense')
   const [tx, setTx] = useState({ type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', to_wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0] })
   const [categories, setCategories]     = useState([])
   const [saving, setSaving]             = useState(false)
@@ -127,7 +128,6 @@ export default function Dashboard() {
     setSaving(false)
   }
 
-  const [showFinance, setShowFinance] = useState(false)
   const totalBalance = wallets.reduce((s, w) => s + Number(w.balance), 0)
   const openLoans = monthlyData.loans.filter(l => Number(l.loan_returned || 0) < Number(l.amount))
 
@@ -146,7 +146,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div>
-          <button className="btn-primary" onClick={() => setShowAddTx(true)}><Plus size={15}/>טרנזקציה חדשה</button>
+          <button className="btn-primary" onClick={() => setShowAddTx(true)}><Plus size={15}/>הוסף עסקה</button>
         </div>
       </div>
 
@@ -175,30 +175,18 @@ export default function Dashboard() {
         }
       </div>
 
-      {/* Finance summary — collapsed by default */}
-      <div>
-        <div style={{display:'flex',justifyContent:'center'}}>
-          <button className="finance-btn" onClick={() => setShowFinance(v => !v)}>
-            <strong className="finance-btn__label">סקירה פיננסית</strong>
-            <div className="finance-btn__stars-container">
-              <div className="finance-btn__stars" />
-            </div>
-            <div className="finance-btn__glow">
-              <div className="finance-btn__circle" />
-              <div className="finance-btn__circle" />
-            </div>
-          </button>
-        </div>
-
-        {showFinance && (
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:'1rem',marginTop:'0.875rem'}}>
-            <StatCard icon={<Wallet size={18}/>}       label="יתרה כוללת"    value={`₪${totalBalance.toLocaleString()}`}         color="#6c63ff" />
-            <StatCard icon={<TrendingUp size={18}/>}   label="הכנסות החודש"   value={`₪${monthlyData.income.toLocaleString()}`}  color="#4ade80" />
-            <StatCard icon={<TrendingDown size={18}/>} label="הוצאות החודש"   value={`₪${monthlyData.expense.toLocaleString()}`} color="#f87171" />
-            <StatCard icon={<CreditCard size={18}/>}   label="הלוואות פתוחות" value={openLoans.length} color="#fbbf24"
-              sub={openLoans.length > 0 ? `₪${openLoans.reduce((s,l)=>s+Number(l.amount)-Number(l.loan_returned||0),0).toLocaleString()} סה"כ` : 'אין הלוואות פתוחות'} />
+      {/* Finance button */}
+      <div style={{display:'flex',justifyContent:'center'}}>
+        <button className="finance-btn" onClick={() => navigate('/finance')}>
+          <strong className="finance-btn__label">סקירה פיננסית</strong>
+          <div className="finance-btn__stars-container">
+            <div className="finance-btn__stars" />
           </div>
-        )}
+          <div className="finance-btn__glow">
+            <div className="finance-btn__circle" />
+            <div className="finance-btn__circle" />
+          </div>
+        </button>
       </div>
 
 
@@ -230,31 +218,50 @@ export default function Dashboard() {
       </div>
 
       {/* Add Transaction Modal */}
-      <Modal open={showAddTx} onClose={() => setShowAddTx(false)} title="טרנזקציה חדשה">
+      <Modal open={showAddTx} onClose={() => { setShowAddTx(false); setTxTab('expense') }} title="עסקה חדשה">
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
-          <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סוג</label>
-            <select className="input-field" value={tx.type} onChange={e => setTx({...tx, type: e.target.value, to_wallet_id:''})}>
-              <option value="income">הכנסה</option>
-              <option value="expense">הוצאה</option>
-              <option value="transfer">מארנק לארנק</option>
-              <option value="loan_given">הלוואה שנתתי</option>
-              <option value="loan_received">הלוואה שקיבלתי</option>
-            </select>
+          {/* Type tabs */}
+          <div style={{display:'flex',gap:'0.375rem'}}>
+            {[
+              { tab:'expense',  label:'הוצאה',  color:'#f87171' },
+              { tab:'income',   label:'הכנסה',  color:'#4ade80' },
+              { tab:'transfer', label:'העברה',  color:'#22d3ee' },
+              { tab:'loan',     label:'חוב',    color:'#fbbf24' },
+            ].map(({tab, label, color}) => (
+              <button key={tab} onClick={() => {
+                setTxTab(tab)
+                setTx(prev => ({...prev, type: tab === 'loan' ? 'loan_given' : tab, to_wallet_id:'', category_id:''}))
+              }} style={{
+                flex:1, padding:'0.45rem 0.2rem', borderRadius:'0.5rem', fontSize:'0.78rem', cursor:'pointer',
+                border:`1px solid ${txTab===tab?color+'80':'rgba(255,255,255,0.08)'}`,
+                background: txTab===tab ? color+'22' : 'rgba(255,255,255,0.03)',
+                color: txTab===tab ? color : '#64748b', fontWeight: txTab===tab ? 600 : 400,
+              }}>{label}</button>
+            ))}
           </div>
+          {/* Loan sub-type */}
+          {txTab === 'loan' && (
+            <div style={{display:'flex',gap:'0.5rem'}}>
+              {[['loan_given','שנתתי'],['loan_received','שקיבלתי']].map(([val, lbl]) => (
+                <button key={val} onClick={() => setTx(prev => ({...prev, type: val}))} style={{
+                  flex:1, padding:'0.4rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer',
+                  border:`1px solid ${tx.type===val?'rgba(251,191,36,0.5)':'rgba(255,255,255,0.08)'}`,
+                  background: tx.type===val?'rgba(251,191,36,0.15)':'rgba(255,255,255,0.03)',
+                  color: tx.type===val?'#fbbf24':'#94a3b8',
+                }}>{lbl}</button>
+              ))}
+            </div>
+          )}
           <div>
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תיאור</label>
-            <input className="input-field" placeholder="תיאור הטרנזקציה" value={tx.description} onChange={e => setTx({...tx, description: e.target.value})}/>
+            <input className="input-field" placeholder="תיאור העסקה" value={tx.description} onChange={e => setTx({...tx, description: e.target.value})}/>
           </div>
           <div className="form-2col">
             <div>
               <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סכום</label>
               <div style={{display:'flex',gap:'0.5rem'}}>
-                <select className="input-field" value={tx.currency} onChange={e => setTx({...tx, currency: e.target.value})} style={{width:70,flexShrink:0}} dir="ltr">
-                  <option>₪</option>
-                  <option>$</option>
-                  <option>€</option>
-                  <option>£</option>
+                <select className="input-field" value={tx.currency} onChange={e => setTx({...tx, currency: e.target.value})} style={{width:64,flexShrink:0}} dir="ltr">
+                  <option>₪</option><option>$</option><option>€</option><option>£</option>
                 </select>
                 <input className="input-field" type="number" placeholder="0.00" value={tx.amount} onChange={e => setTx({...tx, amount: e.target.value})} dir="ltr"/>
               </div>
@@ -288,8 +295,8 @@ export default function Dashboard() {
               </select>
             </div>
           )}
-          <div style={{display:'flex',gap:'0.75rem',justifyContent:'flex-end',marginTop:'0.5rem'}}>
-            <button className="btn-ghost" onClick={() => setShowAddTx(false)}>ביטול</button>
+          <div style={{display:'flex',gap:'0.75rem',justifyContent:'flex-end',marginTop:'0.25rem'}}>
+            <button className="btn-ghost" onClick={() => { setShowAddTx(false); setTxTab('expense') }}>ביטול</button>
             <button className="btn-primary" onClick={handleAddTx} disabled={saving}>{saving ? 'שומר...' : 'שמור'}</button>
           </div>
         </div>
