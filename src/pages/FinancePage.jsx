@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { Wallet, Tag, CreditCard, ArrowLeftRight, TrendingUp, TrendingDown } from 'lucide-react'
+import { Wallet, Tag, ArrowLeftRight, ChevronLeft } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 
 function MiniStat({ label, value, color, sub }) {
@@ -14,26 +14,24 @@ function MiniStat({ label, value, color, sub }) {
   )
 }
 
-function Tile({ icon, label, sub, color, onClick }) {
+function NavRow({ icon, label, sub, color, onClick, isLast }) {
   return (
     <div onClick={onClick} style={{
-      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-      gap:'0.625rem', padding:'1.25rem 0.75rem',
-      borderRadius:'1rem', cursor:'pointer',
-      background:`${color}12`,
-      border:`1px solid ${color}30`,
-      transition:'all 0.15s',
+      display:'flex', alignItems:'center', gap:'0.875rem',
+      padding:'0.875rem 1rem', cursor:'pointer', transition:'background 0.15s',
+      borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.04)',
     }}
-    onMouseEnter={e => { e.currentTarget.style.background = `${color}22`; e.currentTarget.style.borderColor = `${color}60` }}
-    onMouseLeave={e => { e.currentTarget.style.background = `${color}12`; e.currentTarget.style.borderColor = `${color}30` }}
+    onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.04)'}
+    onMouseLeave={e => e.currentTarget.style.background='transparent'}
     >
-      <div style={{width:44,height:44,borderRadius:'0.875rem',background:`${color}25`,display:'flex',alignItems:'center',justifyContent:'center',color,fontSize:'1.25rem'}}>
+      <div style={{width:38,height:38,borderRadius:'0.75rem',background:`${color}20`,display:'flex',alignItems:'center',justifyContent:'center',color,flexShrink:0}}>
         {icon}
       </div>
-      <div style={{textAlign:'center'}}>
-        <div style={{fontSize:'0.875rem',fontWeight:600,color:'#e2e8f0'}}>{label}</div>
-        {sub && <div style={{fontSize:'0.7rem',color:'#64748b',marginTop:'0.15rem'}}>{sub}</div>}
+      <div style={{flex:1}}>
+        <div style={{fontSize:'0.9rem',fontWeight:600,color:'#e2e8f0'}}>{label}</div>
+        {sub && <div style={{fontSize:'0.75rem',color:'#64748b',marginTop:'0.1rem'}}>{sub}</div>}
       </div>
+      <ChevronLeft size={16} color="#475569"/>
     </div>
   )
 }
@@ -88,36 +86,11 @@ export default function FinancePage() {
           sub={openLoans.length > 0 ? `₪${openLoans.reduce((s,l)=>s+Number(l.amount)-Number(l.loan_returned||0),0).toLocaleString()} סה"כ` : undefined} />
       </div>
 
-      {/* Navigation tiles */}
-      <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'0.875rem'}}>
-        <Tile
-          icon={<Wallet size={22}/>}
-          label="ארנקים"
-          sub={`${wallets.length} ארנקים`}
-          color="#6c63ff"
-          onClick={() => navigate('/wallets')}
-        />
-        <Tile
-          icon={<Tag size={22}/>}
-          label="קטגוריות"
-          sub={`${catCount} קטגוריות`}
-          color="#a78bfa"
-          onClick={() => navigate('/categories')}
-        />
-        <Tile
-          icon={<CreditCard size={22}/>}
-          label="חוב"
-          sub={`${openLoans.length} הלוואות פתוחות`}
-          color="#fbbf24"
-          onClick={() => navigate('/transactions?filter=loan')}
-        />
-        <Tile
-          icon={<ArrowLeftRight size={22}/>}
-          label="עסקאות"
-          sub="כל הפעולות"
-          color="#22d3ee"
-          onClick={() => navigate('/transactions')}
-        />
+      {/* Navigation list */}
+      <div className="page-card" style={{padding:0,overflow:'hidden'}}>
+        <NavRow icon={<ArrowLeftRight size={18}/>} label="עסקאות"   sub="כל הפעולות הכספיות"        color="#22d3ee" onClick={() => navigate('/transactions')} />
+        <NavRow icon={<Tag size={18}/>}            label="קטגוריות" sub={`${catCount} קטגוריות`}    color="#a78bfa" onClick={() => navigate('/categories')} />
+        <NavRow icon={<Wallet size={18}/>}         label="ארנקים"   sub={`${wallets.length} ארנקים`} color="#6c63ff" onClick={() => navigate('/wallets')} isLast />
       </div>
     </div>
   )
