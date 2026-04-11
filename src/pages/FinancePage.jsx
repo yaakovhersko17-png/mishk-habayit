@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { Wallet, Tag, ArrowLeftRight, ChevronLeft } from 'lucide-react'
+import { Wallet, Tag, ArrowLeftRight, ChevronLeft, ScanLine, Archive, Lightbulb, BarChart2 } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 
 function MiniStat({ label, value, color, sub }) {
@@ -91,6 +91,17 @@ export default function FinancePage() {
         <NavRow icon={<ArrowLeftRight size={18}/>} label="עסקאות"   sub="כל הפעולות הכספיות"        color="#22d3ee" onClick={() => navigate('/transactions')} />
         <NavRow icon={<Tag size={18}/>}            label="קטגוריות" sub={`${catCount} קטגוריות`}    color="#a78bfa" onClick={() => navigate('/categories')} />
         <NavRow icon={<Wallet size={18}/>}         label="ארנקים"   sub={`${wallets.length} ארנקים`} color="#6c63ff" onClick={() => navigate('/wallets')} isLast />
+      </div>
+
+      {/* Tools list */}
+      <div className="page-card" style={{padding:0,overflow:'hidden'}}>
+        <div style={{padding:'0.625rem 1rem',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+          <span style={{fontSize:'0.75rem',fontWeight:600,color:'#64748b'}}>כלים</span>
+        </div>
+        <NavRow icon={<ScanLine size={18}/>}  label="סריקת חשבונית"  sub="סרוק חשבונית עם AI"           color="#6c63ff" onClick={() => navigate('/scanner')} />
+        <NavRow icon={<Archive size={18}/>}   label="ארכיון חשבוניות" sub="כל החשבוניות השמורות"         color="#a78bfa" onClick={() => navigate('/invoices')} />
+        <NavRow icon={<Lightbulb size={18}/>} label="דף חכם"          sub="השוואת מחירים וניתוח הוצאות"  color="#fbbf24" onClick={() => navigate('/insights')} />
+        <NavRow icon={<BarChart2 size={18}/>} label="דוחות וייצוא"    sub="גרפים, תרשימים וייצוא נתונים" color="#34d399" onClick={() => navigate('/reports')} isLast />
       </div>
     </div>
   )
