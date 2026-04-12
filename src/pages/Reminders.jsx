@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Bell, Check, Trash2, Clock, ShoppingCart, Edit2, ChevronDown } from 'lucide-react'
+import { Plus, Bell, Check, Trash2, Clock, ShoppingCart, Edit2, ChevronDown,
+         AlarmClock, Zap, Calendar, LayoutList, CheckCircle, Settings } from 'lucide-react'
 import Modal from '../components/ui/Modal'
-import EmptyState from '../components/ui/EmptyState'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import toast from 'react-hot-toast'
@@ -17,7 +17,6 @@ function computeNextDate(s) {
   const now = new Date()
   const [h, m] = (s.time || '09:00').split(':').map(Number)
   const d = new Date(now)
-
   if (s.freq === 'daily') {
     d.setHours(h, m, 0, 0)
     if (d <= now) d.setDate(d.getDate() + 1)
@@ -27,20 +26,15 @@ function computeNextDate(s) {
     let minDiff = 8
     for (const td of targets) {
       let diff = (td - nowDay + 7) % 7
-      if (diff === 0) {
-        const check = new Date(now); check.setHours(h, m, 0, 0)
-        diff = check > now ? 0 : 7
-      }
+      if (diff === 0) { const check = new Date(now); check.setHours(h,m,0,0); diff = check > now ? 0 : 7 }
       if (diff < minDiff) minDiff = diff
     }
-    d.setDate(d.getDate() + minDiff)
-    d.setHours(h, m, 0, 0)
+    d.setDate(d.getDate() + minDiff); d.setHours(h, m, 0, 0)
   } else if (s.freq === 'monthly') {
     const day = s.dayOfMonth || 1
     d.setDate(day); d.setHours(h, m, 0, 0)
     if (d <= now) { d.setMonth(d.getMonth() + 1); d.setDate(day) }
   }
-
   return d.toISOString().slice(0, 16)
 }
 
@@ -54,16 +48,14 @@ export default function Reminders() {
   const [form, setForm]           = useState(emptyForm)
   const [saving, setSaving]       = useState(false)
   const [newItem, setNewItem]     = useState('')
-  const [tab, setTab]             = useState('active')
+  const [selectedFilter, setSelectedFilter] = useState(null)
   const [schedOpen, setSchedOpen] = useState(false)
   const [sched, setSched]         = useState(emptySched)
 
   useEffect(() => {
     load()
     try {
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission()
-      }
+      if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission()
     } catch (_) {}
   }, [])
 
@@ -72,25 +64,18 @@ export default function Reminders() {
       supabase.from('reminders').select('*').order('due_date'),
       supabase.from('profiles').select('id,name'),
     ])
-    if (rErr) { console.error('Reminders load error:', rErr); toast.error('שגיאה בטעינת תזכורות') }
+    if (rErr) toast.error('שגיאה בטעינת תזכורות')
     setReminders(rData || [])
     setProfiles(pData || [])
     setLoading(false)
-    // Schedule notifications
     ;(rData || []).filter(r => !r.is_completed && r.due_date).forEach(r => {
       const diff = new Date(r.due_date) - Date.now()
-      if (diff > 0 && diff < 3600000) { // within 1 hour
+      if (diff > 0 && diff < 3600000) {
         setTimeout(() => {
-          try {
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification(`תזכורת: ${r.title}`, { body: r.description || '' })
-            }
-          } catch (_) {}
-          // Play sound (works on iOS where Notification API is unavailable)
+          try { if ('Notification' in window && Notification.permission === 'granted') new Notification(`תזכורת: ${r.title}`, { body: r.description || '' }) } catch (_) {}
           try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)()
-            const osc = ctx.createOscillator()
-            const gain = ctx.createGain()
+            const osc = ctx.createOscillator(); const gain = ctx.createGain()
             osc.connect(gain); gain.connect(ctx.destination)
             osc.frequency.value = 880
             gain.gain.setValueAtTime(0.3, ctx.currentTime)
@@ -106,8 +91,7 @@ export default function Reminders() {
   function openEdit(r) {
     setEditing(r)
     setForm({ title:r.title, description:r.description||'', due_date:r.due_date?r.due_date.slice(0,16):'', is_shopping_list:r.is_shopping_list, shopping_items:r.shopping_items||[], assigned_to:r.assigned_to||'' })
-    setSchedOpen(false); setSched(emptySched)
-    setModal(true)
+    setSchedOpen(false); setSched(emptySched); setModal(true)
   }
 
   async function handleSave() {
@@ -148,70 +132,154 @@ export default function Reminders() {
     setNewItem('')
   }
 
-  const now = Date.now()
-  const active    = reminders.filter(r => !r.is_completed && (!r.due_date || new Date(r.due_date) >= now))
-  const overdue   = reminders.filter(r => !r.is_completed && r.due_date && new Date(r.due_date) < now)
-  const completed = reminders.filter(r => r.is_completed)
-  const lists = { active, overdue, completed }
-  const labels = { active:'פעילות', overdue:'עברה הזמן', completed:'הושלמו' }
+  // ── Computed filter buckets ──
+  const now = new Date()
+  const todayStart = new Date(now); todayStart.setHours(0,0,0,0)
+  const todayEnd   = new Date(now); todayEnd.setHours(23,59,59,999)
+  const in48h  = new Date(now.getTime() + 48 * 3600000)
+  const in7d   = new Date(now.getTime() + 7  * 86400000)
+
+  const completedList = reminders.filter(r => r.is_completed)
+  const urgentList    = reminders.filter(r => !r.is_completed && r.due_date && new Date(r.due_date) < now)
+  const allActiveList = reminders.filter(r => !r.is_completed)
+  const todayList     = reminders.filter(r => !r.is_completed && r.due_date && new Date(r.due_date) >= todayStart && new Date(r.due_date) <= todayEnd)
+  const priorityList  = reminders.filter(r => !r.is_completed && r.due_date && new Date(r.due_date) >= now && new Date(r.due_date) <= in48h)
+  const weeklyList    = reminders.filter(r => !r.is_completed && r.due_date && new Date(r.due_date) >= now && new Date(r.due_date) <= in7d)
+
+  const statCards = [
+    { key:'completed', label:'הושלמו',        count: completedList.length,  bg:'linear-gradient(135deg,#4b5563,#6b7280)', icon:<CheckCircle size={22} color="rgba(255,255,255,0.85)"/>, gear:false },
+    { key:'urgent',    label:'דחופות',         count: urgentList.length,     bg:'linear-gradient(135deg,#e11d48,#fb7185)', icon:<AlarmClock  size={22} color="rgba(255,255,255,0.85)"/>, gear:false },
+    { key:'all',       label:'כל המשימות',     count: allActiveList.length,  bg:'linear-gradient(135deg,#2563eb,#60a5fa)', icon:<LayoutList  size={22} color="rgba(255,255,255,0.85)"/>, gear:false },
+    { key:'today',     label:'צריך לבצע היום', count: todayList.length,      bg:'linear-gradient(135deg,#92400e,#d97706)', icon:<Clock       size={22} color="rgba(255,255,255,0.85)"/>, gear:true  },
+    { key:'priority',  label:'עדיפות גבוהה!',  count: priorityList.length,   bg:'linear-gradient(135deg,#dc2626,#f87171)', icon:<Zap         size={22} color="rgba(255,255,255,0.85)"/>, gear:false },
+    { key:'weekly',    label:'מתוזמן השבוע',   count: weeklyList.length,     bg:'linear-gradient(135deg,#b45309,#fbbf24)', icon:<Calendar    size={22} color="rgba(255,255,255,0.85)"/>, gear:true  },
+  ]
+
+  const filteredList = selectedFilter === 'completed' ? completedList
+    : selectedFilter === 'urgent'    ? urgentList
+    : selectedFilter === 'today'     ? todayList
+    : selectedFilter === 'priority'  ? priorityList
+    : selectedFilter === 'weekly'    ? weeklyList
+    : allActiveList
 
   if (loading) return <LoadingSpinner />
 
   return (
-    <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>תזכורות</h1>
-        <button className="btn-primary" onClick={openAdd}><Plus size={15}/>תזכורת חדשה</button>
+    <div style={{display:'flex',flexDirection:'column',gap:'1rem',paddingBottom:'6rem'}}>
+
+      {/* Header */}
+      <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>תזכורות</h1>
+
+      {/* ── Stat cards 2×3 grid ── */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
+        {statCards.map(card => {
+          const active = selectedFilter === card.key
+          return (
+            <div key={card.key} onClick={() => setSelectedFilter(f => f === card.key ? null : card.key)}
+              style={{
+                background: card.bg, borderRadius:'1.25rem', padding:'0.875rem',
+                cursor:'pointer', minHeight:100, display:'flex', flexDirection:'column',
+                justifyContent:'space-between',
+                outline: active ? '2.5px solid rgba(255,255,255,0.7)' : '2.5px solid transparent',
+                transition:'outline 0.15s, transform 0.1s',
+                transform: active ? 'scale(0.97)' : 'scale(1)',
+              }}>
+              {/* Top row: count + icon */}
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+                <span style={{fontSize:'1.75rem',fontWeight:700,color:'#fff',lineHeight:1}}>{card.count}</span>
+                {card.icon}
+              </div>
+              {/* Bottom row: label (+ gear) */}
+              <div style={{display:'flex',alignItems:'center',gap:'0.3rem',justifyContent:'flex-end'}}>
+                {card.gear && <Settings size={11} color="rgba(255,255,255,0.6)"/>}
+                <span style={{fontSize:'0.78rem',fontWeight:600,color:'rgba(255,255,255,0.92)',textAlign:'right'}}>{card.label}</span>
+              </div>
+            </div>
+          )
+        })}
       </div>
 
-      {/* Tabs */}
-      <div style={{display:'flex',gap:'0.5rem',borderBottom:'1px solid rgba(255,255,255,0.08)',paddingBottom:'0'}}>
-        {Object.entries(labels).map(([k,v])=>(
-          <button key={k} onClick={()=>setTab(k)} style={{padding:'0.5rem 1rem',background:'none',border:'none',cursor:'pointer',color:tab===k?'#a78bfa':'#64748b',fontWeight:tab===k?600:400,borderBottom:`2px solid ${tab===k?'#6c63ff':'transparent'}`,marginBottom:-1,fontSize:'0.875rem',fontFamily:'inherit'}}>
-            {v} <span style={{marginRight:'0.25rem',fontSize:'0.75rem',opacity:0.7}}>({lists[k].length})</span>
-          </button>
-        ))}
-      </div>
+      {/* Active filter label */}
+      {selectedFilter && (
+        <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
+          <span style={{fontSize:'0.8rem',color:'#64748b'}}>מסנן:</span>
+          <span style={{fontSize:'0.8rem',fontWeight:600,color:'#a78bfa'}}>{statCards.find(c=>c.key===selectedFilter)?.label}</span>
+          <button onClick={() => setSelectedFilter(null)} style={{background:'none',border:'none',color:'#475569',cursor:'pointer',fontSize:'0.8rem',padding:'0 0.25rem'}}>✕</button>
+        </div>
+      )}
 
-      {lists[tab].length === 0
-        ? <EmptyState icon="🔔" title={`אין תזכורות ${labels[tab]}`} action={tab==='active'&&<button className="btn-primary" onClick={openAdd}><Plus size={14}/>הוסף</button>}/>
-        : (
-          <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
-            {lists[tab].map(r => (
-              <div key={r.id} className="page-card" style={{padding:'1rem',display:'flex',alignItems:'flex-start',gap:'1rem',opacity:r.is_completed?0.6:1}}>
-                <button onClick={()=>toggleComplete(r)} style={{marginTop:'0.125rem',width:22,height:22,borderRadius:'50%',border:`2px solid ${r.is_completed?'#4ade80':'rgba(255,255,255,0.2)'}`,background:r.is_completed?'rgba(74,222,128,0.2)':'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  {r.is_completed && <Check size={12} color="#4ade80"/>}
+      {/* ── Task list ── */}
+      {filteredList.length === 0 ? (
+        <div style={{textAlign:'center',padding:'2rem 0',color:'#475569',fontSize:'0.875rem'}}>אין משימות להצגה 🎉</div>
+      ) : (
+        <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+          {filteredList.map(r => {
+            const isOverdue = r.due_date && new Date(r.due_date) < now && !r.is_completed
+            return (
+              <div key={r.id} style={{
+                display:'flex',alignItems:'flex-start',gap:'0.75rem',
+                padding:'0.75rem 1rem',borderRadius:'0.875rem',
+                background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',
+                opacity: r.is_completed ? 0.6 : 1, transition:'opacity 0.15s',
+              }}>
+                {/* Completion toggle */}
+                <button onClick={() => toggleComplete(r)} style={{
+                  marginTop:'0.125rem',width:22,height:22,borderRadius:'50%',flexShrink:0,
+                  border:`2px solid ${r.is_completed?'#4ade80':isOverdue?'#f87171':'rgba(255,255,255,0.25)'}`,
+                  background:r.is_completed?'rgba(74,222,128,0.2)':isOverdue?'rgba(248,113,113,0.1)':'transparent',
+                  cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',
+                }}>
+                  {r.is_completed && <Check size={11} color="#4ade80"/>}
                 </button>
+
+                {/* Content */}
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:'flex',alignItems:'center',gap:'0.75rem',flexWrap:'wrap'}}>
-                    <span style={{fontWeight:600,color:'#e2e8f0',textDecoration:r.is_completed?'line-through':'none'}}>{r.title}</span>
-                    {r.is_shopping_list && <span style={{display:'inline-flex',alignItems:'center',gap:'0.25rem',fontSize:'0.7rem',color:'#60a5fa',background:'rgba(96,165,250,0.15)',padding:'0.125rem 0.5rem',borderRadius:'9999px'}}><ShoppingCart size={10}/>רשימת קניות</span>}
-                    {r.due_date && (
-                      <span style={{display:'inline-flex',alignItems:'center',gap:'0.25rem',fontSize:'0.75rem',color:tab==='overdue'?'#f87171':'#64748b'}}>
-                        <Clock size={11}/>{new Date(r.due_date).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})}
-                      </span>
-                    )}
+                  <div style={{fontWeight:500,color:'#e2e8f0',fontSize:'0.875rem',textDecoration:r.is_completed?'line-through':'none',marginBottom:r.due_date||r.description?'0.2rem':0}}>
+                    {r.title}
+                    {r.is_shopping_list && <span style={{marginRight:'0.5rem',fontSize:'0.7rem',color:'#60a5fa',background:'rgba(96,165,250,0.15)',padding:'0.1rem 0.4rem',borderRadius:'9999px',verticalAlign:'middle'}}><ShoppingCart size={9} style={{display:'inline',marginLeft:2}}/>קניות</span>}
                   </div>
-                  {r.description && <p style={{margin:'0.25rem 0 0',fontSize:'0.8rem',color:'#64748b'}}>{r.description}</p>}
-                  {r.is_shopping_list && r.shopping_items?.length > 0 && (
-                    <div style={{marginTop:'0.5rem',display:'flex',flexWrap:'wrap',gap:'0.375rem'}}>
-                      {r.shopping_items.map((item,i)=>(
-                        <span key={i} style={{fontSize:'0.75rem',padding:'0.125rem 0.5rem',borderRadius:'0.375rem',background:'rgba(255,255,255,0.06)',color:'#94a3b8'}}>{item.text}</span>
-                      ))}
+                  {r.due_date && (
+                    <div style={{display:'flex',alignItems:'center',gap:'0.25rem',fontSize:'0.72rem',color:isOverdue?'#f87171':'#64748b'}}>
+                      <Clock size={10}/>
+                      {new Date(r.due_date).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})}
+                      {isOverdue && <span style={{color:'#f87171',fontWeight:600}}>— עברה הזמן</span>}
                     </div>
                   )}
-                  {r.assigned_to && <div style={{marginTop:'0.375rem',fontSize:'0.75rem',color:'#475569'}}>מוקצה ל: {profiles.find(p=>p.id===r.assigned_to)?.name || '—'}</div>}
+                  {r.description && <p style={{margin:'0.25rem 0 0',fontSize:'0.78rem',color:'#64748b'}}>{r.description}</p>}
+                  {r.assigned_to && <div style={{marginTop:'0.25rem',fontSize:'0.7rem',color:'#475569'}}>👤 {profiles.find(p=>p.id===r.assigned_to)?.name}</div>}
                 </div>
-                <div style={{display:'flex',gap:'0.25rem',flexShrink:0}}>
-                  <button onClick={()=>openEdit(r)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.25rem'}}><Edit2 size={13}/></button>
-                  <button onClick={()=>handleDelete(r)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.25rem'}}><Trash2 size={13}/></button>
+
+                {/* Actions */}
+                <div style={{display:'flex',gap:'0.125rem',flexShrink:0,marginTop:'0.1rem'}}>
+                  <button onClick={() => openEdit(r)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.25rem',borderRadius:'0.375rem'}}>
+                    <Edit2 size={13}/>
+                  </button>
+                  <button onClick={() => handleDelete(r)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.25rem',borderRadius:'0.375rem'}}>
+                    <Trash2 size={13}/>
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-        )
-      }
+            )
+          })}
+        </div>
+      )}
 
+      {/* ── FAB ── */}
+      <button onClick={openAdd} style={{
+        position:'fixed',bottom:'1.5rem',left:'1.5rem',zIndex:50,
+        width:52,height:52,borderRadius:'50%',
+        background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',
+        border:'none',cursor:'pointer',
+        display:'flex',alignItems:'center',justifyContent:'center',
+        boxShadow:'0 4px 20px rgba(108,99,255,0.5)',
+        transition:'transform 0.15s',
+      }}
+        onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
+        onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+        <Plus size={22} color="#fff"/>
+      </button>
+
+      {/* ── Modal ── */}
       <Modal open={modal} onClose={()=>setModal(false)} title={editing?'ערוך תזכורת':'תזכורת חדשה'} size="lg">
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
           <div>
@@ -222,73 +290,48 @@ export default function Reminders() {
             <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תיאור</label>
             <textarea className="input-field" placeholder="תיאור..." value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={2} style={{resize:'vertical'}}/>
           </div>
+
           {/* Scheduling panel */}
           <div style={{borderRadius:'0.75rem',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden'}}>
-            <button type="button" onClick={() => setSchedOpen(o => !o)} style={{width:'100%',display:'flex',alignItems:'center',gap:'0.5rem',padding:'0.75rem',background:'rgba(255,255,255,0.03)',border:'none',cursor:'pointer',color:'#94a3b8',fontSize:'0.85rem',fontFamily:'inherit',textAlign:'right'}}>
+            <button type="button" onClick={() => setSchedOpen(o=>!o)} style={{width:'100%',display:'flex',alignItems:'center',gap:'0.5rem',padding:'0.75rem',background:'rgba(255,255,255,0.03)',border:'none',cursor:'pointer',color:'#94a3b8',fontSize:'0.85rem',fontFamily:'inherit',textAlign:'right'}}>
               <Clock size={14} color="#6c63ff"/>
               <span style={{flex:1}}>תזמון תזכורת</span>
               <ChevronDown size={14} style={{transform:schedOpen?'rotate(180deg)':'none',transition:'transform 0.2s'}}/>
             </button>
-
             {schedOpen && (
               <div style={{padding:'1rem',borderTop:'1px solid rgba(255,255,255,0.06)',display:'flex',flexDirection:'column',gap:'0.875rem'}}>
-                {/* Frequency */}
                 <div>
                   <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.4rem'}}>תדירות</div>
                   <div style={{display:'flex',gap:'0.375rem',flexWrap:'wrap'}}>
-                    {[['once','חד פעמי'],['daily','יומי'],['weekly','שבועי'],['monthly','חודשי']].map(([val,lbl]) => {
-                      const active = sched.freq === val
-                      return (
-                        <button key={val} type="button" onClick={() => setSched(s => ({...s, freq:val}))} style={{
-                          padding:'0.35rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',
-                          border:`1px solid ${active?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,
-                          background:active?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',
-                          color:active?'#a78bfa':'#64748b',fontWeight:active?600:400,
-                        }}>{lbl}</button>
-                      )
-                    })}
+                    {[['once','חד פעמי'],['daily','יומי'],['weekly','שבועי'],['monthly','חודשי']].map(([val,lbl]) => (
+                      <button key={val} type="button" onClick={() => setSched(s=>({...s,freq:val}))} style={{padding:'0.35rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',border:`1px solid ${sched.freq===val?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:sched.freq===val?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:sched.freq===val?'#a78bfa':'#64748b',fontWeight:sched.freq===val?600:400}}>{lbl}</button>
+                    ))}
                   </div>
                 </div>
-
-                {/* Time */}
                 {sched.freq !== 'once' && (
                   <div>
                     <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.4rem'}}>שעה</div>
-                    <input className="input-field" type="time" value={sched.time} onChange={e => setSched(s => ({...s,time:e.target.value}))} dir="ltr" style={{maxWidth:130}}/>
+                    <input className="input-field" type="time" value={sched.time} onChange={e=>setSched(s=>({...s,time:e.target.value}))} dir="ltr" style={{maxWidth:130}}/>
                   </div>
                 )}
-
-                {/* Days of week */}
                 {sched.freq === 'weekly' && (
                   <div>
                     <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.4rem'}}>ימים בשבוע</div>
                     <div style={{display:'flex',gap:'0.375rem',flexWrap:'wrap'}}>
-                      {DAYS_HE.map((d, i) => {
-                        const active = sched.days.includes(i)
-                        return (
-                          <button key={i} type="button" onClick={() => setSched(s => ({...s, days: s.days.includes(i) ? s.days.filter(x=>x!==i) : [...s.days,i].sort()}))} style={{
-                            padding:'0.35rem 0.625rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',
-                            border:`1px solid ${active?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,
-                            background:active?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',
-                            color:active?'#a78bfa':'#64748b',fontWeight:active?600:400,
-                          }}>{d}</button>
-                        )
-                      })}
+                      {DAYS_HE.map((d,i) => (
+                        <button key={i} type="button" onClick={() => setSched(s=>({...s,days:s.days.includes(i)?s.days.filter(x=>x!==i):[...s.days,i].sort()}))} style={{padding:'0.35rem 0.625rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',border:`1px solid ${sched.days.includes(i)?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:sched.days.includes(i)?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:sched.days.includes(i)?'#a78bfa':'#64748b',fontWeight:sched.days.includes(i)?600:400}}>{d}</button>
+                      ))}
                     </div>
                   </div>
                 )}
-
-                {/* Day of month */}
                 {sched.freq === 'monthly' && (
                   <div>
                     <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.4rem'}}>יום בחודש</div>
-                    <select className="input-field" value={sched.dayOfMonth} onChange={e => setSched(s => ({...s,dayOfMonth:Number(e.target.value)}))} style={{maxWidth:110}} dir="ltr">
-                      {Array.from({length:28}, (_,i) => i+1).map(d => <option key={d} value={d}>{d}</option>)}
+                    <select className="input-field" value={sched.dayOfMonth} onChange={e=>setSched(s=>({...s,dayOfMonth:Number(e.target.value)}))} style={{maxWidth:110}} dir="ltr">
+                      {Array.from({length:28},(_,i)=>i+1).map(d=><option key={d} value={d}>{d}</option>)}
                     </select>
                   </div>
                 )}
-
-                {/* Computed next date + apply */}
                 {sched.freq !== 'once' && (() => {
                   const next = computeNextDate(sched)
                   return next ? (
@@ -297,9 +340,7 @@ export default function Reminders() {
                         <div style={{fontSize:'0.7rem',color:'#64748b',marginBottom:'0.125rem'}}>הפעם הבאה</div>
                         <div style={{fontSize:'0.82rem',color:'#a78bfa',fontWeight:600}}>{new Date(next).toLocaleString('he-IL',{dateStyle:'medium',timeStyle:'short'})}</div>
                       </div>
-                      <button type="button" onClick={() => setForm(f => ({...f, due_date: next}))} style={{padding:'0.4rem 0.875rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',border:'1px solid rgba(108,99,255,0.4)',background:'rgba(108,99,255,0.2)',color:'#a78bfa',fontWeight:600}}>
-                        קבע
-                      </button>
+                      <button type="button" onClick={() => setForm(f=>({...f,due_date:next}))} style={{padding:'0.4rem 0.875rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',border:'1px solid rgba(108,99,255,0.4)',background:'rgba(108,99,255,0.2)',color:'#a78bfa',fontWeight:600}}>קבע</button>
                     </div>
                   ) : null
                 })()}
@@ -309,7 +350,7 @@ export default function Reminders() {
 
           <div className="form-2col">
             <div>
-              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תאריך ושעה (אופציונלי)</label>
+              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תאריך ושעה</label>
               <input className="input-field" type="datetime-local" value={form.due_date} onChange={e=>setForm({...form,due_date:e.target.value})} dir="ltr"/>
             </div>
             <div>
@@ -329,13 +370,13 @@ export default function Reminders() {
               <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>פריטים</label>
               <div style={{display:'flex',gap:'0.5rem',marginBottom:'0.5rem'}}>
                 <input className="input-field" placeholder="הוסף פריט..." value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addShoppingItem()} style={{flex:1}}/>
-                <button className="btn-ghost" onClick={addShoppingItem} style={{flexShrink:0}}>הוסף</button>
+                <button className="btn-ghost" onClick={addShoppingItem}>הוסף</button>
               </div>
               <div style={{display:'flex',flexWrap:'wrap',gap:'0.375rem'}}>
                 {form.shopping_items.map((item,i)=>(
                   <span key={i} style={{display:'inline-flex',alignItems:'center',gap:'0.375rem',padding:'0.25rem 0.625rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.06)',fontSize:'0.8rem',color:'#94a3b8'}}>
                     {item.text}
-                    <button onClick={()=>setForm(f=>({...f,shopping_items:f.shopping_items.filter((_,j)=>j!==i)}))} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:0,display:'flex'}}>×</button>
+                    <button onClick={()=>setForm(f=>({...f,shopping_items:f.shopping_items.filter((_,j)=>j!==i)}))} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:0}}>×</button>
                   </span>
                 ))}
               </div>
