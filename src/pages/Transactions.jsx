@@ -9,7 +9,7 @@ import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import { useRealtime } from '../hooks/useRealtime'
 import toast from 'react-hot-toast'
 
-const TYPE_LABELS = { income:'הכנסה', expense:'הוצאה', loan_given:'הלוואה שנתתי', loan_received:'הלוואה שקיבלתי', transfer:'מארנק לארנק' }
+const TYPE_LABELS = { income:'הכנסה', expense:'הוצאה', loan_given:'הלוואה שנתתי', loan_received:'הלוואה שקיבלתי', debt_unpaid:'חוב שלא שולם', transfer:'מארנק לארנק' }
 const emptyTx = { type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', to_wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0], notes:'', loan_party:'', loan_due_date:'', loan_returned: false }
 
 function buildCatOptions(cats) {
