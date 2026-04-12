@@ -1,32 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, cached, invalidate, withRetry } from '../lib/supabase'
+import { supabase, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2, History } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2, History, Lightbulb, ScanLine, Archive, ChevronDown } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
-import Modal from '../components/ui/Modal'
-import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
+import AddTransactionSheet from '../components/AddTransactionSheet'
 import toast from 'react-hot-toast'
 
 const COLORS = ['#6c63ff','#f87171','#fbbf24','#4ade80','#60a5fa','#f472b6','#a78bfa','#34d399']
-
-function buildCatOptions(cats) {
-  const parents = cats.filter(c => !c.parent_id)
-  const byParent = {}
-  cats.filter(c => c.parent_id).forEach(c => {
-    if (!byParent[c.parent_id]) byParent[c.parent_id] = []
-    byParent[c.parent_id].push(c)
-  })
-  return parents.map(p => {
-    const kids = byParent[p.id] || []
-    if (kids.length === 0) return <option key={p.id} value={p.id}>{p.icon} {p.name}</option>
-    return (
-      <optgroup key={`g-${p.id}`} label={`${p.icon} ${p.name}`}>
-        {kids.map(k => <option key={k.id} value={k.id}>{k.icon} {k.name}</option>)}
-      </optgroup>
-    )
-  })
-}
 
 function StatCard({ icon, label, value, color, sub }) {
   return (
@@ -48,9 +29,6 @@ export default function Dashboard() {
   const [wallets, setWallets]           = useState([])
   const [monthlyData, setMonthlyData]   = useState({ income: 0, expense: 0, loans: [] })
   const [showAddTx, setShowAddTx]       = useState(false)
-  const [tx, setTx] = useState({ type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0] })
-  const [categories, setCategories]     = useState([])
-  const [saving, setSaving]             = useState(false)
   const [todayEvents, setTodayEvents]   = useState([])
   const today = new Date()
 
@@ -58,13 +36,11 @@ export default function Dashboard() {
 
   async function loadData() {
     setLoading(true)
-    const [{ data: walletsData }, { data: txData }, { data: cats }] = await Promise.all([
+    const [{ data: walletsData }, { data: txData }] = await Promise.all([
       withRetry(() => supabase.from('wallets').select('*').order('created_at')),
       withRetry(() => supabase.from('transactions').select('*,categories(name,color),profiles(name)').order('date', { ascending: false })),
-      cached('categories', () => supabase.from('categories').select('*'), 120_000),
     ])
     setWallets(walletsData || [])
-    setCategories(cats || [])
 
     const now = new Date()
     const monthTxs = (txData || []).filter(t => {
@@ -94,27 +70,6 @@ export default function Dashboard() {
     setLoading(false)
   }
 
-  async function handleAddTx() {
-    if (!tx.description || !tx.amount) { toast.error('מלא תיאור וסכום'); return }
-    setSaving(true)
-    const { error } = await withRetry(() => supabase.from('transactions').insert({ ...tx, amount: Number(tx.amount), user_id: user.id }))
-    if (error) { toast.error('שגיאה בשמירה'); setSaving(false); return }
-    // update wallet balance
-    if (tx.wallet_id) {
-      const wallet = wallets.find(w => w.id === tx.wallet_id)
-      if (wallet) {
-        const delta = tx.type === 'income' ? Number(tx.amount) : -Number(tx.amount)
-        await supabase.from('wallets').update({ balance: wallet.balance + delta }).eq('id', wallet.id)
-      }
-    }
-    await logActivity({ userId: user.id, userName: profile.name, actionType: ACTION_TYPES.CREATE, entityType: ENTITY_TYPES.TRANSACTION, description: `הוסיף/ה טרנזקציה: ${tx.description} – ${tx.amount}₪` })
-    toast.success('טרנזקציה נוספה!')
-    setShowAddTx(false)
-    setTx({ type:'expense', description:'', amount:'', currency:'₪', wallet_id:'', category_id:'', date: new Date().toISOString().split('T')[0] })
-    loadData()
-    setSaving(false)
-  }
-
   const totalBalance = wallets.reduce((s, w) => s + Number(w.balance), 0)
   const openLoans = monthlyData.loans.filter(l => Number(l.loan_returned || 0) < Number(l.amount))
 
@@ -125,25 +80,16 @@ export default function Dashboard() {
       {/* Greeting */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div>
-          <h1 style={{margin:0,fontSize:'2rem',fontWeight:900,letterSpacing:'0.05em',background:'linear-gradient(135deg,#a78bfa,#6c63ff,#60a5fa)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
-            סקירה כללית
+          <h1 style={{margin:0,fontSize:'3.5rem',fontWeight:400,fontFamily:'"Pacifico", cursive',color:'rgba(255,255,255,0.18)',lineHeight:1.1}}>
+            Hersko
           </h1>
           <p style={{margin:'0.25rem 0 0',color:'#64748b',fontSize:'0.875rem'}}>
             {today.toLocaleDateString('he-IL', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
           </p>
         </div>
         <div>
-          <button className="btn-primary" onClick={() => setShowAddTx(true)}><Plus size={15}/>טרנזקציה חדשה</button>
+          <button className="btn-primary" onClick={() => setShowAddTx(true)}><Plus size={15}/>הוסף עסקה</button>
         </div>
-      </div>
-
-      {/* Stats */}
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:'1rem'}}>
-        <StatCard icon={<Wallet size={18}/>}      label="יתרה כוללת"         value={`₪${totalBalance.toLocaleString()}`}          color="#6c63ff" />
-        <StatCard icon={<TrendingUp size={18}/>}  label="הכנסות החודש"        value={`₪${monthlyData.income.toLocaleString()}`}   color="#4ade80" />
-        <StatCard icon={<TrendingDown size={18}/>} label="הוצאות החודש"       value={`₪${monthlyData.expense.toLocaleString()}`}  color="#f87171" />
-        <StatCard icon={<CreditCard size={18}/>}  label="הלוואות פתוחות"      value={openLoans.length} color="#fbbf24"
-          sub={openLoans.length > 0 ? `₪${openLoans.reduce((s,l)=>s+Number(l.amount)-Number(l.loan_returned||0),0).toLocaleString()} סה"כ` : 'אין הלוואות פתוחות'} />
       </div>
 
       {/* Daily widget */}
@@ -171,21 +117,20 @@ export default function Dashboard() {
         }
       </div>
 
-      {/* Wallets quick view */}
-      {wallets.length > 0 && (
-        <div className="page-card">
-          <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>ארנקים</h3>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:'0.75rem'}}>
-            {wallets.map(w => (
-              <div key={w.id} onClick={() => navigate('/wallets')} style={{cursor:'pointer',padding:'1rem',borderRadius:'0.75rem',background:`${w.color || '#6c63ff'}15`,border:`1px solid ${w.color || '#6c63ff'}30`,transition:'all 0.2s'}}>
-                <div style={{fontSize:'1.25rem',marginBottom:'0.5rem'}}>{w.icon}</div>
-                <div style={{fontSize:'0.8rem',color:'#94a3b8',marginBottom:'0.25rem'}}>{w.name}</div>
-                <div style={{fontWeight:700,color:'#e2e8f0'}}>{w.currency}{Number(w.balance).toLocaleString()}</div>
-              </div>
-            ))}
+      {/* Finance button */}
+      <div style={{display:'flex',justifyContent:'center'}}>
+        <button className="finance-btn" onClick={() => navigate('/finance')}>
+          <strong className="finance-btn__label">סקירה פיננסית</strong>
+          <div className="finance-btn__stars-container">
+            <div className="finance-btn__stars" />
           </div>
-        </div>
-      )}
+          <div className="finance-btn__glow">
+            <div className="finance-btn__circle" />
+            <div className="finance-btn__circle" />
+          </div>
+        </button>
+      </div>
+
 
       {/* Quick links */}
       <div className="page-card" style={{padding:0,overflow:'hidden'}}>
@@ -193,7 +138,6 @@ export default function Dashboard() {
           <span style={{fontSize:'0.8rem',fontWeight:600,color:'#64748b'}}>כלים</span>
         </div>
         {[
-          { icon: <BarChart2 size={18}/>, label: 'דוחות וייצוא', sub: 'גרפים, תרשימים וייצוא נתונים', color: '#a78bfa', route: '/reports' },
           { icon: <History size={18}/>, label: 'היסטוריה', sub: 'יומן פעילות ושינויים', color: '#4ade80', route: '/history' },
           { icon: <Settings size={18}/>, label: 'הגדרות', sub: 'ניהול משתמשים והעדפות', color: '#60a5fa', route: '/settings' },
         ].map((item, i, arr) => (
@@ -211,60 +155,11 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Add Transaction Modal */}
-      <Modal open={showAddTx} onClose={() => setShowAddTx(false)} title="טרנזקציה חדשה">
-        <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
-          <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סוג</label>
-            <select className="input-field" value={tx.type} onChange={e => setTx({...tx, type: e.target.value})}>
-              <option value="income">הכנסה</option>
-              <option value="expense">הוצאה</option>
-              <option value="loan_given">הלוואה שנתתי</option>
-              <option value="loan_received">הלוואה שקיבלתי</option>
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תיאור</label>
-            <input className="input-field" placeholder="תיאור הטרנזקציה" value={tx.description} onChange={e => setTx({...tx, description: e.target.value})}/>
-          </div>
-          <div className="form-2col">
-            <div>
-              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סכום</label>
-              <div style={{display:'flex',gap:'0.5rem'}}>
-                <select className="input-field" value={tx.currency} onChange={e => setTx({...tx, currency: e.target.value})} style={{width:70,flexShrink:0}} dir="ltr">
-                  <option>₪</option>
-                  <option>$</option>
-                  <option>€</option>
-                  <option>£</option>
-                </select>
-                <input className="input-field" type="number" placeholder="0.00" value={tx.amount} onChange={e => setTx({...tx, amount: e.target.value})} dir="ltr"/>
-              </div>
-            </div>
-            <div>
-              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תאריך</label>
-              <input className="input-field" type="date" value={tx.date} onChange={e => setTx({...tx, date: e.target.value})} dir="ltr"/>
-            </div>
-          </div>
-          <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>ארנק</label>
-            <select className="input-field" value={tx.wallet_id} onChange={e => setTx({...tx, wallet_id: e.target.value})}>
-              <option value="">בחר ארנק</option>
-              {wallets.map(w => <option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>קטגוריה</label>
-            <select className="input-field" value={tx.category_id} onChange={e => setTx({...tx, category_id: e.target.value})}>
-              <option value="">בחר קטגוריה</option>
-              {buildCatOptions(categories)}
-            </select>
-          </div>
-          <div style={{display:'flex',gap:'0.75rem',justifyContent:'flex-end',marginTop:'0.5rem'}}>
-            <button className="btn-ghost" onClick={() => setShowAddTx(false)}>ביטול</button>
-            <button className="btn-primary" onClick={handleAddTx} disabled={saving}>{saving ? 'שומר...' : 'שמור'}</button>
-          </div>
-        </div>
-      </Modal>
+      <AddTransactionSheet
+        open={showAddTx}
+        onClose={() => setShowAddTx(false)}
+        onSaved={loadData}
+      />
     </div>
   )
 }
