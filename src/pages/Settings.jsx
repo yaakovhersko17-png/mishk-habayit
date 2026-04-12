@@ -31,19 +31,19 @@ export default function Settings() {
   }
 
   const sectionTitle = (t) => (
-    <h2 style={{margin:'0 0 1rem',fontSize:'1rem',fontWeight:600,color:'#e2e8f0'}}>{t}</h2>
+    <h2 style={{margin:'0 0 1rem',fontSize:'1rem',fontWeight:600,color:'var(--text)'}}>{t}</h2>
   )
 
   const row = (label, value) => (
     <div key={label} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0.75rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.03)'}}>
-      <span style={{fontSize:'0.85rem',color:'#64748b'}}>{label}</span>
-      <span style={{fontSize:'0.85rem',color:'#e2e8f0',fontWeight:500}}>{value}</span>
+      <span style={{fontSize:'0.85rem',color:'var(--text-muted)'}}>{label}</span>
+      <span style={{fontSize:'0.85rem',color:'var(--text)',fontWeight:500}}>{value}</span>
     </div>
   )
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem',maxWidth:560}}>
-      <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>הגדרות</h1>
+      <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>הגדרות</h1>
 
       {/* System info */}
       <div className="page-card">
@@ -68,7 +68,7 @@ export default function Settings() {
                 cursor:'pointer', fontWeight: active ? 600 : 400,
                 border: `1px solid ${active ? 'rgba(108,99,255,0.6)' : 'rgba(255,255,255,0.08)'}`,
                 background: active ? 'rgba(108,99,255,0.25)' : 'rgba(255,255,255,0.03)',
-                color: active ? '#a78bfa' : '#94a3b8',
+                color: active ? '#a78bfa' : 'var(--text-sub)',
                 transition:'all 0.15s',
               }}>{lbl}</button>
             )
@@ -81,7 +81,7 @@ export default function Settings() {
         {sectionTitle('🍽️ תזמון ארוחת ערב')}
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.625rem'}}>ימים פעילים</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.625rem'}}>ימים פעילים</label>
             <div style={{display:'flex',gap:'0.375rem',flexWrap:'wrap'}}>
               {DAYS_HE.map((d, i) => {
                 const active = dinnerDays.includes(i)
@@ -90,14 +90,14 @@ export default function Settings() {
                     padding:'0.4rem 0.625rem', borderRadius:'0.5rem', fontSize:'0.8rem', cursor:'pointer',
                     border:`1px solid ${active ? 'rgba(108,99,255,0.5)' : 'rgba(255,255,255,0.08)'}`,
                     background: active ? 'rgba(108,99,255,0.2)' : 'rgba(255,255,255,0.03)',
-                    color: active ? '#a78bfa' : '#64748b', fontWeight: active ? 600 : 400,
+                    color: active ? '#a78bfa' : 'var(--text-muted)', fontWeight: active ? 600 : 400,
                   }}>{d}</button>
                 )
               })}
             </div>
           </div>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>שעת ברירת מחדל</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>שעת ברירת מחדל</label>
             <input className="input-field" type="time" value={dinnerTime} onChange={e => setDinnerTime(e.target.value)} dir="ltr" style={{maxWidth:140}}/>
           </div>
           <button className="btn-primary" onClick={saveDinner} style={{alignSelf:'flex-start'}}>
@@ -110,7 +110,7 @@ export default function Settings() {
       <div className="page-card">
         {sectionTitle('משתמשים')}
         <div style={{padding:'0.875rem',borderRadius:'0.75rem',background:'rgba(108,99,255,0.08)',border:'1px solid rgba(108,99,255,0.15)'}}>
-          <p style={{margin:0,fontSize:'0.85rem',color:'#94a3b8',textAlign:'center'}}>
+          <p style={{margin:0,fontSize:'0.85rem',color:'var(--text-sub)',textAlign:'center'}}>
             המשתמשים הקבועים במערכת הם <strong style={{color:'#a78bfa'}}>יעקב</strong> ו-<strong style={{color:'#a78bfa'}}>יעל</strong>.<br/>
             ניהול משתמשים זמין בפאנל האדמין.
           </p>

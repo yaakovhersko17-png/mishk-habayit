@@ -177,28 +177,28 @@ export default function SmartInsights() {
 
       {/* Header */}
       <div>
-        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>דף חכם</h1>
-        <p style={{margin:'0.25rem 0 0',color:'#64748b',fontSize:'0.875rem'}}>ניתוח הוצאות והשוואת מחירים</p>
+        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>דף חכם</h1>
+        <p style={{margin:'0.25rem 0 0',color:'var(--text-muted)',fontSize:'0.875rem'}}>ניתוח הוצאות והשוואת מחירים</p>
       </div>
 
       {/* Summary */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:'0.875rem'}}>
         <div className="stat-card">
-          <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.5rem'}}><TrendingDown size={16} color="#f87171"/><span style={{fontSize:'0.75rem',color:'#64748b'}}>ממוצע שבועי</span></div>
+          <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.5rem'}}><TrendingDown size={16} color="#f87171"/><span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>ממוצע שבועי</span></div>
           <div style={{fontSize:'1.5rem',fontWeight:700,color:'#f87171'}}>₪{weeklyAvg.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
         </div>
         {topCat && (
           <div className="stat-card">
-            <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.5rem'}}><Award size={16} color="#fbbf24"/><span style={{fontSize:'0.75rem',color:'#64748b'}}>קטגוריה מובילה</span></div>
-            <div style={{fontSize:'1rem',fontWeight:700,color:'#e2e8f0'}}>{topCat.name}</div>
+            <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.5rem'}}><Award size={16} color="#fbbf24"/><span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>קטגוריה מובילה</span></div>
+            <div style={{fontSize:'1rem',fontWeight:700,color:'var(--text)'}}>{topCat.name}</div>
             <div style={{fontSize:'0.9rem',color:'#f87171'}}>₪{topCat.total.toLocaleString()}</div>
           </div>
         )}
         {totalSaving > 0 && (
           <div className="stat-card" style={{border:'1px solid rgba(74,222,128,0.2)',background:'rgba(74,222,128,0.05)'}}>
-            <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.5rem'}}><Zap size={16} color="#4ade80"/><span style={{fontSize:'0.75rem',color:'#64748b'}}>חיסכון פוטנציאלי</span></div>
+            <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.5rem'}}><Zap size={16} color="#4ade80"/><span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>חיסכון פוטנציאלי</span></div>
             <div style={{fontSize:'1.5rem',fontWeight:700,color:'#4ade80'}}>₪{totalSaving.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
-            <div style={{fontSize:'0.7rem',color:'#64748b'}}>אם תקנה הכל במקום הזול</div>
+            <div style={{fontSize:'0.7rem',color:'var(--text-muted)'}}>אם תקנה הכל במקום הזול</div>
           </div>
         )}
       </div>
@@ -207,7 +207,7 @@ export default function SmartInsights() {
       <div style={{display:'flex',gap:'0.375rem',background:'rgba(255,255,255,0.04)',borderRadius:'0.875rem',padding:'0.25rem'}}>
         {TABS.map(tab => (
           <button key={tab.id} onClick={()=>setActiveTab(tab.id)}
-            style={{flex:1,padding:'0.5rem 0.25rem',borderRadius:'0.625rem',border:'none',cursor:'pointer',fontSize:'0.78rem',fontWeight:500,transition:'all 0.2s',background:activeTab===tab.id?'rgba(108,99,255,0.3)':'transparent',color:activeTab===tab.id?'#a78bfa':'#64748b'}}>
+            style={{flex:1,padding:'0.5rem 0.25rem',borderRadius:'0.625rem',border:'none',cursor:'pointer',fontSize:'0.78rem',fontWeight:500,transition:'all 0.2s',background:activeTab===tab.id?'rgba(108,99,255,0.3)':'transparent',color:activeTab===tab.id?'#a78bfa':'var(--text-muted)'}}>
             {tab.label}
           </button>
         ))}
@@ -219,12 +219,12 @@ export default function SmartInsights() {
 
           {storeRanking.length > 0 && (
             <div className="page-card">
-              <h2 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8',display:'flex',alignItems:'center',gap:'0.5rem'}}><Store size={15}/>דירוג חנויות</h2>
+              <h2 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text-sub)',display:'flex',alignItems:'center',gap:'0.5rem'}}><Store size={15}/>דירוג חנויות</h2>
               {storeRanking.map((s,i) => (
                 <div key={s.store} style={{display:'flex',alignItems:'center',gap:'0.875rem',padding:'0.625rem 0.75rem',borderRadius:'0.75rem',marginBottom:'0.375rem',background:i===0?'rgba(74,222,128,0.08)':'rgba(255,255,255,0.03)',border:i===0?'1px solid rgba(74,222,128,0.2)':'1px solid rgba(255,255,255,0.04)'}}>
-                  <div style={{width:26,height:26,borderRadius:'50%',background:i===0?'rgba(74,222,128,0.2)':'rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.8rem',fontWeight:700,color:i===0?'#4ade80':'#94a3b8',flexShrink:0}}>{i+1}</div>
-                  <div style={{flex:1,fontWeight:500,color:'#e2e8f0',fontSize:'0.875rem'}}>{s.store}</div>
-                  <div style={{fontSize:'0.78rem',color:i===0?'#4ade80':'#64748b'}}>זול ב-{s.count} מוצרים</div>
+                  <div style={{width:26,height:26,borderRadius:'50%',background:i===0?'rgba(74,222,128,0.2)':'rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.8rem',fontWeight:700,color:i===0?'#4ade80':'var(--text-sub)',flexShrink:0}}>{i+1}</div>
+                  <div style={{flex:1,fontWeight:500,color:'var(--text)',fontSize:'0.875rem'}}>{s.store}</div>
+                  <div style={{fontSize:'0.78rem',color:i===0?'#4ade80':'var(--text-muted)'}}>זול ב-{s.count} מוצרים</div>
                   {i===0 && <span style={{fontSize:'0.68rem',padding:'0.15rem 0.4rem',borderRadius:'9999px',background:'rgba(74,222,128,0.15)',color:'#4ade80'}}>✅ מומלץ</span>}
                 </div>
               ))}
@@ -234,15 +234,15 @@ export default function SmartInsights() {
           {priceComparison.length === 0 ? (
             <div className="page-card" style={{textAlign:'center',padding:'3rem'}}>
               <div style={{fontSize:'3rem',marginBottom:'1rem'}}>🏪</div>
-              <h3 style={{color:'#94a3b8',margin:'0 0 0.5rem'}}>אין עדיין נתונים להשוואה</h3>
-              <p style={{color:'#475569',fontSize:'0.85rem',margin:'0 0 1.5rem'}}>הוסף ידנית מחיר מוצר בחנויות שונות או הוסף טרנזקציות בפורמט:<br/><strong style={{color:'#a78bfa'}}>"שם חנות — שם מוצר"</strong></p>
+              <h3 style={{color:'var(--text-sub)',margin:'0 0 0.5rem'}}>אין עדיין נתונים להשוואה</h3>
+              <p style={{color:'var(--text-dim)',fontSize:'0.85rem',margin:'0 0 1.5rem'}}>הוסף ידנית מחיר מוצר בחנויות שונות או הוסף טרנזקציות בפורמט:<br/><strong style={{color:'#a78bfa'}}>"שם חנות — שם מוצר"</strong></p>
               <button className="btn-primary" onClick={openAdd} style={{margin:'0 auto',justifyContent:'center'}}><Plus size={15}/>הוסף מחיר ידני</button>
             </div>
           ) : (
             priceComparison.map((p, idx) => (
               <div key={idx} className="page-card" style={{padding:'1rem'}}>
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'0.875rem'}}>
-                  <div style={{fontWeight:600,color:'#e2e8f0',fontSize:'0.95rem',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',paddingLeft:'0.5rem'}}>{p.product}</div>
+                  <div style={{fontWeight:600,color:'var(--text)',fontSize:'0.95rem',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',paddingLeft:'0.5rem'}}>{p.product}</div>
                   <span style={{fontSize:'0.72rem',padding:'0.2rem 0.5rem',borderRadius:'9999px',background:'rgba(74,222,128,0.12)',color:'#4ade80',flexShrink:0,fontWeight:600}}>חיסכון {p.savingPct.toFixed(0)}%</span>
                 </div>
                 {p.stores.map((s, si) => {
@@ -250,12 +250,12 @@ export default function SmartInsights() {
                   const diffPct = si === 0 ? 0 : ((s.avg - p.stores[0].avg) / p.stores[0].avg * 100)
                   return (
                     <div key={s.store} style={{display:'flex',alignItems:'center',gap:'0.625rem',padding:'0.45rem 0.625rem',borderRadius:'0.5rem',marginBottom:'0.25rem',background:isCheapest?'rgba(74,222,128,0.07)':'rgba(255,255,255,0.03)',border:isCheapest?'1px solid rgba(74,222,128,0.15)':'1px solid transparent'}}>
-                      <div style={{width:6,height:6,borderRadius:'50%',background:isCheapest?'#4ade80':'#475569',flexShrink:0}}/>
-                      <div style={{flex:1,fontSize:'0.82rem',color:isCheapest?'#e2e8f0':'#94a3b8'}}>{s.store}</div>
+                      <div style={{width:6,height:6,borderRadius:'50%',background:isCheapest?'#4ade80':'var(--text-dim)',flexShrink:0}}/>
+                      <div style={{flex:1,fontSize:'0.82rem',color:isCheapest?'var(--text)':'var(--text-sub)'}}>{s.store}</div>
                       <div style={{width:55,height:4,borderRadius:'9999px',background:'rgba(255,255,255,0.06)',overflow:'hidden'}}>
                         <div style={{height:'100%',width:`${(s.avg/p.stores[p.stores.length-1].avg)*100}%`,background:isCheapest?'#4ade80':'#6c63ff',borderRadius:'9999px'}}/>
                       </div>
-                      <div style={{fontSize:'0.85rem',fontWeight:700,color:isCheapest?'#4ade80':'#e2e8f0',minWidth:52,textAlign:'left',direction:'ltr'}}>₪{s.avg.toFixed(2)}</div>
+                      <div style={{fontSize:'0.85rem',fontWeight:700,color:isCheapest?'#4ade80':'var(--text)',minWidth:52,textAlign:'left',direction:'ltr'}}>₪{s.avg.toFixed(2)}</div>
                       {!isCheapest && <div style={{fontSize:'0.7rem',color:'#f87171',minWidth:30}}>+{diffPct.toFixed(0)}%</div>}
                       {isCheapest  && <div style={{fontSize:'0.7rem',color:'#4ade80',minWidth:30}}>✅</div>}
                     </div>
@@ -268,12 +268,12 @@ export default function SmartInsights() {
           {/* Manual entries list */}
           {manual.length > 0 && (
             <div className="page-card">
-              <h2 style={{margin:'0 0 0.875rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>✏️ ערכים ידניים ({manual.length})</h2>
+              <h2 style={{margin:'0 0 0.875rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text-sub)'}}>✏️ ערכים ידניים ({manual.length})</h2>
               {manual.map((m, i) => (
                 <div key={i} style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.625rem 0.75rem',borderRadius:'0.625rem',background:'rgba(255,255,255,0.03)',marginBottom:'0.375rem'}}>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:'0.85rem',fontWeight:500,color:'#e2e8f0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.product}</div>
-                    <div style={{fontSize:'0.75rem',color:'#64748b'}}>{m.store} · ₪{Number(m.price).toFixed(2)}</div>
+                    <div style={{fontSize:'0.85rem',fontWeight:500,color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.product}</div>
+                    <div style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>{m.store} · ₪{Number(m.price).toFixed(2)}</div>
                   </div>
                   <button onClick={()=>openEdit(i)} style={{background:'none',border:'none',cursor:'pointer',color:'#a78bfa',padding:'0.25rem'}}><Pencil size={14}/></button>
                   <button onClick={()=>deleteEntry(i)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.25rem'}}><Trash2 size={14}/></button>
@@ -288,12 +288,12 @@ export default function SmartInsights() {
       {activeTab === 'trends' && (
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
           <div className="page-card">
-            <h2 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>📅 השוואה חודשית</h2>
+            <h2 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text-sub)'}}>📅 השוואה חודשית</h2>
             <div style={{display:'flex',gap:'0.75rem'}}>
               {monthlyComp.map((m, i) => (
                 <div key={i} style={{flex:1,padding:'1rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',textAlign:'center'}}>
-                  <div style={{fontSize:'0.78rem',color:'#64748b',marginBottom:'0.4rem'}}>{m.label}</div>
-                  <div style={{fontSize:'1.2rem',fontWeight:700,color:'#e2e8f0'}}>₪{m.total.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
+                  <div style={{fontSize:'0.78rem',color:'var(--text-muted)',marginBottom:'0.4rem'}}>{m.label}</div>
+                  <div style={{fontSize:'1.2rem',fontWeight:700,color:'var(--text)'}}>₪{m.total.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
                   {i>0&&monthlyComp[i-1].total>0&&(
                     <div style={{fontSize:'0.72rem',marginTop:'0.25rem',color:m.total>monthlyComp[i-1].total?'#f87171':'#4ade80'}}>
                       {m.total>monthlyComp[i-1].total?'↑':'↓'} {Math.abs(((m.total-monthlyComp[i-1].total)/monthlyComp[i-1].total)*100).toFixed(1)}%
@@ -305,12 +305,12 @@ export default function SmartInsights() {
           </div>
           {priceChanges.length > 0 && (
             <div className="page-card">
-              <h2 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>💰 שינויי מחיר</h2>
+              <h2 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text-sub)'}}>💰 שינויי מחיר</h2>
               {priceChanges.map((p,i) => (
                 <div key={i} style={{display:'flex',alignItems:'center',gap:'1rem',padding:'0.75rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:500,color:'#e2e8f0',fontSize:'0.85rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.name}</div>
-                    <div style={{fontSize:'0.72rem',color:'#64748b',marginTop:'0.1rem'}}>{p.count} רכישות | ₪{p.first.toFixed(2)} → ₪{p.last.toFixed(2)}</div>
+                    <div style={{fontWeight:500,color:'var(--text)',fontSize:'0.85rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.name}</div>
+                    <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{p.count} רכישות | ₪{p.first.toFixed(2)} → ₪{p.last.toFixed(2)}</div>
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:'0.25rem',fontWeight:700,color:p.delta>0?'#f87171':'#4ade80',flexShrink:0}}>
                     {p.delta>0?<TrendingUp size={14}/>:<TrendingDown size={14}/>}
@@ -326,11 +326,11 @@ export default function SmartInsights() {
       {/* ── top ── */}
       {activeTab === 'top' && top5.length > 0 && (
         <div className="page-card">
-          <h2 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>🛒 נרכש הכי הרבה</h2>
+          <h2 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text-sub)'}}>🛒 נרכש הכי הרבה</h2>
           {top5.map((item,i) => (
             <div key={i} style={{display:'flex',alignItems:'center',gap:'1rem',padding:'0.625rem 0.75rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
               <div style={{width:28,height:28,borderRadius:'50%',background:i<3?'linear-gradient(135deg,#6c63ff,#8b5cf6)':'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.8rem',fontWeight:700,color:'#fff',flexShrink:0}}>{i+1}</div>
-              <div style={{flex:1,fontWeight:500,color:'#e2e8f0',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.name}</div>
+              <div style={{flex:1,fontWeight:500,color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.name}</div>
               <div style={{fontSize:'0.85rem',color:'#a78bfa',fontWeight:600}}>{item.count}×</div>
             </div>
           ))}
@@ -350,20 +350,20 @@ export default function SmartInsights() {
         <div style={{position:'fixed',inset:0,zIndex:60,display:'flex',alignItems:'flex-end'}} onClick={()=>setShowAdd(false)}>
           <div style={{width:'100%',background:'#1a1a2e',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',boxShadow:'0 -8px 40px rgba(0,0,0,0.5)'}} onClick={e=>e.stopPropagation()}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem'}}>
-              <span style={{fontWeight:700,fontSize:'1rem',color:'#e2e8f0'}}>{editIdx!==null?'ערוך מחיר':'הוסף מחיר ידני'}</span>
-              <button onClick={()=>setShowAdd(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b'}}><X size={20}/></button>
+              <span style={{fontWeight:700,fontSize:'1rem',color:'var(--text)'}}>{editIdx!==null?'ערוך מחיר':'הוסף מחיר ידני'}</span>
+              <button onClick={()=>setShowAdd(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)'}}><X size={20}/></button>
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:'0.875rem'}}>
               <div>
-                <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.3rem'}}>שם מוצר</label>
+                <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.3rem'}}>שם מוצר</label>
                 <input className="input-field" placeholder='לדוגמה: חלב 1%' value={form.product} onChange={e=>setForm(f=>({...f,product:e.target.value}))}/>
               </div>
               <div>
-                <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.3rem'}}>שם חנות</label>
+                <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.3rem'}}>שם חנות</label>
                 <input className="input-field" placeholder='לדוגמה: רמי לוי' value={form.store} onChange={e=>setForm(f=>({...f,store:e.target.value}))}/>
               </div>
               <div>
-                <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.3rem'}}>מחיר (₪)</label>
+                <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.3rem'}}>מחיר (₪)</label>
                 <input className="input-field" type="number" placeholder='0.00' step="0.01" dir="ltr" value={form.price} onChange={e=>setForm(f=>({...f,price:e.target.value}))}/>
               </div>
               <div style={{display:'flex',gap:'0.75rem',marginTop:'0.25rem'}}>

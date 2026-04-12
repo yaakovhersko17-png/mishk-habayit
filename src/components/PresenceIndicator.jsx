@@ -47,15 +47,15 @@ export default function PresenceIndicator() {
       {/* current user */}
       <div style={{display:'flex',alignItems:'center',gap:'0.375rem'}}>
         <div style={{width:8,height:8,borderRadius:'50%',background:'#4ade80',boxShadow:'0 0 6px #4ade80'}} />
-        <span style={{color:'#e2e8f0',fontWeight:500}}>{profile.name}</span>
-        <span style={{color:'#64748b'}}>מחובר/ת</span>
+        <span style={{color:'var(--text)',fontWeight:500}}>{profile.name}</span>
+        <span style={{color:'var(--text-muted)'}}>מחובר/ת</span>
       </div>
       {/* others online */}
       {others.map(o => (
         <div key={o.id} style={{display:'flex',alignItems:'center',gap:'0.375rem'}}>
           <div style={{width:8,height:8,borderRadius:'50%',background:'#4ade80',boxShadow:'0 0 6px #4ade80'}} />
-          <span style={{color:'#94a3b8'}}>{o.name}</span>
-          <span style={{color:'#475569'}}>מחובר/ת</span>
+          <span style={{color:'var(--text-sub)'}}>{o.name}</span>
+          <span style={{color:'var(--text-dim)'}}>מחובר/ת</span>
         </div>
       ))}
     </div>

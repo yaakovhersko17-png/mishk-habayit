@@ -13,11 +13,11 @@ function StatCard({ icon, label, value, color, sub }) {
   return (
     <div className="stat-card">
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'0.75rem'}}>
-        <span style={{fontSize:'0.8rem',color:'#64748b'}}>{label}</span>
+        <span style={{fontSize:'0.8rem',color:'var(--text-muted)'}}>{label}</span>
         <div style={{width:36,height:36,borderRadius:'0.75rem',background:`${color}20`,display:'flex',alignItems:'center',justifyContent:'center',color}}>{icon}</div>
       </div>
-      <div style={{fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0',marginBottom:'0.25rem'}}>{value}</div>
-      {sub && <div style={{fontSize:'0.75rem',color:'#64748b'}}>{sub}</div>}
+      <div style={{fontSize:'1.5rem',fontWeight:700,color:'var(--text)',marginBottom:'0.25rem'}}>{value}</div>
+      {sub && <div style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>{sub}</div>}
     </div>
   )
 }
@@ -66,7 +66,7 @@ export default function Dashboard() {
       events.push({ type: 'reminder', icon: r.is_completed ? '✅' : new Date(r.due_date) < now ? '⚠️' : '🔔', label: r.title, sub: r.is_completed ? 'הושלם' : 'תזכורת', route: '/reminders', color: r.is_completed ? '#4ade80' : '#fbbf24' })
     })
 
-    // Dinner reminder — show only after configured time on active days
+    // Dinner reminder — show only after configured time AND only if not yet logged/skipped today
     try {
       const dinnerDays = JSON.parse(localStorage.getItem('dinner_active_days') || '[0,1,2,3,4,5]')
       const dinnerTime = JSON.parse(localStorage.getItem('dinner_default_time') || '"19:00"')
@@ -75,7 +75,10 @@ export default function Dashboard() {
       const nowMins = now.getHours() * 60 + now.getMinutes()
       const dinnerMins = dh * 60 + dm
       if (dinnerDays.includes(todayDow) && nowMins >= dinnerMins) {
-        events.push({ type: 'dinner', icon: '🍽️', label: 'ארוחת ערב', sub: `הוגדרה ל-${dinnerTime}`, route: '/dinners', color: '#f97316' })
+        const { data: dinnerData } = await supabase.from('dinner_meals').select('id').eq('meal_date', todayStr).limit(1)
+        if (!dinnerData || dinnerData.length === 0) {
+          events.push({ type: 'dinner', icon: '🍽️', label: 'ארוחת ערב', sub: `הוגדרה ל-${dinnerTime}`, route: '/dinners', color: '#f97316' })
+        }
       }
     } catch (_) {}
     const { data: invData } = await supabase.from('invoices').select('business_name,total,currency').eq('date', todayStr)
@@ -99,7 +102,7 @@ export default function Dashboard() {
           <h1 style={{margin:0,fontSize:'3.5rem',fontWeight:400,fontFamily:'"Pacifico", cursive',color:'rgba(255,255,255,0.18)',lineHeight:1.1}}>
             Hersko
           </h1>
-          <p style={{margin:'0.25rem 0 0',color:'#64748b',fontSize:'0.875rem'}}>
+          <p style={{margin:'0.25rem 0 0',color:'var(--text-muted)',fontSize:'0.875rem'}}>
             {today.toLocaleDateString('he-IL', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
           </p>
         </div>
@@ -110,11 +113,11 @@ export default function Dashboard() {
 
       {/* Daily widget */}
       <div className="page-card">
-        <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>
+        <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text-sub)'}}>
           📅 אירועי היום — {today.toLocaleDateString('he-IL', { weekday:'long', day:'numeric', month:'long' })}
         </h3>
         {todayEvents.length === 0
-          ? <div style={{padding:'1rem 0',textAlign:'center',color:'#475569',fontSize:'0.875rem'}}>אין אירועים להיום 🎉</div>
+          ? <div style={{padding:'1rem 0',textAlign:'center',color:'var(--text-dim)',fontSize:'0.875rem'}}>אין אירועים להיום 🎉</div>
           : <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
               {todayEvents.map((ev, i) => (
                 <div key={i} onClick={() => navigate(ev.route)}
@@ -123,8 +126,8 @@ export default function Dashboard() {
                   onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
                   <div style={{width:36,height:36,borderRadius:'0.75rem',background:`${ev.color}20`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.1rem',flexShrink:0}}>{ev.icon}</div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:500,color:'#e2e8f0',fontSize:'0.875rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ev.label}</div>
-                    <div style={{fontSize:'0.75rem',color:'#64748b',marginTop:'0.1rem'}}>{ev.sub}</div>
+                    <div style={{fontWeight:500,color:'var(--text)',fontSize:'0.875rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ev.label}</div>
+                    <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{ev.sub}</div>
                   </div>
                   <div style={{fontSize:'0.7rem',color:ev.color,fontWeight:600,flexShrink:0,paddingRight:'0.25rem'}}>›</div>
                 </div>
@@ -151,7 +154,7 @@ export default function Dashboard() {
       {/* Quick links */}
       <div className="page-card" style={{padding:0,overflow:'hidden'}}>
         <div style={{padding:'0.875rem 1rem',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-          <span style={{fontSize:'0.8rem',fontWeight:600,color:'#64748b'}}>כלים</span>
+          <span style={{fontSize:'0.8rem',fontWeight:600,color:'var(--text-muted)'}}>כלים</span>
         </div>
         {[
           { icon: <History size={18}/>, label: 'היסטוריה', sub: 'יומן פעילות ושינויים', color: '#4ade80', route: '/history' },
@@ -163,10 +166,10 @@ export default function Dashboard() {
             onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
             <div style={{width:38,height:38,borderRadius:'0.75rem',background:`${item.color}20`,display:'flex',alignItems:'center',justifyContent:'center',color:item.color,flexShrink:0}}>{item.icon}</div>
             <div style={{flex:1}}>
-              <div style={{fontSize:'0.875rem',fontWeight:600,color:'#e2e8f0'}}>{item.label}</div>
-              <div style={{fontSize:'0.75rem',color:'#64748b',marginTop:'0.1rem'}}>{item.sub}</div>
+              <div style={{fontSize:'0.875rem',fontWeight:600,color:'var(--text)'}}>{item.label}</div>
+              <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{item.sub}</div>
             </div>
-            <div style={{color:'#475569',fontSize:'0.8rem'}}>›</div>
+            <div style={{color:'var(--text-dim)',fontSize:'0.8rem'}}>›</div>
           </div>
         ))}
       </div>

@@ -163,12 +163,12 @@ function MealModal({ meal, defaultDate, onSave, onDelete, onClose }) {
       >
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#e2e8f0' }}>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text)' }}>
             {isEditing ? 'עריכת ארוחה' : 'הוספת ארוחה'}
           </h3>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 4 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}
           >
             <X size={20} />
           </button>
@@ -176,7 +176,7 @@ function MealModal({ meal, defaultDate, onSave, onDelete, onClose }) {
 
         {/* מה אכלתי */}
         <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: 6 }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: 6 }}>
             מה אכלתי *
           </label>
           <input
@@ -192,7 +192,7 @@ function MealModal({ meal, defaultDate, onSave, onDelete, onClose }) {
 
         {/* תאריך */}
         <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: 6 }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: 6 }}>
             תאריך
           </label>
           <input
@@ -206,7 +206,7 @@ function MealModal({ meal, defaultDate, onSave, onDelete, onClose }) {
 
         {/* דירוג */}
         <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: 6 }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: 6 }}>
             דירוג (לא חובה)
           </label>
           <StarRating value={rating} onChange={setRating} size={22} />
@@ -214,7 +214,7 @@ function MealModal({ meal, defaultDate, onSave, onDelete, onClose }) {
 
         {/* הערות */}
         <div style={{ marginBottom: '1.5rem' }}>
-          <label style={{ display: 'block', fontSize: '0.85rem', color: '#94a3b8', marginBottom: 6 }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-sub)', marginBottom: 6 }}>
             הערות (לא חובה)
           </label>
           <textarea
@@ -282,10 +282,10 @@ function MissingDaysModal({ missing, onFill, onSkip, onClose }) {
       }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexShrink: 0 }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#e2e8f0' }}>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text)' }}>
             ימים חסרים ({missing.length})
           </h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 4 }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
             <X size={20} />
           </button>
         </div>
@@ -314,7 +314,7 @@ function MissingDaysModal({ missing, onFill, onSkip, onClose }) {
                   style={{
                     padding: '4px 12px', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600,
                     cursor: skipping === date ? 'default' : 'pointer', opacity: skipping === date ? 0.5 : 1,
-                    background: 'rgba(100,116,139,0.1)', border: '1px solid rgba(100,116,139,0.2)', color: '#64748b',
+                    background: 'rgba(100,116,139,0.1)', border: '1px solid rgba(100,116,139,0.2)', color: 'var(--text-muted)',
                   }}>
                   {skipping === date ? '...' : 'דלג'}
                 </button>
@@ -408,7 +408,7 @@ function SmartMealsView({ meals, onMerge, onClose }) {
     marginBottom: '0.75rem',
     fontSize: '0.95rem',
     fontWeight: 600,
-    color: '#e2e8f0',
+    color: 'var(--text)',
   }
 
   return (
@@ -426,17 +426,17 @@ function SmartMealsView({ meals, onMerge, onClose }) {
       <div style={{ maxWidth: 520, margin: '0 auto' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ margin: 0, color: '#e2e8f0', fontSize: '1.25rem' }}>ארוחות חכמות</h2>
+          <h2 style={{ margin: 0, color: 'var(--text)', fontSize: '1.25rem' }}>ארוחות חכמות</h2>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 4 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}
           >
             <X size={22} />
           </button>
         </div>
 
         {meals.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#64748b', padding: '3rem 0' }}>
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 0' }}>
             <ChefHat size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
             <p>אין עדיין ארוחות לניתוח</p>
           </div>
@@ -467,7 +467,7 @@ function SmartMealsView({ meals, onMerge, onClose }) {
                   }}>
                     {idx + 1}
                   </div>
-                  <span style={{ flex: 1, color: '#e2e8f0', fontSize: '0.9rem' }}>{item.text}</span>
+                  <span style={{ flex: 1, color: 'var(--text)', fontSize: '0.9rem' }}>{item.text}</span>
                   <span style={{
                     background: 'rgba(251,191,36,0.15)',
                     color: '#fbbf24',
@@ -499,8 +499,8 @@ function SmartMealsView({ meals, onMerge, onClose }) {
                     borderBottom: idx < forgottenMeals.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                   }}
                 >
-                  <span style={{ color: '#e2e8f0', fontSize: '0.9rem' }}>{item.text}</span>
-                  <span style={{ color: '#64748b', fontSize: '0.78rem' }}>{formatDateHebrew(item.date)}</span>
+                  <span style={{ color: 'var(--text)', fontSize: '0.9rem' }}>{item.text}</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{formatDateHebrew(item.date)}</span>
                 </div>
               ))}
             </div>
@@ -513,11 +513,11 @@ function SmartMealsView({ meals, onMerge, onClose }) {
               </div>
               <ResponsiveContainer width="100%" height={120}>
                 <BarChart data={dayDistribution} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} allowDecimals={false} />
+                  <XAxis dataKey="name" tick={{ fill: 'var(--text-sub)', fontSize: 11 }} />
+                  <YAxis tick={{ fill: 'var(--text-sub)', fontSize: 11 }} allowDecimals={false} />
                   <Tooltip
                     contentStyle={{ background: '#1e1e3a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
-                    labelStyle={{ color: '#e2e8f0' }}
+                    labelStyle={{ color: 'var(--text)' }}
                     itemStyle={{ color: '#6c63ff' }}
                   />
                   <Bar dataKey="count" fill="#6c63ff" radius={[4, 4, 0, 0]} />
@@ -544,9 +544,9 @@ function SmartMealsView({ meals, onMerge, onClose }) {
                         borderBottom: idx < mergeSuggestions.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                       }}
                     >
-                      <div style={{ color: '#e2e8f0', fontSize: '0.88rem', marginBottom: 6 }}>
+                      <div style={{ color: 'var(--text)', fontSize: '0.88rem', marginBottom: 6 }}>
                         <span>{pair.a}</span>
-                        <span style={{ color: '#64748b', margin: '0 6px' }}>≈</span>
+                        <span style={{ color: 'var(--text-muted)', margin: '0 6px' }}>≈</span>
                         <span>{pair.b}</span>
                       </div>
                       {merged ? (
@@ -749,7 +749,7 @@ export default function DinnerMeals() {
     paddingBottom: '5rem',
     maxWidth: 680,
     margin: '0 auto',
-    color: '#e2e8f0',
+    color: 'var(--text)',
   }
 
   const cardStyle = {
@@ -771,7 +771,7 @@ export default function DinnerMeals() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: '1.6rem' }}>🍽️</span>
-          <h1 style={{ margin: 0, fontSize: '1.4rem', color: '#e2e8f0' }}>ארוחות ערב</h1>
+          <h1 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text)' }}>ארוחות ערב</h1>
         </div>
         {missingDays.length > 0 && (
           <button
@@ -824,15 +824,15 @@ export default function DinnerMeals() {
           }}
         >
           <div>
-            <div style={{ fontSize: '0.78rem', color: todayMeal ? '#86efac' : todaySkipped ? '#94a3b8' : '#fca5a5', marginBottom: 2 }}>
+            <div style={{ fontSize: '0.78rem', color: todayMeal ? '#86efac' : todaySkipped ? 'var(--text-sub)' : '#fca5a5', marginBottom: 2 }}>
               ארוחת היום
             </div>
             {todayMeal ? (
-              <div style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.95rem' }}>{todayMeal.meal_text}</div>
+              <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: '0.95rem' }}>{todayMeal.meal_text}</div>
             ) : todaySkipped ? (
-              <div style={{ color: '#64748b', fontSize: '0.88rem' }}>דולג — לא בישלנו הערב</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>דולג — לא בישלנו הערב</div>
             ) : (
-              <div style={{ color: '#94a3b8', fontSize: '0.88rem' }}>לא מולא עדיין</div>
+              <div style={{ color: 'var(--text-sub)', fontSize: '0.88rem' }}>לא מולא עדיין</div>
             )}
           </div>
           <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
@@ -847,7 +847,7 @@ export default function DinnerMeals() {
                 </button>
                 <button
                   onClick={() => skipDay(today)}
-                  style={{ fontSize: '0.82rem', padding: '6px 12px', borderRadius: 8, background: 'rgba(100,116,139,0.12)', border: '1px solid rgba(100,116,139,0.25)', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                  style={{ fontSize: '0.82rem', padding: '6px 12px', borderRadius: 8, background: 'rgba(100,116,139,0.12)', border: '1px solid rgba(100,116,139,0.25)', color: 'var(--text-sub)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                 >
                   <SkipForward size={13} />דלג
                 </button>
@@ -899,9 +899,9 @@ export default function DinnerMeals() {
 
       {/* Meals list */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem 0', color: '#64748b' }}>טוען...</div>
+        <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-muted)' }}>טוען...</div>
       ) : filteredMeals.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem 0', color: '#64748b' }}>
+        <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-muted)' }}>
           <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '0.75rem', opacity: 0.3 }}>🍽️</span>
           {hasFilters ? 'לא נמצאו ארוחות לפי הסינון' : 'עוד לא נוספו ארוחות'}
         </div>
@@ -916,20 +916,20 @@ export default function DinnerMeals() {
           >
             <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>🍽</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600, color: '#e2e8f0', fontSize: '0.95rem', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.95rem', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {meal.meal_text}
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: meal.rating ? 4 : 0 }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: meal.rating ? 4 : 0 }}>
                 {formatDateHebrew(meal.meal_date)}
               </div>
               {meal.rating > 0 && <StarRating value={meal.rating} size={13} />}
               {meal.notes && (
-                <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontStyle: 'italic', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-sub)', fontStyle: 'italic', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {meal.notes}
                 </div>
               )}
             </div>
-            <Edit2 size={15} style={{ color: '#64748b', flexShrink: 0 }} />
+            <Edit2 size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
           </div>
         ))
       )}
@@ -955,7 +955,7 @@ export default function DinnerMeals() {
           transition: 'background 0.2s',
         }}
       >
-        <SlidersHorizontal size={18} color={hasFilters ? '#fff' : '#94a3b8'} />
+        <SlidersHorizontal size={18} color={hasFilters ? '#fff' : 'var(--text-sub)'} />
       </button>
 
       {/* Filter slide-up panel */}
@@ -976,7 +976,7 @@ export default function DinnerMeals() {
           }}
         >
           <style>{`@keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
-          <div style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: '1rem' }}>סינון ארוחות</div>
+          <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: '1rem' }}>סינון ארוחות</div>
           <input
             className="input-field"
             placeholder="חיפוש לפי שם..."
@@ -986,7 +986,7 @@ export default function DinnerMeals() {
           />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: '1rem' }}>
             <div>
-              <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: 4 }}>מתאריך</label>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>מתאריך</label>
               <input
                 type="date"
                 className="input-field"
@@ -996,7 +996,7 @@ export default function DinnerMeals() {
               />
             </div>
             <div>
-              <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: 4 }}>עד תאריך</label>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>עד תאריך</label>
               <input
                 type="date"
                 className="input-field"
@@ -1033,7 +1033,7 @@ export default function DinnerMeals() {
       )}
       {showSmart && (
         <SmartMealsView
-          meals={meals}
+          meals={meals.filter(m => m.meal_text !== '__skip__')}
           onMerge={mergeMeals}
           onClose={() => setShowSmart(false)}
         />

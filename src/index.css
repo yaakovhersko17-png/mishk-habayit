@@ -23,6 +23,8 @@
   --ghost-bg:       rgba(255,255,255,0.05);
   --ghost-border:   rgba(255,255,255,0.08);
   --ghost-color:    #cbd5e1;
+  --row-bg:         rgba(255,255,255,0.04);
+  --row-bg-h:       rgba(255,255,255,0.08);
 }
 [data-theme="light"] {
   --bg:             #f0f4f8;
@@ -46,6 +48,8 @@
   --ghost-bg:       rgba(0,0,0,0.04);
   --ghost-border:   rgba(0,0,0,0.1);
   --ghost-color:    #334155;
+  --row-bg:         rgba(0,0,0,0.04);
+  --row-bg-h:       rgba(0,0,0,0.08);
 }
 
 @layer base {
@@ -212,6 +216,21 @@
       var(--bg);
   }
   select.input-field option { background: var(--modal-bg); color: var(--text); }
+
+  /* ── Light mode: ensure readable text across all inline-styled elements ── */
+  [data-theme="light"] h1,
+  [data-theme="light"] h2,
+  [data-theme="light"] h3,
+  [data-theme="light"] h4 {
+    color: var(--text);
+  }
+  /* Give light mode a subtle shadow on cards so they're visible on light bg */
+  [data-theme="light"] .page-card,
+  [data-theme="light"] .stat-card {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    background: #ffffff;
+    border-color: rgba(0,0,0,0.08);
+  }
 
   /* ── Finance starfield button (UIverse) ──────── */
   .finance-btn {

@@ -201,8 +201,8 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
         <button onClick={handleSave} disabled={saving} style={{width:38,height:38,borderRadius:'50%',background:'rgba(108,99,255,0.15)',border:'1px solid rgba(108,99,255,0.3)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'#a78bfa'}}>
           {saving ? <span style={{color:'#a78bfa',fontSize:'0.7rem'}}>...</span> : <Check size={18}/>}
         </button>
-        <span style={{fontWeight:700,fontSize:'1rem',color:'#e2e8f0'}}>{editingTx ? 'ערוך עסקה' : 'עסקה'}</span>
-        <button onClick={onClose} style={{width:38,height:38,borderRadius:'50%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'#64748b'}}>
+        <span style={{fontWeight:700,fontSize:'1rem',color:'var(--text)'}}>{editingTx ? 'ערוך עסקה' : 'עסקה'}</span>
+        <button onClick={onClose} style={{width:38,height:38,borderRadius:'50%',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--text-muted)'}}>
           <X size={18}/>
         </button>
       </div>
@@ -214,7 +214,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
             flex:1,padding:'0.5rem',borderRadius:'0.75rem',fontSize:'0.82rem',cursor:'pointer',
             border:`1px solid ${type===t?col+'60':'rgba(255,255,255,0.07)'}`,
             background:type===t?col+'18':'transparent',
-            color:type===t?col:'#64748b',fontWeight:type===t?700:400,transition:'all 0.15s',
+            color:type===t?col:'var(--text-muted)',fontWeight:type===t?700:400,transition:'all 0.15s',
           }}>{lbl}</button>
         ))}
       </div>
@@ -227,7 +227,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
               flex:1,padding:'0.4rem 0.25rem',borderRadius:'0.625rem',fontSize:'0.75rem',cursor:'pointer',
               border:`1px solid ${loanSubType===sub?'rgba(251,191,36,0.5)':'rgba(255,255,255,0.07)'}`,
               background:loanSubType===sub?'rgba(251,191,36,0.12)':'transparent',
-              color:loanSubType===sub?'#fbbf24':'#64748b',fontWeight:loanSubType===sub?600:400,transition:'all 0.15s',
+              color:loanSubType===sub?'#fbbf24':'var(--text-muted)',fontWeight:loanSubType===sub?600:400,transition:'all 0.15s',
             }}>{lbl}</button>
           ))}
         </div>
@@ -240,7 +240,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
         <div style={{background:'rgba(255,255,255,0.04)',borderRadius:'1rem',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',gap:'0.75rem',padding:'0 1rem',minHeight:58}}>
           <Star size={17} color="#334155" style={{flexShrink:0}}/>
           <input value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="תיאור"
-            style={{flex:1,background:'none',border:'none',outline:'none',color:'#e2e8f0',fontSize:'0.95rem',fontFamily:'inherit',textAlign:'right',direction:'rtl'}}/>
+            style={{flex:1,background:'none',border:'none',outline:'none',color:'var(--text)',fontSize:'0.95rem',fontFamily:'inherit',textAlign:'right',direction:'rtl'}}/>
           {form.description && <Check size={16} color="#4ade80" style={{flexShrink:0}}/>}
         </div>
 
@@ -250,7 +250,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
           {/* Wallet (hidden for debt_unpaid) */}
           {showWallet && (<>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52}}>
-              <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>{type==='transfer'?'מארנק':'חשבון לחיוב'}</span>
+              <span style={{color:'var(--text-sub)',fontSize:'0.875rem',flexShrink:0}}>{type==='transfer'?'מארנק':'חשבון לחיוב'}</span>
               <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
                 {selW && (
                   <div style={{width:26,height:26,borderRadius:'50%',background:'rgba(239,68,68,0.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.85rem',fontWeight:700,color:'#f87171',flexShrink:0}}>
@@ -258,7 +258,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
                   </div>
                 )}
                 <select value={form.wallet_id} onChange={e=>setForm(f=>({...f,wallet_id:e.target.value}))}
-                  style={{background:'none',border:'none',outline:'none',color:form.wallet_id?'#e2e8f0':'#475569',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:160}}>
+                  style={{background:'none',border:'none',outline:'none',color:form.wallet_id?'var(--text)':'var(--text-dim)',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:160}}>
                   <option value="">בחר חשבון</option>
                   {wallets.map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
                 </select>
@@ -271,7 +271,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52}}>
               <span style={{color:'#22d3ee',fontSize:'0.875rem',flexShrink:0}}>לארנק</span>
               <select value={form.to_wallet_id} onChange={e=>setForm(f=>({...f,to_wallet_id:e.target.value}))}
-                style={{background:'none',border:'none',outline:'none',color:form.to_wallet_id?'#e2e8f0':'#475569',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:160}}>
+                style={{background:'none',border:'none',outline:'none',color:form.to_wallet_id?'var(--text)':'var(--text-dim)',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:160}}>
                 <option value="">בחר ארנק יעד</option>
                 {wallets.filter(w=>w.id!==form.wallet_id).map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
               </select>
@@ -281,12 +281,12 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
 
           {/* Amount */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52}}>
-            <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>סכום</span>
+            <span style={{color:'var(--text-sub)',fontSize:'0.875rem',flexShrink:0}}>סכום</span>
             <div style={{display:'flex',alignItems:'center',gap:'0.375rem',direction:'ltr'}}>
               <input type="number" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))} placeholder="0.00"
-                style={{background:'none',border:'none',outline:'none',color:form.amount?'#e2e8f0':'#475569',fontSize:'1.1rem',fontWeight:700,width:100,textAlign:'right',fontFamily:'inherit'}} dir="ltr"/>
+                style={{background:'none',border:'none',outline:'none',color:form.amount?'var(--text)':'var(--text-dim)',fontSize:'1.1rem',fontWeight:700,width:100,textAlign:'right',fontFamily:'inherit'}} dir="ltr"/>
               <select value={form.currency} onChange={e=>setForm(f=>({...f,currency:e.target.value}))}
-                style={{background:'none',border:'none',outline:'none',color:'#64748b',fontSize:'0.875rem',fontFamily:'inherit'}}>
+                style={{background:'none',border:'none',outline:'none',color:'var(--text-muted)',fontSize:'0.875rem',fontFamily:'inherit'}}>
                 <option>₪</option><option>$</option><option>€</option>
               </select>
             </div>
@@ -295,12 +295,12 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
           {sep()}
           {/* Date + Time */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52,gap:'0.5rem'}}>
-            <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>תאריך</span>
+            <span style={{color:'var(--text-sub)',fontSize:'0.875rem',flexShrink:0}}>תאריך</span>
             <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
               <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}
-                style={{background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.5rem',padding:'0.25rem 0.5rem',color:'#e2e8f0',fontSize:'0.82rem',outline:'none',fontFamily:'inherit'}} dir="ltr"/>
+                style={{background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.5rem',padding:'0.25rem 0.5rem',color:'var(--text)',fontSize:'0.82rem',outline:'none',fontFamily:'inherit'}} dir="ltr"/>
               <input type="time" value={form.time} onChange={e=>setForm(f=>({...f,time:e.target.value}))}
-                style={{background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.5rem',padding:'0.25rem 0.5rem',color:'#e2e8f0',fontSize:'0.82rem',outline:'none',fontFamily:'inherit'}} dir="ltr"/>
+                style={{background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.5rem',padding:'0.25rem 0.5rem',color:'var(--text)',fontSize:'0.82rem',outline:'none',fontFamily:'inherit'}} dir="ltr"/>
             </div>
           </div>
         </div>
@@ -309,9 +309,9 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
         <div style={{background:'rgba(255,255,255,0.04)',borderRadius:'1rem',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden'}}>
           {type !== 'transfer' && (<>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52}}>
-              <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>קטגוריה</span>
+              <span style={{color:'var(--text-sub)',fontSize:'0.875rem',flexShrink:0}}>קטגוריה</span>
               <select value={form.category_id} onChange={e=>setForm(f=>({...f,category_id:e.target.value}))}
-                style={{background:'none',border:'none',outline:'none',color:form.category_id?'#e2e8f0':'#475569',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:200}}>
+                style={{background:'none',border:'none',outline:'none',color:form.category_id?'var(--text)':'var(--text-dim)',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:200}}>
                 <option value="">ללא קטגוריה</option>
                 {buildCatOptions(categories)}
               </select>
@@ -319,9 +319,9 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
             {sep()}
           </>)}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52}}>
-            <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>בן משפחה</span>
+            <span style={{color:'var(--text-sub)',fontSize:'0.875rem',flexShrink:0}}>בן משפחה</span>
             <select value={form.assigned_to||''} onChange={e=>setForm(f=>({...f,assigned_to:e.target.value}))}
-              style={{background:'none',border:'none',outline:'none',color:form.assigned_to?'#e2e8f0':'#475569',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:180}}>
+              style={{background:'none',border:'none',outline:'none',color:form.assigned_to?'var(--text)':'var(--text-dim)',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:180}}>
               <option value="">לא נבחר</option>
               {profiles.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -331,7 +331,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
         {/* Notes */}
         <div style={{background:'rgba(255,255,255,0.04)',borderRadius:'1rem',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden'}}>
           <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="הערה" rows={2}
-            style={{width:'100%',background:'none',border:'none',outline:'none',color:notes?'#e2e8f0':'#475569',fontSize:'0.875rem',fontFamily:'inherit',padding:'0.875rem 1rem',resize:'none',direction:'rtl',textAlign:'right',boxSizing:'border-box'}}/>
+            style={{width:'100%',background:'none',border:'none',outline:'none',color:notes?'var(--text)':'var(--text-dim)',fontSize:'0.875rem',fontFamily:'inherit',padding:'0.875rem 1rem',resize:'none',direction:'rtl',textAlign:'right',boxSizing:'border-box'}}/>
         </div>
       </div>
     </div>

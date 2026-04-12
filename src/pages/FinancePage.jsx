@@ -7,8 +7,8 @@ import LoadingSpinner from '../components/ui/LoadingSpinner'
 function MiniStat({ label, value, color, sub }) {
   return (
     <div style={{padding:'0.875rem',borderRadius:'0.875rem',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
-      <div style={{fontSize:'0.72rem',color:'#64748b',marginBottom:'0.375rem'}}>{label}</div>
-      <div style={{fontSize:'1.2rem',fontWeight:700,color:'#e2e8f0'}}>{value}</div>
+      <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginBottom:'0.375rem'}}>{label}</div>
+      <div style={{fontSize:'1.2rem',fontWeight:700,color:'var(--text)'}}>{value}</div>
       {sub && <div style={{fontSize:'0.7rem',color,marginTop:'0.2rem'}}>{sub}</div>}
     </div>
   )
@@ -28,10 +28,10 @@ function NavRow({ icon, label, sub, color, onClick, isLast }) {
         {icon}
       </div>
       <div style={{flex:1}}>
-        <div style={{fontSize:'0.9rem',fontWeight:600,color:'#e2e8f0'}}>{label}</div>
-        {sub && <div style={{fontSize:'0.75rem',color:'#64748b',marginTop:'0.1rem'}}>{sub}</div>}
+        <div style={{fontSize:'0.9rem',fontWeight:600,color:'var(--text)'}}>{label}</div>
+        {sub && <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{sub}</div>}
       </div>
-      <ChevronLeft size={16} color="#475569"/>
+      <ChevronLeft size={16} color="var(--text-dim)"/>
     </div>
   )
 }
@@ -75,7 +75,7 @@ export default function FinancePage() {
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
-      <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>סקירה פיננסית</h1>
+      <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>סקירה פיננסית</h1>
 
       {/* 4 mini stat cards */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'0.75rem'}}>
@@ -96,7 +96,7 @@ export default function FinancePage() {
       {/* Tools list */}
       <div className="page-card" style={{padding:0,overflow:'hidden'}}>
         <div style={{padding:'0.625rem 1rem',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-          <span style={{fontSize:'0.75rem',fontWeight:600,color:'#64748b'}}>כלים</span>
+          <span style={{fontSize:'0.75rem',fontWeight:600,color:'var(--text-muted)'}}>כלים</span>
         </div>
         <NavRow icon={<ScanLine size={18}/>}  label="סריקת חשבונית"  sub="סרוק חשבונית עם AI"           color="#6c63ff" onClick={() => navigate('/scanner')} />
         <NavRow icon={<Archive size={18}/>}   label="ארכיון חשבוניות" sub="כל החשבוניות השמורות"         color="#a78bfa" onClick={() => navigate('/invoices')} />

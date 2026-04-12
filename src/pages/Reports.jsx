@@ -143,20 +143,20 @@ export default function Reports() {
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
-      <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>דוחות וייצוא</h1>
+      <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>דוחות וייצוא</h1>
 
       {/* Summary cards */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'0.75rem'}}>
         <div className="stat-card">
-          <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.375rem'}}>הכנסות</div>
+          <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginBottom:'0.375rem'}}>הכנסות</div>
           <div style={{fontSize:'1.25rem',fontWeight:700,color:'#4ade80'}}>₪{income.toLocaleString()}</div>
         </div>
         <div className="stat-card">
-          <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.375rem'}}>הוצאות</div>
+          <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginBottom:'0.375rem'}}>הוצאות</div>
           <div style={{fontSize:'1.25rem',fontWeight:700,color:'#f87171'}}>₪{expense.toLocaleString()}</div>
         </div>
         <div className="stat-card" style={{gridColumn:'span 2'}}>
-          <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.375rem'}}>מאזן</div>
+          <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginBottom:'0.375rem'}}>מאזן</div>
           <div style={{fontSize:'1.25rem',fontWeight:700,color:net>=0?'#4ade80':'#f87171'}}>
             ₪{Math.abs(net).toLocaleString()} <span style={{fontSize:'0.85rem',fontWeight:400}}>{net>=0?'חיובי':'שלילי'}</span>
           </div>
@@ -171,7 +171,7 @@ export default function Reports() {
               padding:'0.625rem 1rem',
               fontSize:'0.82rem',
               fontWeight: activeTab === tab.id ? 700 : 400,
-              color: activeTab === tab.id ? '#a78bfa' : '#64748b',
+              color: activeTab === tab.id ? '#a78bfa' : 'var(--text-muted)',
               background:'none',
               border:'none',
               borderBottom: activeTab === tab.id ? '2px solid #a78bfa' : '2px solid transparent',
@@ -189,42 +189,42 @@ export default function Reports() {
       {activeTab === 'overview' && (
         pieData.length > 0 ? (
           <div className="page-card">
-            <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>הוצאות לפי קטגוריה</h3>
+            <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text-sub)'}}>הוצאות לפי קטגוריה</h3>
             <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={90} dataKey="value" nameKey="name">
                     {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]}/>)}
                   </Pie>
-                  <Tooltip contentStyle={{background:'#1e1e3a',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.75rem',color:'#e2e8f0'}} formatter={v=>`₪${v.toLocaleString()}`}/>
+                  <Tooltip contentStyle={{background:'#1e1e3a',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.75rem',color:'var(--text)'}} formatter={v=>`₪${v.toLocaleString()}`}/>
                 </PieChart>
               </ResponsiveContainer>
               <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
                 {pieData.map((d,i) => (
                   <div key={d.name} style={{display:'flex',alignItems:'center',gap:'0.625rem',padding:'0.5rem 0.75rem',borderRadius:'0.625rem',background:'rgba(255,255,255,0.03)'}}>
                     <div style={{width:10,height:10,borderRadius:'50%',background:COLORS[i%COLORS.length],flexShrink:0}}/>
-                    <span style={{color:'#94a3b8',flex:1,fontSize:'0.82rem'}}>{d.name}</span>
-                    <span style={{color:'#e2e8f0',fontWeight:600,fontSize:'0.85rem'}}>₪{d.value.toLocaleString()}</span>
+                    <span style={{color:'var(--text-sub)',flex:1,fontSize:'0.82rem'}}>{d.name}</span>
+                    <span style={{color:'var(--text)',fontWeight:600,fontSize:'0.85rem'}}>₪{d.value.toLocaleString()}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
         ) : (
-          <div className="page-card" style={{textAlign:'center',color:'#475569',padding:'2rem'}}>אין הוצאות בטווח הזמן הנבחר</div>
+          <div className="page-card" style={{textAlign:'center',color:'var(--text-dim)',padding:'2rem'}}>אין הוצאות בטווח הזמן הנבחר</div>
         )
       )}
 
       {/* Tab: מגמה */}
       {activeTab === 'trend' && (
         <div className="page-card">
-          <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>הכנסות vs הוצאות – 6 חודשים אחרונים</h3>
+          <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text-sub)'}}>הכנסות vs הוצאות – 6 חודשים אחרונים</h3>
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={trendData}>
-              <XAxis dataKey="name" tick={{fill:'#64748b',fontSize:11}} axisLine={false} tickLine={false}/>
-              <YAxis tick={{fill:'#64748b',fontSize:11}} axisLine={false} tickLine={false} width={55}/>
-              <Tooltip contentStyle={{background:'#1e1e3a',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.75rem',color:'#e2e8f0'}} formatter={v=>`₪${v.toLocaleString()}`}/>
-              <Legend wrapperStyle={{fontSize:'0.8rem',color:'#94a3b8'}}/>
+              <XAxis dataKey="name" tick={{fill:'var(--text-muted)',fontSize:11}} axisLine={false} tickLine={false}/>
+              <YAxis tick={{fill:'var(--text-muted)',fontSize:11}} axisLine={false} tickLine={false} width={55}/>
+              <Tooltip contentStyle={{background:'#1e1e3a',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.75rem',color:'var(--text)'}} formatter={v=>`₪${v.toLocaleString()}`}/>
+              <Legend wrapperStyle={{fontSize:'0.8rem',color:'var(--text-sub)'}}/>
               <Line type="monotone" dataKey="הכנסות" stroke="#4ade80" strokeWidth={2.5} dot={{r:4,fill:'#4ade80'}}/>
               <Line type="monotone" dataKey="הוצאות" stroke="#f87171" strokeWidth={2.5} dot={{r:4,fill:'#f87171'}}/>
             </LineChart>
@@ -236,28 +236,28 @@ export default function Reports() {
       {activeTab === 'cashflow' && (
         <div className="page-card" style={{padding:0,overflow:'hidden'}}>
           <div style={{padding:'1rem',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-            <span style={{fontSize:'0.875rem',color:'#94a3b8',fontWeight:600}}>תזרים מזומנים</span>
-            <span style={{fontSize:'0.8rem',color:'#64748b'}}>{filtered.length} רשומות</span>
+            <span style={{fontSize:'0.875rem',color:'var(--text-sub)',fontWeight:600}}>תזרים מזומנים</span>
+            <span style={{fontSize:'0.8rem',color:'var(--text-muted)'}}>{filtered.length} רשומות</span>
           </div>
           <div style={{overflowX:'auto',maxHeight:480}}>
             <table style={{width:'100%',borderCollapse:'collapse'}}>
               <thead style={{position:'sticky',top:0,background:'#1a1a2e'}}>
                 <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
                   {['תאריך','תיאור','סכום','קטגוריה','ארנק','סוג'].map(h=>(
-                    <th key={h} style={{padding:'0.75rem 1rem',textAlign:'right',fontSize:'0.75rem',color:'#64748b',fontWeight:500}}>{h}</th>
+                    <th key={h} style={{padding:'0.75rem 1rem',textAlign:'right',fontSize:'0.75rem',color:'var(--text-muted)',fontWeight:500}}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(t=>(
                   <tr key={t.id} style={{borderBottom:'1px solid rgba(255,255,255,0.03)'}}>
-                    <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',color:'#64748b'}}>{t.date}</td>
-                    <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',color:'#e2e8f0',maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.description}</td>
+                    <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',color:'var(--text-muted)'}}>{t.date}</td>
+                    <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',color:'var(--text)',maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.description}</td>
                     <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',fontWeight:600,color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>
                       {t.type==='income'?'+':t.type==='transfer'?'↔':'-'}{t.currency}{Number(t.amount).toLocaleString()}
                     </td>
-                    <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',color:'#94a3b8'}}>{t.categories?.name||'—'}</td>
-                    <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',color:'#94a3b8'}}>{t.wallets?.name||'—'}</td>
+                    <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',color:'var(--text-sub)'}}>{t.categories?.name||'—'}</td>
+                    <td style={{padding:'0.625rem 1rem',fontSize:'0.8rem',color:'var(--text-sub)'}}>{t.wallets?.name||'—'}</td>
                     <td style={{padding:'0.625rem 1rem'}}>
                       <span style={{fontSize:'0.7rem',padding:'0.2rem 0.5rem',borderRadius:'0.375rem',
                         background:t.type==='income'?'#4ade8020':t.type==='transfer'?'#22d3ee20':t.type.startsWith('loan')?'#fbbf2420':'#f8717120',
@@ -276,18 +276,18 @@ export default function Reports() {
       {/* Tab: רווח והפסד */}
       {activeTab === 'pnl' && (
         <div className="page-card">
-          <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>רווח והפסד – 6 חודשים אחרונים</h3>
+          <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text-sub)'}}>רווח והפסד – 6 חודשים אחרונים</h3>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={pnlData}>
-              <XAxis dataKey="name" tick={{fill:'#64748b',fontSize:11}} axisLine={false} tickLine={false}/>
-              <YAxis tick={{fill:'#64748b',fontSize:11}} axisLine={false} tickLine={false} width={55}/>
-              <Tooltip contentStyle={{background:'#1e1e3a',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.75rem',color:'#e2e8f0'}} formatter={v=>`₪${v.toLocaleString()}`}/>
+              <XAxis dataKey="name" tick={{fill:'var(--text-muted)',fontSize:11}} axisLine={false} tickLine={false}/>
+              <YAxis tick={{fill:'var(--text-muted)',fontSize:11}} axisLine={false} tickLine={false} width={55}/>
+              <Tooltip contentStyle={{background:'#1e1e3a',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.75rem',color:'var(--text)'}} formatter={v=>`₪${v.toLocaleString()}`}/>
               <Bar dataKey="מאזן" radius={[4,4,0,0]}>
                 {pnlData.map((d,i) => <Cell key={i} fill={d['מאזן'] >= 0 ? '#4ade80' : '#f87171'}/>)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <div style={{marginTop:'1rem',display:'flex',gap:'1rem',justifyContent:'center',fontSize:'0.8rem',color:'#64748b'}}>
+          <div style={{marginTop:'1rem',display:'flex',gap:'1rem',justifyContent:'center',fontSize:'0.8rem',color:'var(--text-muted)'}}>
             <span><span style={{color:'#4ade80'}}>■</span> רווח</span>
             <span><span style={{color:'#f87171'}}>■</span> הפסד</span>
           </div>
@@ -325,33 +325,33 @@ export default function Reports() {
         <div style={{position:'fixed',inset:0,zIndex:60,display:'flex',alignItems:'flex-end'}} onClick={()=>setFilterOpen(false)}>
           <div style={{width:'100%',background:'#1a1a2e',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',boxShadow:'0 -8px 40px rgba(0,0,0,0.5)'}} onClick={e=>e.stopPropagation()}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem'}}>
-              <span style={{fontWeight:700,fontSize:'1rem',color:'#e2e8f0'}}>סינון דוח</span>
-              <button onClick={()=>setFilterOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b'}}><X size={20}/></button>
+              <span style={{fontWeight:700,fontSize:'1rem',color:'var(--text)'}}>סינון דוח</span>
+              <button onClick={()=>setFilterOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)'}}><X size={20}/></button>
             </div>
 
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem',marginBottom:'1rem'}}>
               <div>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>מתאריך</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>מתאריך</label>
                 <input className="input-field" type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} dir="ltr"/>
               </div>
               <div>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>עד תאריך</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>עד תאריך</label>
                 <input className="input-field" type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} dir="ltr"/>
               </div>
             </div>
 
             <div style={{marginBottom:'1rem'}}>
-              <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>סוג</div>
+              <div style={{fontSize:'0.8rem',color:'var(--text-muted)',marginBottom:'0.5rem'}}>סוג</div>
               <div style={{display:'flex',gap:'0.5rem'}}>
                 {[['','הכל'],['income','הכנסה'],['expense','הוצאה']].map(([k,v])=>(
                   <button key={k} onClick={()=>setFilterType(k)}
-                    style={{flex:1,padding:'0.4rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${filterType===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:filterType===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:filterType===k?'#a78bfa':'#94a3b8'}}>{v}</button>
+                    style={{flex:1,padding:'0.4rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${filterType===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:filterType===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:filterType===k?'#a78bfa':'var(--text-sub)'}}>{v}</button>
                 ))}
               </div>
             </div>
 
             <div style={{marginBottom:'1rem'}}>
-              <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>קטגוריה</div>
+              <div style={{fontSize:'0.8rem',color:'var(--text-muted)',marginBottom:'0.5rem'}}>קטגוריה</div>
               <select className="input-field" value={filterCat} onChange={e=>setFilterCat(e.target.value)}>
                 <option value="">הכל</option>
                 {cats.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
@@ -359,7 +359,7 @@ export default function Reports() {
             </div>
 
             <div style={{marginBottom:'1rem'}}>
-              <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>ארנק</div>
+              <div style={{fontSize:'0.8rem',color:'var(--text-muted)',marginBottom:'0.5rem'}}>ארנק</div>
               <select className="input-field" value={filterWallet} onChange={e=>setFilterWallet(e.target.value)}>
                 <option value="">הכל</option>
                 {wallets.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
@@ -367,7 +367,7 @@ export default function Reports() {
             </div>
 
             <button onClick={()=>{setFilterCat('');setFilterWallet('');setFilterType('');setDateFrom(new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().split('T')[0]);setDateTo(new Date().toISOString().split('T')[0])}}
-              style={{width:'100%',padding:'0.6rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',color:'#94a3b8',cursor:'pointer',fontSize:'0.85rem'}}>
+              style={{width:'100%',padding:'0.6rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',color:'var(--text-sub)',cursor:'pointer',fontSize:'0.85rem'}}>
               נקה סינון
             </button>
           </div>

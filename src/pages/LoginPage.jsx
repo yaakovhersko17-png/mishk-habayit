@@ -32,17 +32,17 @@ export default function LoginPage() {
         {/* Logo */}
         <div style={{textAlign:'center',marginBottom:'2rem'}}>
           <div style={{width:64,height:64,borderRadius:'1.25rem',background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'2rem',margin:'0 auto 1rem'}}>🏠</div>
-          <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>משק הבית</h1>
-          <p style={{color:'#64748b',fontSize:'0.875rem',marginTop:'0.25rem'}}>ניהול פיננסי משותף</p>
+          <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>משק הבית</h1>
+          <p style={{color:'var(--text-muted)',fontSize:'0.875rem',marginTop:'0.25rem'}}>ניהול פיננסי משותף</p>
         </div>
 
         {/* Card */}
         <div style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'1.25rem',padding:'2rem'}}>
-          <h2 style={{margin:'0 0 1.5rem',fontSize:'1.1rem',fontWeight:600,color:'#e2e8f0',textAlign:'center'}}>כניסה למערכת</h2>
+          <h2 style={{margin:'0 0 1.5rem',fontSize:'1.1rem',fontWeight:600,color:'var(--text)',textAlign:'center'}}>כניסה למערכת</h2>
 
           <form onSubmit={handleSubmit} style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
             <div>
-              <label style={{display:'block',fontSize:'0.8rem',color:'#94a3b8',marginBottom:'0.375rem'}}>אימייל</label>
+              <label style={{display:'block',fontSize:'0.8rem',color:'var(--text-sub)',marginBottom:'0.375rem'}}>אימייל</label>
               <input
                 type="email"
                 className="input-field"
@@ -55,7 +55,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label style={{display:'block',fontSize:'0.8rem',color:'#94a3b8',marginBottom:'0.375rem'}}>סיסמה</label>
+              <label style={{display:'block',fontSize:'0.8rem',color:'var(--text-sub)',marginBottom:'0.375rem'}}>סיסמה</label>
               <div style={{position:'relative'}}>
                 <input
                   type={showPw ? 'text' : 'password'}
@@ -68,7 +68,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPw(!showPw)}
-                  style={{position:'absolute',left:'0.75rem',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'#64748b',display:'flex'}}
+                  style={{position:'absolute',left:'0.75rem',top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',display:'flex'}}
                 >
                   {showPw ? <EyeOff size={16}/> : <Eye size={16}/>}
                 </button>
@@ -81,7 +81,7 @@ export default function LoginPage() {
           </form>
 
           <div style={{marginTop:'1.5rem',padding:'1rem',background:'rgba(108,99,255,0.08)',borderRadius:'0.75rem',border:'1px solid rgba(108,99,255,0.15)'}}>
-            <p style={{margin:0,fontSize:'0.75rem',color:'#64748b',textAlign:'center'}}>
+            <p style={{margin:0,fontSize:'0.75rem',color:'var(--text-muted)',textAlign:'center'}}>
               המשתמשים במערכת: <strong style={{color:'#a78bfa'}}>יעקב</strong> ו-<strong style={{color:'#a78bfa'}}>יעל</strong>
             </p>
           </div>

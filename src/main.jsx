@@ -20,10 +20,10 @@ class ErrorBoundary extends Component {
       const key = import.meta.env.VITE_SUPABASE_ANON_KEY
       return (
         <div style={{background:'#0f0f1a',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px',fontFamily:'monospace',direction:'ltr'}}>
-          <div style={{background:'#1e1e3a',border:'1px solid #f87171',borderRadius:'12px',padding:'24px',maxWidth:'540px',width:'100%',color:'#e2e8f0'}}>
+          <div style={{background:'#1e1e3a',border:'1px solid #f87171',borderRadius:'12px',padding:'24px',maxWidth:'540px',width:'100%',color:'var(--text)'}}>
             <h2 style={{color:'#f87171',margin:'0 0 16px'}}>App failed to load</h2>
-            <p style={{color:'#94a3b8',fontSize:'0.8rem',margin:'0 0 4px'}}>VITE_SUPABASE_URL: <span style={{color: url?'#4ade80':'#f87171'}}>{url ? '✅ set' : '❌ missing'}</span></p>
-            <p style={{color:'#94a3b8',fontSize:'0.8rem',margin:'0 0 16px'}}>VITE_SUPABASE_ANON_KEY: <span style={{color: key?'#4ade80':'#f87171'}}>{key ? '✅ set' : '❌ missing'}</span></p>
+            <p style={{color:'var(--text-sub)',fontSize:'0.8rem',margin:'0 0 4px'}}>VITE_SUPABASE_URL: <span style={{color: url?'#4ade80':'#f87171'}}>{url ? '✅ set' : '❌ missing'}</span></p>
+            <p style={{color:'var(--text-sub)',fontSize:'0.8rem',margin:'0 0 16px'}}>VITE_SUPABASE_ANON_KEY: <span style={{color: key?'#4ade80':'#f87171'}}>{key ? '✅ set' : '❌ missing'}</span></p>
             <pre style={{color:'#f87171',fontSize:'0.75rem',whiteSpace:'pre-wrap',wordBreak:'break-all',background:'#0f0f1a',padding:'12px',borderRadius:'8px',margin:0}}>{String(this.state.error)}</pre>
           </div>
         </div>
@@ -50,7 +50,7 @@ createRoot(document.getElementById('root')).render(
         toastOptions={{
           style: {
             background: '#1e1e3a',
-            color: '#e2e8f0',
+            color: 'var(--text)',
             border: '1px solid rgba(108,99,255,0.3)',
             borderRadius: '12px',
             fontFamily: "'Segoe UI', system-ui, sans-serif",

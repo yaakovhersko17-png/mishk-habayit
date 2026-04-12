@@ -95,14 +95,14 @@ export default function Categories() {
       <div key={c.id} style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.625rem 1rem',paddingRight:isChild?'2.75rem':'1rem',borderTop:'1px solid rgba(255,255,255,0.04)',background:isChild?'rgba(255,255,255,0.025)':'transparent'}}>
         <div style={{width:32,height:32,borderRadius:'0.625rem',background:`${c.color}25`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',flexShrink:0,border:`1px solid ${c.color}30`}}>{c.icon}</div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:'0.875rem',fontWeight:500,color:'#e2e8f0'}}>{c.name}</div>
+          <div style={{fontSize:'0.875rem',fontWeight:500,color:'var(--text)'}}>{c.name}</div>
         </div>
         <div style={{textAlign:'left',flexShrink:0}}>
           <div style={{fontSize:'0.8rem',fontWeight:600,color:c.type==='income'?'#4ade80':'#f87171'}}>₪{(txCounts[c.id]?.total||0).toLocaleString()}</div>
-          <div style={{fontSize:'0.7rem',color:'#64748b'}}>{txCounts[c.id]?.count||0} טרנ׳</div>
+          <div style={{fontSize:'0.7rem',color:'var(--text-muted)'}}>{txCounts[c.id]?.count||0} טרנ׳</div>
         </div>
         <div style={{display:'flex',gap:'0.125rem',flexShrink:0}}>
-          <button onClick={()=>openEdit(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.3rem'}}><Edit2 size={13}/></button>
+          <button onClick={()=>openEdit(c)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',padding:'0.3rem'}}><Edit2 size={13}/></button>
           <button onClick={()=>handleDelete(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.3rem'}}><Trash2 size={13}/></button>
         </div>
       </div>
@@ -112,7 +112,7 @@ export default function Categories() {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>קטגוריות</h1>
+        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>קטגוריות</h1>
         <button className="btn-primary" onClick={openAdd}><Plus size={15}/>קטגוריה חדשה</button>
       </div>
 
@@ -127,21 +127,21 @@ export default function Categories() {
                 {/* Chevron toggle */}
                 <button
                   onClick={() => kids.length && toggleExpand(c.id)}
-                  style={{background:'none',border:'none',padding:'0.125rem',display:'flex',alignItems:'center',flexShrink:0,width:18,cursor:kids.length?'pointer':'default',color:kids.length?(isOpen?'#a78bfa':'#64748b'):'transparent'}}
+                  style={{background:'none',border:'none',padding:'0.125rem',display:'flex',alignItems:'center',flexShrink:0,width:18,cursor:kids.length?'pointer':'default',color:kids.length?(isOpen?'#a78bfa':'var(--text-muted)'):'transparent'}}
                 >
                   {kids.length > 0 && (isOpen ? <ChevronDown size={15}/> : <ChevronLeft size={15}/>)}
                 </button>
                 <div style={{width:32,height:32,borderRadius:'0.625rem',background:`${c.color}25`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',flexShrink:0,border:`1px solid ${c.color}30`}}>{c.icon}</div>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:'0.875rem',fontWeight:600,color:'#e2e8f0'}}>{c.name}</div>
-                  {kids.length > 0 && <div style={{fontSize:'0.7rem',color:'#64748b',marginTop:'0.1rem'}}>{kids.length} תת-קטגוריות</div>}
+                  <div style={{fontSize:'0.875rem',fontWeight:600,color:'var(--text)'}}>{c.name}</div>
+                  {kids.length > 0 && <div style={{fontSize:'0.7rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{kids.length} תת-קטגוריות</div>}
                 </div>
                 <div style={{textAlign:'left',flexShrink:0}}>
                   <div style={{fontSize:'0.8rem',fontWeight:600,color:c.type==='income'?'#4ade80':'#f87171'}}>₪{(txCounts[c.id]?.total||0).toLocaleString()}</div>
-                  <div style={{fontSize:'0.7rem',color:'#64748b'}}>{txCounts[c.id]?.count||0} טרנ׳</div>
+                  <div style={{fontSize:'0.7rem',color:'var(--text-muted)'}}>{txCounts[c.id]?.count||0} טרנ׳</div>
                 </div>
                 <div style={{display:'flex',gap:'0.125rem',flexShrink:0}}>
-                  <button onClick={()=>openEdit(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.3rem'}}><Edit2 size={13}/></button>
+                  <button onClick={()=>openEdit(c)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',padding:'0.3rem'}}><Edit2 size={13}/></button>
                   <button onClick={()=>handleDelete(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.3rem'}}><Trash2 size={13}/></button>
                 </div>
               </div>
@@ -155,19 +155,19 @@ export default function Categories() {
       <Modal open={modal} onClose={()=>setModal(false)} title={editing?'ערוך קטגוריה':'קטגוריה חדשה'}>
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>שם</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>שם</label>
             <input className="input-field" placeholder="שם הקטגוריה..." value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/>
           </div>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>סוג</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>סוג</label>
             <div style={{display:'flex',gap:'0.5rem'}}>
               {[['expense','הוצאה'],['income','הכנסה'],['both','שניהם']].map(([k,v])=>(
-                <button key={k} onClick={()=>setForm({...form,type:k})} style={{flex:1,padding:'0.4rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${form.type===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:form.type===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:form.type===k?'#a78bfa':'#94a3b8'}}>{v}</button>
+                <button key={k} onClick={()=>setForm({...form,type:k})} style={{flex:1,padding:'0.4rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${form.type===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:form.type===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:form.type===k?'#a78bfa':'var(--text-sub)'}}>{v}</button>
               ))}
             </div>
           </div>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>קטגוריית הורה</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>קטגוריית הורה</label>
             <select className="input-field" value={form.parent_id} onChange={e=>setForm({...form,parent_id:e.target.value})}>
               <option value="">ללא הורה</option>
               {cats.filter(c => (!editing || c.id !== editing.id) && !c.parent_id).map(c=>(
@@ -176,11 +176,11 @@ export default function Categories() {
             </select>
           </div>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.5rem'}}>אייקון</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.5rem'}}>אייקון</label>
             <input className="input-field" value={form.icon} onChange={e=>setForm({...form,icon:e.target.value})} placeholder="לחץ להוספת אמוג׳י 😀" style={{fontSize:'1.5rem',textAlign:'center'}}/>
           </div>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.5rem'}}>צבע</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.5rem'}}>צבע</label>
             <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
               {COLORS.map(c=>(
                 <button key={c} onClick={()=>setForm({...form,color:c})} style={{width:26,height:26,borderRadius:'50%',background:c,border:`3px solid ${form.color===c?'#fff':'transparent'}`,cursor:'pointer'}}/>

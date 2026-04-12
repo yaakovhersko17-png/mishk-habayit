@@ -187,7 +187,7 @@ export default function InvoiceArchive() {
   function SortBtn({ field, label }) {
     const active = sortBy === field
     return (
-      <button onClick={() => toggleSort(field)} style={{background:'none',border:'none',cursor:'pointer',color:active?'#a78bfa':'#64748b',fontSize:'0.75rem',display:'flex',alignItems:'center',gap:'0.25rem',padding:'0.25rem 0.5rem',borderRadius:'0.375rem',fontWeight:active?600:400}}>
+      <button onClick={() => toggleSort(field)} style={{background:'none',border:'none',cursor:'pointer',color:active?'#a78bfa':'var(--text-muted)',fontSize:'0.75rem',display:'flex',alignItems:'center',gap:'0.25rem',padding:'0.25rem 0.5rem',borderRadius:'0.375rem',fontWeight:active?600:400}}>
         {label}
         {active ? (sortDir==='asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>) : null}
       </button>
@@ -235,14 +235,14 @@ export default function InvoiceArchive() {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'0.75rem'}}>
-        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>ארכיון חשבוניות</h1>
+        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>ארכיון חשבוניות</h1>
         <div style={{display:'flex',gap:'0.5rem'}}>
           <button className="btn-ghost" onClick={exportPDF} style={{fontSize:'0.8rem',padding:'0.4rem 0.875rem'}}><FileText size={14}/>PDF</button>
           <button className="btn-ghost" onClick={exportExcel} style={{fontSize:'0.8rem',padding:'0.4rem 0.875rem'}}><Download size={14}/>Excel</button>
         </div>
       </div>
 
-      <div style={{fontSize:'0.8rem',color:'#64748b'}}>{sorted.length} חשבוניות</div>
+      <div style={{fontSize:'0.8rem',color:'var(--text-muted)'}}>{sorted.length} חשבוניות</div>
 
       {sorted.length === 0
         ? <EmptyState icon="🧾" title="אין חשבוניות" subtitle="סרוק חשבונית ראשונה בעמוד סריקת חשבונית"/>
@@ -269,14 +269,14 @@ export default function InvoiceArchive() {
 
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'0.75rem'}}>
                   <div style={{fontSize:'1.5rem'}}>🧾</div>
-                  <span style={{fontSize:'0.75rem',color:'#64748b'}}>{inv.date}</span>
+                  <span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>{inv.date}</span>
                 </div>
-                <div style={{fontWeight:600,color:'#e2e8f0',marginBottom:'0.25rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{inv.business_name || 'לא ידוע'}</div>
+                <div style={{fontWeight:600,color:'var(--text)',marginBottom:'0.25rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{inv.business_name || 'לא ידוע'}</div>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:'0.5rem'}}>
-                  <span style={{fontSize:'0.75rem',color:'#64748b'}}>{inv.categories ? `${inv.categories.icon||''} ${inv.categories.name}` : ''}</span>
-                  <span style={{fontWeight:700,color:'#e2e8f0'}}>{inv.currency||'₪'}{Number(inv.total||0).toLocaleString()}</span>
+                  <span style={{fontSize:'0.75rem',color:'var(--text-muted)'}}>{inv.categories ? `${inv.categories.icon||''} ${inv.categories.name}` : ''}</span>
+                  <span style={{fontWeight:700,color:'var(--text)'}}>{inv.currency||'₪'}{Number(inv.total||0).toLocaleString()}</span>
                 </div>
-                {inv.wallets && <div style={{fontSize:'0.75rem',color:'#475569',marginTop:'0.25rem'}}>💳 {inv.wallets.name}</div>}
+                {inv.wallets && <div style={{fontSize:'0.75rem',color:'var(--text-dim)',marginTop:'0.25rem'}}>💳 {inv.wallets.name}</div>}
               </div>
             ))}
           </div>
@@ -302,16 +302,16 @@ export default function InvoiceArchive() {
         <div style={{position:'fixed',inset:0,zIndex:60,display:'flex',alignItems:'flex-end'}} onClick={() => setFilterOpen(false)}>
           <div style={{width:'100%',background:'#1a1a2e',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',boxShadow:'0 -8px 40px rgba(0,0,0,0.5)'}} onClick={e=>e.stopPropagation()}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem'}}>
-              <span style={{fontWeight:700,fontSize:'1rem',color:'#e2e8f0'}}>סינון ומיון</span>
-              <button onClick={() => setFilterOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b'}}><X size={20}/></button>
+              <span style={{fontWeight:700,fontSize:'1rem',color:'var(--text)'}}>סינון ומיון</span>
+              <button onClick={() => setFilterOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)'}}><X size={20}/></button>
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
               <div style={{position:'relative'}}>
-                <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'#64748b'}}/>
+                <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)'}}/>
                 <input className="input-field" style={{paddingRight:'2.25rem'}} placeholder="שם עסק..." value={search} onChange={e=>setSearch(e.target.value)}/>
               </div>
               <div style={{position:'relative'}}>
-                <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'#64748b'}}/>
+                <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)'}}/>
                 <input className="input-field" style={{paddingRight:'2.25rem'}} placeholder="שם מוצר..." value={searchItem} onChange={e=>setSearchItem(e.target.value)}/>
               </div>
               <div style={{display:'flex',gap:'0.625rem'}}>
@@ -327,18 +327,18 @@ export default function InvoiceArchive() {
                 {wallets.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
               </select>
               <div>
-                <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>מיון לפי</div>
+                <div style={{fontSize:'0.8rem',color:'var(--text-muted)',marginBottom:'0.5rem'}}>מיון לפי</div>
                 <div style={{display:'flex',gap:'0.5rem'}}>
                   {[['date','תאריך'],['total','סכום'],['name','שם עסק']].map(([f,l])=>(
                     <button key={f} onClick={() => toggleSort(f)}
-                      style={{flex:1,padding:'0.4rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${sortBy===f?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:sortBy===f?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:sortBy===f?'#a78bfa':'#94a3b8'}}>
+                      style={{flex:1,padding:'0.4rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${sortBy===f?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:sortBy===f?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:sortBy===f?'#a78bfa':'var(--text-sub)'}}>
                       {l} {sortBy===f?(sortDir==='asc'?'↑':'↓'):''}
                     </button>
                   ))}
                 </div>
               </div>
               <button onClick={() => {setSearch('');setSearchItem('');setDateFrom('');setDateTo('');setFilterCat('');setFilterWallet('');setSortBy('date');setSortDir('desc')}}
-                style={{width:'100%',padding:'0.6rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',color:'#94a3b8',cursor:'pointer',fontSize:'0.85rem'}}>
+                style={{width:'100%',padding:'0.6rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',color:'var(--text-sub)',cursor:'pointer',fontSize:'0.85rem'}}>
                 נקה סינון
               </button>
             </div>
@@ -353,28 +353,28 @@ export default function InvoiceArchive() {
             <div className="form-2col">
               {[['תאריך',selected.date],['סה"כ',`${selected.currency||'₪'}${Number(selected.total||0).toLocaleString()}`],['מע"מ',`${selected.currency||'₪'}${Number(selected.vat||0).toLocaleString()}`],['נסרק ע"י',selected.profiles?.name||'—']].map(([l,v])=>(
                 <div key={l} style={{padding:'0.75rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.04)'}}>
-                  <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.25rem'}}>{l}</div>
-                  <div style={{fontWeight:600,color:'#e2e8f0'}}>{v}</div>
+                  <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginBottom:'0.25rem'}}>{l}</div>
+                  <div style={{fontWeight:600,color:'var(--text)'}}>{v}</div>
                 </div>
               ))}
             </div>
             {items.length > 0 && (
               <div>
-                <h3 style={{margin:'0 0 0.75rem',fontSize:'0.875rem',fontWeight:600,color:'#94a3b8'}}>פריטים</h3>
+                <h3 style={{margin:'0 0 0.75rem',fontSize:'0.875rem',fontWeight:600,color:'var(--text-sub)'}}>פריטים</h3>
                 <div style={{overflowX:'auto'}}>
                   <table style={{width:'100%',borderCollapse:'collapse',minWidth:'400px'}}>
                     <thead>
                       <tr style={{borderBottom:'1px solid rgba(255,255,255,0.08)'}}>
-                        {['פריט','כמות','מחיר','סה"כ','קטגוריה'].map(h=><th key={h} style={{padding:'0.5rem',textAlign:'right',fontSize:'0.75rem',color:'#64748b'}}>{h}</th>)}
+                        {['פריט','כמות','מחיר','סה"כ','קטגוריה'].map(h=><th key={h} style={{padding:'0.5rem',textAlign:'right',fontSize:'0.75rem',color:'var(--text-muted)'}}>{h}</th>)}
                       </tr>
                     </thead>
                     <tbody>
                       {items.map(item=>(
                         <tr key={item.id} style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
-                          <td style={{padding:'0.625rem 0.5rem',fontSize:'0.85rem',color:'#e2e8f0'}}>{item.name}</td>
-                          <td style={{padding:'0.625rem 0.5rem',fontSize:'0.85rem',color:'#94a3b8'}}>×{item.quantity}</td>
-                          <td style={{padding:'0.625rem 0.5rem',fontSize:'0.85rem',color:'#94a3b8'}}>₪{Number(item.price).toFixed(2)}</td>
-                          <td style={{padding:'0.625rem 0.5rem',fontSize:'0.85rem',fontWeight:600,color:'#e2e8f0'}}>₪{(Number(item.price)*Number(item.quantity)).toFixed(2)}</td>
+                          <td style={{padding:'0.625rem 0.5rem',fontSize:'0.85rem',color:'var(--text)'}}>{item.name}</td>
+                          <td style={{padding:'0.625rem 0.5rem',fontSize:'0.85rem',color:'var(--text-sub)'}}>×{item.quantity}</td>
+                          <td style={{padding:'0.625rem 0.5rem',fontSize:'0.85rem',color:'var(--text-sub)'}}>₪{Number(item.price).toFixed(2)}</td>
+                          <td style={{padding:'0.625rem 0.5rem',fontSize:'0.85rem',fontWeight:600,color:'var(--text)'}}>₪{(Number(item.price)*Number(item.quantity)).toFixed(2)}</td>
                           <td style={{padding:'0.625rem 0.5rem',fontSize:'0.8rem',color:'#a78bfa'}}>{item.categories ? `${item.categories.icon||''} ${item.categories.name}` : '—'}</td>
                         </tr>
                       ))}
@@ -401,16 +401,16 @@ export default function InvoiceArchive() {
         {editingInv && (
           <div style={{display:'flex',flexDirection:'column',gap:'0.875rem'}}>
             <div>
-              <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>שם עסק</label>
+              <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>שם עסק</label>
               <input className="input-field" value={editForm.business_name} onChange={e=>setEditForm({...editForm,business_name:e.target.value})}/>
             </div>
             <div style={{display:'flex',gap:'0.75rem'}}>
               <div style={{flex:1}}>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>תאריך</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>תאריך</label>
                 <input className="input-field" type="date" value={editForm.date} onChange={e=>setEditForm({...editForm,date:e.target.value})} dir="ltr"/>
               </div>
               <div style={{flex:1}}>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>מטבע</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>מטבע</label>
                 <select className="input-field" value={editForm.currency} onChange={e=>setEditForm({...editForm,currency:e.target.value})}>
                   {CURRENCIES.map(c=><option key={c} value={c}>{c}</option>)}
                 </select>
@@ -418,23 +418,23 @@ export default function InvoiceArchive() {
             </div>
             <div style={{display:'flex',gap:'0.75rem'}}>
               <div style={{flex:1}}>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>סה"כ</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>סה"כ</label>
                 <input className="input-field" type="number" step="0.01" value={editForm.total} onChange={e=>setEditForm({...editForm,total:e.target.value})} dir="ltr"/>
               </div>
               <div style={{flex:1}}>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>מע"מ</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>מע"מ</label>
                 <input className="input-field" type="number" step="0.01" value={editForm.vat} onChange={e=>setEditForm({...editForm,vat:e.target.value})} dir="ltr"/>
               </div>
             </div>
             <div>
-              <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>ארנק <span style={{color:'#f87171'}}>*</span></label>
+              <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>ארנק <span style={{color:'#f87171'}}>*</span></label>
               <select className="input-field" value={editForm.wallet_id} onChange={e=>setEditForm({...editForm,wallet_id:e.target.value})}>
                 <option value="">בחר ארנק</option>
                 {wallets.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}
               </select>
             </div>
             <div>
-              <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>קטגוריה</label>
+              <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>קטגוריה</label>
               <select className="input-field" value={editForm.category_id} onChange={e=>setEditForm({...editForm,category_id:e.target.value})}>
                 <option value="">— ללא קטגוריה</option>
                 {cats.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
@@ -454,10 +454,10 @@ export default function InvoiceArchive() {
       <Modal open={!!confirmDelete} onClose={() => setConfirmDelete(null)} title="מחיקת חשבונית">
         {confirmDelete && (
           <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
-            <p style={{margin:0,color:'#94a3b8',fontSize:'0.9rem'}}>
-              האם למחוק את החשבונית של <strong style={{color:'#e2e8f0'}}>{confirmDelete.business_name || 'לא ידוע'}</strong> בסך <strong style={{color:'#f87171'}}>{confirmDelete.currency||'₪'}{Number(confirmDelete.total||0).toLocaleString()}</strong>?
+            <p style={{margin:0,color:'var(--text-sub)',fontSize:'0.9rem'}}>
+              האם למחוק את החשבונית של <strong style={{color:'var(--text)'}}>{confirmDelete.business_name || 'לא ידוע'}</strong> בסך <strong style={{color:'#f87171'}}>{confirmDelete.currency||'₪'}{Number(confirmDelete.total||0).toLocaleString()}</strong>?
             </p>
-            <p style={{margin:0,fontSize:'0.8rem',color:'#64748b'}}>
+            <p style={{margin:0,fontSize:'0.8rem',color:'var(--text-muted)'}}>
               הסכום יוחזר לארנק והטרנזקציה המשויכת תימחק.
             </p>
             <div style={{display:'flex',gap:'0.75rem'}}>

@@ -9,7 +9,7 @@ import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import { useRealtime } from '../hooks/useRealtime'
 import toast from 'react-hot-toast'
 
-const COLORS = ['#6c63ff','#4ade80','#f87171','#fbbf24','#60a5fa','#f472b6','#a78bfa','#34d399','#fb923c','#94a3b8']
+const COLORS = ['#6c63ff','#4ade80','#f87171','#fbbf24','#60a5fa','#f472b6','#a78bfa','#34d399','#fb923c','var(--text-sub)']
 const CURRENCIES = ['₪','$','€','£']
 
 const emptyWallet = { name:'', balance:'', currency:'₪', icon:'', color:'#6c63ff' }
@@ -81,8 +81,8 @@ export default function Wallets() {
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div>
-          <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>ארנקים</h1>
-          <p style={{margin:'0.25rem 0 0',color:'#64748b',fontSize:'0.875rem'}}>{wallets.length} ארנקים</p>
+          <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>ארנקים</h1>
+          <p style={{margin:'0.25rem 0 0',color:'var(--text-muted)',fontSize:'0.875rem'}}>{wallets.length} ארנקים</p>
         </div>
         <button className="btn-primary" onClick={openAdd}><Plus size={15}/>ארנק חדש</button>
       </div>
@@ -97,12 +97,12 @@ export default function Wallets() {
                 <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'0.625rem',paddingTop:'0.25rem'}}>
                   <div style={{fontSize:'1.5rem'}}>{w.icon}</div>
                   <div style={{display:'flex',gap:'0.25rem'}}>
-                    <button onClick={e => { e.stopPropagation(); openEdit(w) }} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.2rem',borderRadius:'0.375rem'}}><Edit2 size={13}/></button>
+                    <button onClick={e => { e.stopPropagation(); openEdit(w) }} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',padding:'0.2rem',borderRadius:'0.375rem'}}><Edit2 size={13}/></button>
                     <button onClick={e => { e.stopPropagation(); handleDelete(w) }} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.2rem',borderRadius:'0.375rem'}}><Trash2 size={13}/></button>
                   </div>
                 </div>
-                <div style={{fontSize:'0.78rem',color:'#94a3b8',marginBottom:'0.25rem'}}>{w.name}</div>
-                <div style={{fontSize:'1.35rem',fontWeight:700,color:'#e2e8f0'}}>{w.currency}{Number(w.balance).toLocaleString()}</div>
+                <div style={{fontSize:'0.78rem',color:'var(--text-sub)',marginBottom:'0.25rem'}}>{w.name}</div>
+                <div style={{fontSize:'1.35rem',fontWeight:700,color:'var(--text)'}}>{w.currency}{Number(w.balance).toLocaleString()}</div>
               </div>
             ))}
           </div>
@@ -112,27 +112,27 @@ export default function Wallets() {
       <Modal open={modal} onClose={() => setModal(false)} title={editing ? 'ערוך ארנק' : 'ארנק חדש'}>
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>שם הארנק</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>שם הארנק</label>
             <input className="input-field" placeholder="למשל: עוש, מזומן..." value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/>
           </div>
           <div className="form-2col">
             <div>
-              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>יתרה</label>
+              <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>יתרה</label>
               <input className="input-field" type="number" placeholder="0.00" value={form.balance} onChange={e=>setForm({...form,balance:e.target.value})} dir="ltr"/>
             </div>
             <div>
-              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>מטבע</label>
+              <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>מטבע</label>
               <select className="input-field" value={form.currency} onChange={e=>setForm({...form,currency:e.target.value})}>
                 {CURRENCIES.map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.5rem'}}>אייקון</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.5rem'}}>אייקון</label>
             <input className="input-field" value={form.icon} onChange={e=>setForm({...form,icon:e.target.value})} placeholder="לחץ להוספת אמוג׳י 😀" style={{fontSize:'1.5rem',textAlign:'center'}}/>
           </div>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.5rem'}}>צבע</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.5rem'}}>צבע</label>
             <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
               {COLORS.map(c => (
                 <button key={c} onClick={()=>setForm({...form,color:c})} style={{width:28,height:28,borderRadius:'50%',background:c,border:`3px solid ${form.color===c?'#fff':'transparent'}`,cursor:'pointer',boxShadow:form.color===c?`0 0 8px ${c}`:'none'}}/>
@@ -149,21 +149,21 @@ export default function Wallets() {
       {/* Transaction History Modal */}
       <Modal open={!!historyWallet} onClose={()=>setHistoryWallet(null)} title={historyWallet ? `היסטוריה – ${historyWallet.icon} ${historyWallet.name}` : ''} size="lg">
         {walletTxs.length === 0
-          ? <p style={{textAlign:'center',color:'#64748b',padding:'2rem 0'}}>אין עסקאות לארנק זה</p>
+          ? <p style={{textAlign:'center',color:'var(--text-muted)',padding:'2rem 0'}}>אין עסקאות לארנק זה</p>
           : <div style={{overflowX:'auto'}}>
               <table style={{width:'100%',borderCollapse:'collapse',minWidth:'400px'}}>
                 <thead>
                   <tr style={{borderBottom:'1px solid rgba(255,255,255,0.08)'}}>
-                    {['תאריך','תיאור','סכום','קטגוריה'].map(h=><th key={h} style={{padding:'0.625rem 0.75rem',textAlign:'right',fontSize:'0.75rem',color:'#64748b',fontWeight:500}}>{h}</th>)}
+                    {['תאריך','תיאור','סכום','קטגוריה'].map(h=><th key={h} style={{padding:'0.625rem 0.75rem',textAlign:'right',fontSize:'0.75rem',color:'var(--text-muted)',fontWeight:500}}>{h}</th>)}
                   </tr>
                 </thead>
                 <tbody>
                   {walletTxs.map(t=>(
                     <tr key={`${t.id}_${t._dir}`} style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
-                      <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'#64748b',whiteSpace:'nowrap'}}>{new Date(t.date).toLocaleDateString('he-IL')}</td>
-                      <td style={{padding:'0.625rem 0.75rem',fontSize:'0.85rem',color:'#e2e8f0'}}>{t.description}</td>
+                      <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'var(--text-muted)',whiteSpace:'nowrap'}}>{new Date(t.date).toLocaleDateString('he-IL')}</td>
+                      <td style={{padding:'0.625rem 0.75rem',fontSize:'0.85rem',color:'var(--text)'}}>{t.description}</td>
                       <td style={{padding:'0.625rem 0.75rem',fontWeight:600,whiteSpace:'nowrap',color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>{t.type==='income'?'+':t.type==='transfer'?(t._dir==='in'?'+↔':'-↔'):t.type.startsWith('loan')?'':'-'}{t.currency}{Number(t.amount).toLocaleString()}</td>
-                      <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'#94a3b8'}}>{t.categories ? `${t.categories.icon||''} ${t.categories.name}` : '—'}</td>
+                      <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'var(--text-sub)'}}>{t.categories ? `${t.categories.icon||''} ${t.categories.name}` : '—'}</td>
                     </tr>
                   ))}
                 </tbody>

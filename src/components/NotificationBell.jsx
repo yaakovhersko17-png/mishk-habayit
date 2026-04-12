@@ -206,7 +206,7 @@ export default function NotificationBell() {
           borderRadius: '0.625rem',
           padding: '0.4rem',
           cursor: 'pointer',
-          color: count > 0 ? '#f87171' : '#64748b',
+          color: count > 0 ? '#f87171' : 'var(--text-muted)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'all 0.15s',
         }}
@@ -247,11 +247,11 @@ export default function NotificationBell() {
             padding: '0.75rem 1rem',
             borderBottom: '1px solid rgba(255,255,255,0.06)',
           }}>
-            <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>
               התראות {count > 0 && <span style={{ color: '#f87171' }}>({count})</span>}
             </span>
             <button onClick={() => setOpen(false)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 2, display: 'flex' }}>
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2, display: 'flex' }}>
               <X size={16} />
             </button>
           </div>
@@ -259,7 +259,7 @@ export default function NotificationBell() {
           {/* Content */}
           <div style={{ maxHeight: 420, overflowY: 'auto', padding: '0.5rem' }}>
             {count === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#475569', fontSize: '0.875rem' }}>
+              <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-dim)', fontSize: '0.875rem' }}>
                 🎉 אין התראות
               </div>
             ) : (
@@ -306,13 +306,13 @@ export default function NotificationBell() {
                           {/* Text */}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{
-                              fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0',
+                              fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)',
                               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                             }}>
                               {r.title}
                             </div>
                             {r.description && (
-                              <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 2 }}>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)', marginTop: 2 }}>
                                 {r.description}
                               </div>
                             )}
@@ -326,7 +326,7 @@ export default function NotificationBell() {
                             onClick={() => { navigate('/reminders'); setOpen(false) }}
                             style={{
                               flexShrink: 0, background: 'none', border: 'none',
-                              color: '#64748b', cursor: 'pointer', fontSize: '0.8rem', padding: 2,
+                              color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', padding: 2,
                             }}
                           >›</button>
                         </div>
@@ -353,7 +353,7 @@ export default function NotificationBell() {
                           borderRadius: '0.625rem',
                           padding: '0.625rem 0.75rem',
                         }}>
-                          <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.5rem' }}>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-sub)', marginBottom: '0.5rem' }}>
                             {formatDateHebrew(date)}
                           </div>
                           <div style={{ display: 'flex', gap: '0.375rem' }}>
@@ -372,7 +372,7 @@ export default function NotificationBell() {
                               style={{
                                 flex: 1, padding: '0.3rem 0.5rem', borderRadius: '0.375rem',
                                 background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                                color: '#64748b', fontSize: '0.75rem', fontWeight: 600,
+                                color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600,
                                 cursor: skipping === date ? 'default' : 'pointer',
                                 opacity: skipping === date ? 0.6 : 1,
                               }}>

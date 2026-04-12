@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Plus, Bell, Check, Trash2, Clock, ShoppingCart, Edit2, ChevronDown,
-         AlarmClock, Zap, Calendar, LayoutList, CheckCircle, Settings } from 'lucide-react'
+         Calendar, LayoutList, CheckCircle, Settings } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
@@ -140,26 +140,20 @@ export default function Reminders() {
   const in7d   = new Date(now.getTime() + 7  * 86400000)
 
   const completedList = reminders.filter(r => r.is_completed)
-  const urgentList    = reminders.filter(r => !r.is_completed && r.due_date && new Date(r.due_date) < now)
   const allActiveList = reminders.filter(r => !r.is_completed)
   const todayList     = reminders.filter(r => !r.is_completed && r.due_date && new Date(r.due_date) >= todayStart && new Date(r.due_date) <= todayEnd)
-  const priorityList  = reminders.filter(r => !r.is_completed && r.due_date && new Date(r.due_date) >= now && new Date(r.due_date) <= in48h)
   const weeklyList    = reminders.filter(r => !r.is_completed && r.due_date && new Date(r.due_date) >= now && new Date(r.due_date) <= in7d)
 
   const statCards = [
     { key:'completed', label:'הושלמו',        count: completedList.length,  bg:'linear-gradient(135deg,#4b5563,#6b7280)', icon:<CheckCircle size={22} color="rgba(255,255,255,0.85)"/>, gear:false },
-    { key:'urgent',    label:'דחופות',         count: urgentList.length,     bg:'linear-gradient(135deg,#e11d48,#fb7185)', icon:<AlarmClock  size={22} color="rgba(255,255,255,0.85)"/>, gear:false },
     { key:'all',       label:'כל המשימות',     count: allActiveList.length,  bg:'linear-gradient(135deg,#2563eb,#60a5fa)', icon:<LayoutList  size={22} color="rgba(255,255,255,0.85)"/>, gear:false },
     { key:'today',     label:'צריך לבצע היום', count: todayList.length,      bg:'linear-gradient(135deg,#92400e,#d97706)', icon:<Clock       size={22} color="rgba(255,255,255,0.85)"/>, gear:true  },
-    { key:'priority',  label:'עדיפות גבוהה!',  count: priorityList.length,   bg:'linear-gradient(135deg,#dc2626,#f87171)', icon:<Zap         size={22} color="rgba(255,255,255,0.85)"/>, gear:false },
     { key:'weekly',    label:'מתוזמן השבוע',   count: weeklyList.length,     bg:'linear-gradient(135deg,#b45309,#fbbf24)', icon:<Calendar    size={22} color="rgba(255,255,255,0.85)"/>, gear:true  },
   ]
 
   const filteredList = selectedFilter === 'completed' ? completedList
-    : selectedFilter === 'urgent'    ? urgentList
-    : selectedFilter === 'today'     ? todayList
-    : selectedFilter === 'priority'  ? priorityList
-    : selectedFilter === 'weekly'    ? weeklyList
+    : selectedFilter === 'today'  ? todayList
+    : selectedFilter === 'weekly' ? weeklyList
     : allActiveList
 
   if (loading) return <LoadingSpinner />
@@ -168,7 +162,7 @@ export default function Reminders() {
     <div style={{display:'flex',flexDirection:'column',gap:'1rem',paddingBottom:'6rem'}}>
 
       {/* Header */}
-      <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>תזכורות</h1>
+      <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>תזכורות</h1>
 
       {/* ── Stat cards 2×3 grid ── */}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
@@ -202,15 +196,15 @@ export default function Reminders() {
       {/* Active filter label */}
       {selectedFilter && (
         <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
-          <span style={{fontSize:'0.8rem',color:'#64748b'}}>מסנן:</span>
+          <span style={{fontSize:'0.8rem',color:'var(--text-muted)'}}>מסנן:</span>
           <span style={{fontSize:'0.8rem',fontWeight:600,color:'#a78bfa'}}>{statCards.find(c=>c.key===selectedFilter)?.label}</span>
-          <button onClick={() => setSelectedFilter(null)} style={{background:'none',border:'none',color:'#475569',cursor:'pointer',fontSize:'0.8rem',padding:'0 0.25rem'}}>✕</button>
+          <button onClick={() => setSelectedFilter(null)} style={{background:'none',border:'none',color:'var(--text-dim)',cursor:'pointer',fontSize:'0.8rem',padding:'0 0.25rem'}}>✕</button>
         </div>
       )}
 
       {/* ── Task list ── */}
       {filteredList.length === 0 ? (
-        <div style={{textAlign:'center',padding:'2rem 0',color:'#475569',fontSize:'0.875rem'}}>אין משימות להצגה 🎉</div>
+        <div style={{textAlign:'center',padding:'2rem 0',color:'var(--text-dim)',fontSize:'0.875rem'}}>אין משימות להצגה 🎉</div>
       ) : (
         <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
           {filteredList.map(r => {
@@ -234,24 +228,24 @@ export default function Reminders() {
 
                 {/* Content */}
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontWeight:500,color:'#e2e8f0',fontSize:'0.875rem',textDecoration:r.is_completed?'line-through':'none',marginBottom:r.due_date||r.description?'0.2rem':0}}>
+                  <div style={{fontWeight:500,color:'var(--text)',fontSize:'0.875rem',textDecoration:r.is_completed?'line-through':'none',marginBottom:r.due_date||r.description?'0.2rem':0}}>
                     {r.title}
                     {r.is_shopping_list && <span style={{marginRight:'0.5rem',fontSize:'0.7rem',color:'#60a5fa',background:'rgba(96,165,250,0.15)',padding:'0.1rem 0.4rem',borderRadius:'9999px',verticalAlign:'middle'}}><ShoppingCart size={9} style={{display:'inline',marginLeft:2}}/>קניות</span>}
                   </div>
                   {r.due_date && (
-                    <div style={{display:'flex',alignItems:'center',gap:'0.25rem',fontSize:'0.72rem',color:isOverdue?'#f87171':'#64748b'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:'0.25rem',fontSize:'0.72rem',color:isOverdue?'#f87171':'var(--text-muted)'}}>
                       <Clock size={10}/>
                       {new Date(r.due_date).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})}
                       {isOverdue && <span style={{color:'#f87171',fontWeight:600}}>— עברה הזמן</span>}
                     </div>
                   )}
-                  {r.description && <p style={{margin:'0.25rem 0 0',fontSize:'0.78rem',color:'#64748b'}}>{r.description}</p>}
-                  {r.assigned_to && <div style={{marginTop:'0.25rem',fontSize:'0.7rem',color:'#475569'}}>👤 {profiles.find(p=>p.id===r.assigned_to)?.name}</div>}
+                  {r.description && <p style={{margin:'0.25rem 0 0',fontSize:'0.78rem',color:'var(--text-muted)'}}>{r.description}</p>}
+                  {r.assigned_to && <div style={{marginTop:'0.25rem',fontSize:'0.7rem',color:'var(--text-dim)'}}>👤 {profiles.find(p=>p.id===r.assigned_to)?.name}</div>}
                 </div>
 
                 {/* Actions */}
                 <div style={{display:'flex',gap:'0.125rem',flexShrink:0,marginTop:'0.1rem'}}>
-                  <button onClick={() => openEdit(r)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.25rem',borderRadius:'0.375rem'}}>
+                  <button onClick={() => openEdit(r)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',padding:'0.25rem',borderRadius:'0.375rem'}}>
                     <Edit2 size={13}/>
                   </button>
                   <button onClick={() => handleDelete(r)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.25rem',borderRadius:'0.375rem'}}>
@@ -283,17 +277,17 @@ export default function Reminders() {
       <Modal open={modal} onClose={()=>setModal(false)} title={editing?'ערוך תזכורת':'תזכורת חדשה'} size="lg">
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>כותרת</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>כותרת</label>
             <input className="input-field" placeholder="כותרת..." value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/>
           </div>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תיאור</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>תיאור</label>
             <textarea className="input-field" placeholder="תיאור..." value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={2} style={{resize:'vertical'}}/>
           </div>
 
           {/* Scheduling panel */}
           <div style={{borderRadius:'0.75rem',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden'}}>
-            <button type="button" onClick={() => setSchedOpen(o=>!o)} style={{width:'100%',display:'flex',alignItems:'center',gap:'0.5rem',padding:'0.75rem',background:'rgba(255,255,255,0.03)',border:'none',cursor:'pointer',color:'#94a3b8',fontSize:'0.85rem',fontFamily:'inherit',textAlign:'right'}}>
+            <button type="button" onClick={() => setSchedOpen(o=>!o)} style={{width:'100%',display:'flex',alignItems:'center',gap:'0.5rem',padding:'0.75rem',background:'rgba(255,255,255,0.03)',border:'none',cursor:'pointer',color:'var(--text-sub)',fontSize:'0.85rem',fontFamily:'inherit',textAlign:'right'}}>
               <Clock size={14} color="#6c63ff"/>
               <span style={{flex:1}}>תזמון תזכורת</span>
               <ChevronDown size={14} style={{transform:schedOpen?'rotate(180deg)':'none',transition:'transform 0.2s'}}/>
@@ -301,32 +295,32 @@ export default function Reminders() {
             {schedOpen && (
               <div style={{padding:'1rem',borderTop:'1px solid rgba(255,255,255,0.06)',display:'flex',flexDirection:'column',gap:'0.875rem'}}>
                 <div>
-                  <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.4rem'}}>תדירות</div>
+                  <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginBottom:'0.4rem'}}>תדירות</div>
                   <div style={{display:'flex',gap:'0.375rem',flexWrap:'wrap'}}>
                     {[['once','חד פעמי'],['daily','יומי'],['weekly','שבועי'],['monthly','חודשי']].map(([val,lbl]) => (
-                      <button key={val} type="button" onClick={() => setSched(s=>({...s,freq:val}))} style={{padding:'0.35rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',border:`1px solid ${sched.freq===val?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:sched.freq===val?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:sched.freq===val?'#a78bfa':'#64748b',fontWeight:sched.freq===val?600:400}}>{lbl}</button>
+                      <button key={val} type="button" onClick={() => setSched(s=>({...s,freq:val}))} style={{padding:'0.35rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',border:`1px solid ${sched.freq===val?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:sched.freq===val?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:sched.freq===val?'#a78bfa':'var(--text-muted)',fontWeight:sched.freq===val?600:400}}>{lbl}</button>
                     ))}
                   </div>
                 </div>
                 {sched.freq !== 'once' && (
                   <div>
-                    <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.4rem'}}>שעה</div>
+                    <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginBottom:'0.4rem'}}>שעה</div>
                     <input className="input-field" type="time" value={sched.time} onChange={e=>setSched(s=>({...s,time:e.target.value}))} dir="ltr" style={{maxWidth:130}}/>
                   </div>
                 )}
                 {sched.freq === 'weekly' && (
                   <div>
-                    <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.4rem'}}>ימים בשבוע</div>
+                    <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginBottom:'0.4rem'}}>ימים בשבוע</div>
                     <div style={{display:'flex',gap:'0.375rem',flexWrap:'wrap'}}>
                       {DAYS_HE.map((d,i) => (
-                        <button key={i} type="button" onClick={() => setSched(s=>({...s,days:s.days.includes(i)?s.days.filter(x=>x!==i):[...s.days,i].sort()}))} style={{padding:'0.35rem 0.625rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',border:`1px solid ${sched.days.includes(i)?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:sched.days.includes(i)?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:sched.days.includes(i)?'#a78bfa':'#64748b',fontWeight:sched.days.includes(i)?600:400}}>{d}</button>
+                        <button key={i} type="button" onClick={() => setSched(s=>({...s,days:s.days.includes(i)?s.days.filter(x=>x!==i):[...s.days,i].sort()}))} style={{padding:'0.35rem 0.625rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',border:`1px solid ${sched.days.includes(i)?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:sched.days.includes(i)?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:sched.days.includes(i)?'#a78bfa':'var(--text-muted)',fontWeight:sched.days.includes(i)?600:400}}>{d}</button>
                       ))}
                     </div>
                   </div>
                 )}
                 {sched.freq === 'monthly' && (
                   <div>
-                    <div style={{fontSize:'0.75rem',color:'#64748b',marginBottom:'0.4rem'}}>יום בחודש</div>
+                    <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginBottom:'0.4rem'}}>יום בחודש</div>
                     <select className="input-field" value={sched.dayOfMonth} onChange={e=>setSched(s=>({...s,dayOfMonth:Number(e.target.value)}))} style={{maxWidth:110}} dir="ltr">
                       {Array.from({length:28},(_,i)=>i+1).map(d=><option key={d} value={d}>{d}</option>)}
                     </select>
@@ -337,7 +331,7 @@ export default function Reminders() {
                   return next ? (
                     <div style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.625rem 0.75rem',borderRadius:'0.625rem',background:'rgba(108,99,255,0.08)',border:'1px solid rgba(108,99,255,0.15)'}}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:'0.7rem',color:'#64748b',marginBottom:'0.125rem'}}>הפעם הבאה</div>
+                        <div style={{fontSize:'0.7rem',color:'var(--text-muted)',marginBottom:'0.125rem'}}>הפעם הבאה</div>
                         <div style={{fontSize:'0.82rem',color:'#a78bfa',fontWeight:600}}>{new Date(next).toLocaleString('he-IL',{dateStyle:'medium',timeStyle:'short'})}</div>
                       </div>
                       <button type="button" onClick={() => setForm(f=>({...f,due_date:next}))} style={{padding:'0.4rem 0.875rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',border:'1px solid rgba(108,99,255,0.4)',background:'rgba(108,99,255,0.2)',color:'#a78bfa',fontWeight:600}}>קבע</button>
@@ -350,31 +344,31 @@ export default function Reminders() {
 
           <div className="form-2col">
             <div>
-              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תאריך ושעה</label>
+              <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>תאריך ושעה</label>
               <input className="input-field" type="datetime-local" value={form.due_date} onChange={e=>setForm({...form,due_date:e.target.value})} dir="ltr"/>
             </div>
             <div>
-              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>הקצה למשתמש</label>
+              <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>הקצה למשתמש</label>
               <select className="input-field" value={form.assigned_to} onChange={e=>setForm({...form,assigned_to:e.target.value})}>
                 <option value="">כולם</option>
                 {profiles.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
           </div>
-          <label style={{display:'flex',alignItems:'center',gap:'0.5rem',cursor:'pointer',color:'#94a3b8',fontSize:'0.875rem'}}>
+          <label style={{display:'flex',alignItems:'center',gap:'0.5rem',cursor:'pointer',color:'var(--text-sub)',fontSize:'0.875rem'}}>
             <input type="checkbox" checked={form.is_shopping_list} onChange={e=>setForm({...form,is_shopping_list:e.target.checked})} style={{accentColor:'#6c63ff'}}/>
             רשימת קניות
           </label>
           {form.is_shopping_list && (
             <div>
-              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>פריטים</label>
+              <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>פריטים</label>
               <div style={{display:'flex',gap:'0.5rem',marginBottom:'0.5rem'}}>
                 <input className="input-field" placeholder="הוסף פריט..." value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addShoppingItem()} style={{flex:1}}/>
                 <button className="btn-ghost" onClick={addShoppingItem}>הוסף</button>
               </div>
               <div style={{display:'flex',flexWrap:'wrap',gap:'0.375rem'}}>
                 {form.shopping_items.map((item,i)=>(
-                  <span key={i} style={{display:'inline-flex',alignItems:'center',gap:'0.375rem',padding:'0.25rem 0.625rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.06)',fontSize:'0.8rem',color:'#94a3b8'}}>
+                  <span key={i} style={{display:'inline-flex',alignItems:'center',gap:'0.375rem',padding:'0.25rem 0.625rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.06)',fontSize:'0.8rem',color:'var(--text-sub)'}}>
                     {item.text}
                     <button onClick={()=>setForm(f=>({...f,shopping_items:f.shopping_items.filter((_,j)=>j!==i)}))} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:0}}>×</button>
                   </span>

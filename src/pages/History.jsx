@@ -56,8 +56,8 @@ export default function History() {
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div>
-          <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>היסטוריה</h1>
-          <p style={{margin:'0.25rem 0 0',color:'#64748b',fontSize:'0.875rem'}}>{filtered.length} פעולות</p>
+          <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>היסטוריה</h1>
+          <p style={{margin:'0.25rem 0 0',color:'var(--text-muted)',fontSize:'0.875rem'}}>{filtered.length} פעולות</p>
         </div>
       </div>
 
@@ -70,7 +70,7 @@ export default function History() {
                 <thead>
                   <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
                     {['פעולה','תיאור','סוג','משתמש','תאריך ושעה'].map(h=>(
-                      <th key={h} style={{padding:'0.875rem 1rem',textAlign:'right',fontSize:'0.75rem',color:'#64748b',fontWeight:500}}>{h}</th>
+                      <th key={h} style={{padding:'0.875rem 1rem',textAlign:'right',fontSize:'0.75rem',color:'var(--text-muted)',fontWeight:500}}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -85,12 +85,12 @@ export default function History() {
                           <span style={{fontSize:'0.8rem',fontWeight:500,color:'#a78bfa'}}>{l.action_type}</span>
                         </div>
                       </td>
-                      <td style={{padding:'0.75rem 1rem',color:'#e2e8f0',fontSize:'0.85rem',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.description}</td>
+                      <td style={{padding:'0.75rem 1rem',color:'var(--text)',fontSize:'0.85rem',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.description}</td>
                       <td style={{padding:'0.75rem 1rem'}}>
-                        <span style={{fontSize:'0.75rem',padding:'0.125rem 0.5rem',borderRadius:'9999px',background:'rgba(255,255,255,0.06)',color:'#94a3b8'}}>{l.entity_type}</span>
+                        <span style={{fontSize:'0.75rem',padding:'0.125rem 0.5rem',borderRadius:'9999px',background:'rgba(255,255,255,0.06)',color:'var(--text-sub)'}}>{l.entity_type}</span>
                       </td>
-                      <td style={{padding:'0.75rem 1rem',fontSize:'0.8rem',color:'#64748b'}}>{l.user_name}</td>
-                      <td style={{padding:'0.75rem 1rem',fontSize:'0.75rem',color:'#475569',whiteSpace:'nowrap'}}>
+                      <td style={{padding:'0.75rem 1rem',fontSize:'0.8rem',color:'var(--text-muted)'}}>{l.user_name}</td>
+                      <td style={{padding:'0.75rem 1rem',fontSize:'0.75rem',color:'var(--text-dim)',whiteSpace:'nowrap'}}>
                         {new Date(l.created_at).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})}
                       </td>
                     </tr>
@@ -118,51 +118,51 @@ export default function History() {
         <div style={{position:'fixed',inset:0,zIndex:60,display:'flex',alignItems:'flex-end'}} onClick={()=>setFilterOpen(false)}>
           <div style={{width:'100%',background:'#1a1a2e',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',boxShadow:'0 -8px 40px rgba(0,0,0,0.5)'}} onClick={e=>e.stopPropagation()}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem'}}>
-              <span style={{fontWeight:700,fontSize:'1rem',color:'#e2e8f0'}}>סינון ומיון</span>
-              <button onClick={()=>setFilterOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b'}}><X size={20}/></button>
+              <span style={{fontWeight:700,fontSize:'1rem',color:'var(--text)'}}>סינון ומיון</span>
+              <button onClick={()=>setFilterOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)'}}><X size={20}/></button>
             </div>
 
             {/* Search */}
             <div style={{position:'relative',marginBottom:'1rem'}}>
-              <Search size={15} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'#64748b'}}/>
+              <Search size={15} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)'}}/>
               <input className="input-field" placeholder="חיפוש..." value={search} onChange={e=>setSearch(e.target.value)} style={{paddingRight:'2.25rem'}}/>
             </div>
 
             {/* User */}
             <div style={{marginBottom:'1rem'}}>
-              <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>משתמש</div>
+              <div style={{fontSize:'0.8rem',color:'var(--text-muted)',marginBottom:'0.5rem'}}>משתמש</div>
               <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
                 {[['','הכל'],...profiles.map(p=>[p.id,p.name])].map(([k,v])=>(
                   <button key={k} onClick={()=>setFilter(f=>({...f,user:k}))}
-                    style={{padding:'0.35rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${filter.user===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:filter.user===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:filter.user===k?'#a78bfa':'#94a3b8'}}>{v}</button>
+                    style={{padding:'0.35rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${filter.user===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:filter.user===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:filter.user===k?'#a78bfa':'var(--text-sub)'}}>{v}</button>
                 ))}
               </div>
             </div>
 
             {/* Action */}
             <div style={{marginBottom:'1rem'}}>
-              <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>פעולה</div>
+              <div style={{fontSize:'0.8rem',color:'var(--text-muted)',marginBottom:'0.5rem'}}>פעולה</div>
               <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
                 {[['','הכל'],...allActions.map(a=>[a,a])].map(([k,v])=>(
                   <button key={k} onClick={()=>setFilter(f=>({...f,action:k}))}
-                    style={{padding:'0.35rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${filter.action===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:filter.action===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:filter.action===k?'#a78bfa':'#94a3b8'}}>{v}</button>
+                    style={{padding:'0.35rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${filter.action===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:filter.action===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:filter.action===k?'#a78bfa':'var(--text-sub)'}}>{v}</button>
                 ))}
               </div>
             </div>
 
             {/* Sort */}
             <div style={{marginBottom:'1rem'}}>
-              <div style={{fontSize:'0.8rem',color:'#64748b',marginBottom:'0.5rem'}}>מיון</div>
+              <div style={{fontSize:'0.8rem',color:'var(--text-muted)',marginBottom:'0.5rem'}}>מיון</div>
               <div style={{display:'flex',gap:'0.5rem'}}>
                 {[[false,'חדש לישן'],[true,'ישן לחדש']].map(([k,v])=>(
                   <button key={String(k)} onClick={()=>setSortAsc(k)}
-                    style={{flex:1,padding:'0.4rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${sortAsc===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:sortAsc===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:sortAsc===k?'#a78bfa':'#94a3b8'}}>{v}</button>
+                    style={{flex:1,padding:'0.4rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',border:`1px solid ${sortAsc===k?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,background:sortAsc===k?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',color:sortAsc===k?'#a78bfa':'var(--text-sub)'}}>{v}</button>
                 ))}
               </div>
             </div>
 
             <button onClick={()=>{setFilter({user:'',action:'',entity:''});setSearch('');setSortAsc(false)}}
-              style={{width:'100%',padding:'0.6rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',color:'#94a3b8',cursor:'pointer',fontSize:'0.85rem'}}>
+              style={{width:'100%',padding:'0.6rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',color:'var(--text-sub)',cursor:'pointer',fontSize:'0.85rem'}}>
               נקה סינון
             </button>
           </div>

@@ -32,7 +32,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <div style={{ width: 36, height: 36, borderRadius: '0.75rem', background: 'linear-gradient(135deg,#6c63ff,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', flexShrink: 0 }}>🏠</div>
           <div>
             <div style={{ fontWeight: 400, fontSize: '1.5rem', fontFamily: '"Pacifico", cursive', color: 'rgba(255,255,255,0.2)', lineHeight: 1.1 }}>Hersko</div>
-            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.1rem' }}>משק הבית</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>משק הבית</div>
           </div>
         </div>
         <button onClick={onClose} className="sidebar-close-btn" aria-label="סגור תפריט">

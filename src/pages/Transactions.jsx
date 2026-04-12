@@ -220,8 +220,8 @@ export default function Transactions() {
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div>
-          <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>עסקאות</h1>
-          <p style={{margin:'0.25rem 0 0',color:'#64748b',fontSize:'0.875rem'}}>{filtered.length} רשומות</p>
+          <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>עסקאות</h1>
+          <p style={{margin:'0.25rem 0 0',color:'var(--text-muted)',fontSize:'0.875rem'}}>{filtered.length} רשומות</p>
         </div>
         <div style={{display:'flex',gap:'0.75rem'}}>
           <button className={`btn-ghost${listening?' active':''}`} onClick={startVoice} style={listening?{background:'rgba(239,68,68,0.15)',borderColor:'rgba(239,68,68,0.3)',color:'#f87171'}:{}}>
@@ -233,7 +233,7 @@ export default function Transactions() {
 
       {/* Search bar only */}
       <div style={{position:'relative'}}>
-        <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'#64748b'}}/>
+        <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)'}}/>
         <input className="input-field" placeholder="חיפוש..." value={search} onChange={e=>setSearch(e.target.value)} style={{paddingRight:'2.25rem'}}/>
       </div>
 
@@ -247,7 +247,7 @@ export default function Transactions() {
                 <thead>
                   <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
                     {['תאריך','תיאור','סכום','קטגוריה','ארנק','משתמש','סוג',''].map(h=>(
-                      <th key={h} style={{padding:'0.875rem 1rem',textAlign:'right',fontSize:'0.75rem',color:'#64748b',fontWeight:500,whiteSpace:'nowrap'}}>{h}</th>
+                      <th key={h} style={{padding:'0.875rem 1rem',textAlign:'right',fontSize:'0.75rem',color:'var(--text-muted)',fontWeight:500,whiteSpace:'nowrap'}}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -256,13 +256,13 @@ export default function Transactions() {
                     <tr key={t.id} style={{borderBottom:'1px solid rgba(255,255,255,0.04)',transition:'background 0.15s'}}
                         onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}
                         onMouseLeave={e=>e.currentTarget.style.background=''}>
-                      <td style={{padding:'0.875rem 1rem',color:'#64748b',fontSize:'0.8rem',whiteSpace:'nowrap'}}>{new Date(t.date).toLocaleDateString('he-IL')}</td>
-                      <td style={{padding:'0.875rem 1rem',color:'#e2e8f0',fontSize:'0.875rem',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.description}</td>
+                      <td style={{padding:'0.875rem 1rem',color:'var(--text-muted)',fontSize:'0.8rem',whiteSpace:'nowrap'}}>{new Date(t.date).toLocaleDateString('he-IL')}</td>
+                      <td style={{padding:'0.875rem 1rem',color:'var(--text)',fontSize:'0.875rem',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.description}</td>
                       <td style={{padding:'0.875rem 1rem',fontWeight:600,whiteSpace:'nowrap',color: t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>
                         {t.type==='income'?'+':t.type==='transfer'?'↔':'-'}{t.currency}{Number(t.amount).toLocaleString()}
                       </td>
-                      <td style={{padding:'0.875rem 1rem',fontSize:'0.8rem',color:'#94a3b8'}}>{t.categories ? `${t.categories.icon||''} ${t.categories.name}` : '—'}</td>
-                      <td style={{padding:'0.875rem 1rem',fontSize:'0.8rem',color:'#94a3b8'}}>
+                      <td style={{padding:'0.875rem 1rem',fontSize:'0.8rem',color:'var(--text-sub)'}}>{t.categories ? `${t.categories.icon||''} ${t.categories.name}` : '—'}</td>
+                      <td style={{padding:'0.875rem 1rem',fontSize:'0.8rem',color:'var(--text-sub)'}}>
                         {t.type === 'transfer'
                           ? <>
                               <span>{t.wallets?.icon||''} {t.wallets?.name||'—'}</span>
@@ -271,7 +271,7 @@ export default function Transactions() {
                             </>
                           : t.wallets ? `${t.wallets.icon||''} ${t.wallets.name}` : '—'}
                       </td>
-                      <td style={{padding:'0.875rem 1rem',fontSize:'0.8rem',color:'#94a3b8'}}>{t.profiles?.name || '—'}</td>
+                      <td style={{padding:'0.875rem 1rem',fontSize:'0.8rem',color:'var(--text-sub)'}}>{t.profiles?.name || '—'}</td>
                       <td style={{padding:'0.875rem 1rem'}}>
                         <span className={t.type==='income'?'badge-income':t.type==='transfer'?'badge-transfer':t.type.startsWith('loan')?'badge-loan':'badge-expense'}>
                           {TYPE_LABELS[t.type]}
@@ -280,7 +280,7 @@ export default function Transactions() {
                       </td>
                       <td style={{padding:'0.875rem 1rem'}}>
                         <div style={{display:'flex',gap:'0.25rem'}}>
-                          <button onClick={()=>openEdit(t)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b',padding:'0.25rem',borderRadius:'0.375rem'}}><Edit2 size={13}/></button>
+                          <button onClick={()=>openEdit(t)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',padding:'0.25rem',borderRadius:'0.375rem'}}><Edit2 size={13}/></button>
                           <button onClick={()=>handleDelete(t)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.25rem',borderRadius:'0.375rem'}}><Trash2 size={13}/></button>
                         </div>
                       </td>
@@ -306,33 +306,33 @@ export default function Transactions() {
         <div style={{position:'fixed',inset:0,zIndex:60,display:'flex',alignItems:'flex-end'}} onClick={()=>setFilterOpen(false)}>
           <div style={{width:'100%',background:'#1a1a2e',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',boxShadow:'0 -8px 40px rgba(0,0,0,0.5)'}} onClick={e=>e.stopPropagation()}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.25rem'}}>
-              <span style={{fontWeight:700,fontSize:'1rem',color:'#e2e8f0'}}>סינון</span>
-              <button onClick={()=>setFilterOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'#64748b'}}><X size={20}/></button>
+              <span style={{fontWeight:700,fontSize:'1rem',color:'var(--text)'}}>סינון</span>
+              <button onClick={()=>setFilterOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)'}}><X size={20}/></button>
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
               <div>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>סוג</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>סוג</label>
                 <select className="input-field" value={filter.type} onChange={e=>setFilter({...filter,type:e.target.value})}>
                   <option value="">הכל</option>
                   {Object.entries(TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>קטגוריה</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>קטגוריה</label>
                 <select className="input-field" value={filter.category} onChange={e=>setFilter({...filter,category:e.target.value})}>
                   <option value="">הכל</option>
                   {buildCatOptions(categories)}
                 </select>
               </div>
               <div>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>ארנק</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>ארנק</label>
                 <select className="input-field" value={filter.wallet} onChange={e=>setFilter({...filter,wallet:e.target.value})}>
                   <option value="">הכל</option>
                   {wallets.map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>משתמש</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>משתמש</label>
                 <select className="input-field" value={filter.user} onChange={e=>setFilter({...filter,user:e.target.value})}>
                   <option value="">הכל</option>
                   {profiles.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
@@ -340,11 +340,11 @@ export default function Transactions() {
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem'}}>
                 <div>
-                  <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>מתאריך</label>
+                  <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>מתאריך</label>
                   <input className="input-field" type="date" value={filter.dateFrom} onChange={e=>setFilter({...filter,dateFrom:e.target.value})} dir="ltr"/>
                 </div>
                 <div>
-                  <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>עד תאריך</label>
+                  <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>עד תאריך</label>
                   <input className="input-field" type="date" value={filter.dateTo} onChange={e=>setFilter({...filter,dateTo:e.target.value})} dir="ltr"/>
                 </div>
               </div>

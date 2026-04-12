@@ -107,7 +107,7 @@ export default function CalendarPage() {
         borderRadius:'0.625rem',cursor:'pointer',transition:'all 0.15s',position:'relative',
         background:isSel?'rgba(108,99,255,0.3)':isToday?'rgba(108,99,255,0.15)':'transparent',
         border:isSel?'1px solid rgba(108,99,255,0.5)':isToday?'1px solid rgba(108,99,255,0.3)':'1px solid transparent',
-        color:isSel?'#a78bfa':isToday?'#c4b5fd':'#e2e8f0',
+        color:isSel?'#a78bfa':isToday?'#c4b5fd':'var(--text)',
         fontSize:'0.875rem',fontWeight:isToday||isSel?700:400,
         padding: compact ? 0 : '0.5rem',
       }}>
@@ -125,14 +125,14 @@ export default function CalendarPage() {
   function renderEvents(ds) {
     const tx = txByDate[ds] || []
     const rem = remByDate[ds] || []
-    if (!tx.length && !rem.length) return <p style={{color:'#475569',fontSize:'0.85rem',textAlign:'center',marginTop:'1rem'}}>אין אירועים</p>
+    if (!tx.length && !rem.length) return <p style={{color:'var(--text-dim)',fontSize:'0.85rem',textAlign:'center',marginTop:'1rem'}}>אין אירועים</p>
     return <>
       {tx.length > 0 && (
         <div style={{marginBottom:'1rem'}}>
           <div style={{fontSize:'0.75rem',color:'#6c63ff',fontWeight:600,marginBottom:'0.5rem'}}>💳 טרנזקציות</div>
           {tx.map((t,i)=>(
             <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
-              <div style={{fontSize:'0.8rem',color:'#e2e8f0'}}>{t.description}</div>
+              <div style={{fontSize:'0.8rem',color:'var(--text)'}}>{t.description}</div>
               <div style={{fontSize:'0.75rem',fontWeight:600,color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>
                 {t.type==='income'?'+':t.type==='transfer'?'↔':'-'}{t.currency||'₪'}{Number(t.amount).toLocaleString()}
               </div>
@@ -145,7 +145,7 @@ export default function CalendarPage() {
           <div style={{fontSize:'0.75rem',color:'#fbbf24',fontWeight:600,marginBottom:'0.5rem'}}>🔔 תזכורות</div>
           {rem.map((r,i)=>(
             <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
-              <div style={{fontSize:'0.8rem',color:'#e2e8f0',textDecoration:r.is_completed?'line-through':'none'}}>{r.title}</div>
+              <div style={{fontSize:'0.8rem',color:'var(--text)',textDecoration:r.is_completed?'line-through':'none'}}>{r.title}</div>
             </div>
           ))}
         </div>
@@ -156,14 +156,14 @@ export default function CalendarPage() {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'0.75rem'}}>
-        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>לוח שנה</h1>
+        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>לוח שנה</h1>
         <div style={{display:'flex',gap:'0.375rem'}}>
           {[['month','חודש'],['week','שבוע'],['day','יום']].map(([v,label])=>(
             <button key={v} onClick={()=>{setView(v);setSelected(null)}} style={{
               padding:'0.375rem 0.875rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',
               border:`1px solid ${view===v?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,
               background:view===v?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',
-              color:view===v?'#a78bfa':'#94a3b8',
+              color:view===v?'#a78bfa':'var(--text-sub)',
             }}>{label}</button>
           ))}
         </div>
@@ -173,16 +173,16 @@ export default function CalendarPage() {
         <div className="page-card">
           {/* Navigation */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.5rem'}}>
-            <button onClick={prev} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'#e2e8f0',padding:'0.375rem',display:'flex'}}><ChevronRight size={18}/></button>
-            <h2 style={{margin:0,fontSize:'1.1rem',fontWeight:600,color:'#e2e8f0'}}>{headerTitle()}</h2>
-            <button onClick={next} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'#e2e8f0',padding:'0.375rem',display:'flex'}}><ChevronLeft size={18}/></button>
+            <button onClick={prev} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'var(--text)',padding:'0.375rem',display:'flex'}}><ChevronRight size={18}/></button>
+            <h2 style={{margin:0,fontSize:'1.1rem',fontWeight:600,color:'var(--text)'}}>{headerTitle()}</h2>
+            <button onClick={next} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'var(--text)',padding:'0.375rem',display:'flex'}}><ChevronLeft size={18}/></button>
           </div>
 
           {/* MONTH VIEW */}
           {view === 'month' && <>
             <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem',marginBottom:'0.5rem'}}>
               {DAYS_HE.map(d=>(
-                <div key={d} style={{textAlign:'center',fontSize:'0.75rem',color:'#64748b',fontWeight:600,padding:'0.25rem'}}>{d}</div>
+                <div key={d} style={{textAlign:'center',fontSize:'0.75rem',color:'var(--text-muted)',fontWeight:600,padding:'0.25rem'}}>{d}</div>
               ))}
             </div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem'}}>
@@ -198,7 +198,7 @@ export default function CalendarPage() {
           {view === 'week' && <>
             <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem',marginBottom:'0.5rem'}}>
               {weekDays.map((d,i)=>(
-                <div key={i} style={{textAlign:'center',fontSize:'0.7rem',color:'#64748b',fontWeight:600}}>{DAYS_HE[i]}</div>
+                <div key={i} style={{textAlign:'center',fontSize:'0.7rem',color:'var(--text-muted)',fontWeight:600}}>{DAYS_HE[i]}</div>
               ))}
             </div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem'}}>
@@ -227,7 +227,7 @@ export default function CalendarPage() {
           {/* DAY VIEW */}
           {view === 'day' && (
             <div>
-              <div style={{fontSize:'0.85rem',color:'#94a3b8',marginBottom:'1rem',textAlign:'center'}}>
+              <div style={{fontSize:'0.85rem',color:'var(--text-sub)',marginBottom:'1rem',textAlign:'center'}}>
                 {current.getDate()} {MONTHS_HE[current.getMonth()]} {current.getFullYear()}
               </div>
               {renderEvents(dateStr(current))}
@@ -237,7 +237,7 @@ export default function CalendarPage() {
           {/* Legend */}
           <div style={{marginTop:'1rem',display:'flex',gap:'1rem',justifyContent:'center'}}>
             {[['#6c63ff','טרנזקציות'],['#fbbf24','תזכורות']].map(([c,l])=>(
-              <div key={l} style={{display:'flex',alignItems:'center',gap:'0.375rem',fontSize:'0.75rem',color:'#64748b'}}>
+              <div key={l} style={{display:'flex',alignItems:'center',gap:'0.375rem',fontSize:'0.75rem',color:'var(--text-muted)'}}>
                 <div style={{width:8,height:8,borderRadius:'50%',background:c}}/>
                 {l}
               </div>
@@ -249,13 +249,13 @@ export default function CalendarPage() {
         <div className="page-card">
           {selectedDateStr2 ? (
             <>
-              <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#e2e8f0'}}>
+              <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text)'}}>
                 {(() => { const d = new Date(selectedDateStr2+'T00:00:00'); return `${d.getDate()} ${MONTHS_HE[d.getMonth()]}` })()}
               </h3>
               {renderEvents(selectedDateStr2)}
             </>
           ) : (
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:'#475569',textAlign:'center',gap:'0.5rem'}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:'var(--text-dim)',textAlign:'center',gap:'0.5rem'}}>
               <span style={{fontSize:'2rem'}}>📅</span>
               <p style={{margin:0,fontSize:'0.85rem'}}>לחץ על תאריך לצפייה באירועים</p>
             </div>

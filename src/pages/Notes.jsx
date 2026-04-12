@@ -65,10 +65,10 @@ export default function Notes() {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>פתקים</h1>
+        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>פתקים</h1>
         <div style={{display:'flex',gap:'0.75rem',alignItems:'center'}}>
           <div style={{position:'relative'}}>
-            <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'#64748b'}}/>
+            <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)'}}/>
             <input className="input-field" style={{paddingRight:'2.25rem',width:200}} placeholder="חיפוש..." value={search} onChange={e=>setSearch(e.target.value)}/>
           </div>
           <button className="btn-primary" onClick={openAdd}><Plus size={15}/>פתק חדש</button>
@@ -100,15 +100,15 @@ export default function Notes() {
       <Modal open={modal} onClose={()=>setModal(false)} title={editing?'ערוך פתק':'פתק חדש'}>
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>כותרת (אופציונלי)</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>כותרת (אופציונלי)</label>
             <input className="input-field" placeholder="כותרת..." value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/>
           </div>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>תוכן</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>תוכן</label>
             <textarea className="input-field" placeholder="תוכן הפתק..." value={form.content} onChange={e=>setForm({...form,content:e.target.value})} rows={5} style={{resize:'vertical'}}/>
           </div>
           <div>
-            <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.5rem'}}>צבע</label>
+            <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.5rem'}}>צבע</label>
             <div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
               {NOTE_COLORS.map(c=>(
                 <button key={c} onClick={()=>setForm({...form,color:c})} style={{width:32,height:32,borderRadius:'0.5rem',background:c,border:`3px solid ${form.color===c?'#6c63ff':'transparent'}`,cursor:'pointer'}}/>

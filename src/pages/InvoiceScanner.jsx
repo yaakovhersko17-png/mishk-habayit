@@ -220,7 +220,7 @@ export default function InvoiceScanner() {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem',maxWidth:720}}>
       <div style={{display:'flex',alignItems:'center',gap:'0.75rem'}}>
-        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'#e2e8f0'}}>סריקת חשבונית</h1>
+        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>סריקת חשבונית</h1>
         <span style={{fontSize:'0.7rem',padding:'0.2rem 0.6rem',borderRadius:'999px',background:'rgba(108,99,255,0.15)',color:'#a78bfa',border:'1px solid rgba(108,99,255,0.25)',fontWeight:600}}>Gemini AI</span>
       </div>
 
@@ -228,8 +228,8 @@ export default function InvoiceScanner() {
       {step === 'upload' && (
         <div className="page-card" style={{textAlign:'center'}}>
           <div style={{fontSize:'3rem',marginBottom:'1rem'}}>✨</div>
-          <h2 style={{margin:'0 0 0.5rem',color:'#e2e8f0',fontSize:'1.1rem'}}>העלה חשבונית לניתוח חכם</h2>
-          <p style={{color:'#64748b',fontSize:'0.875rem',marginBottom:'2rem'}}>Gemini AI יזהה מוצרים, מחירים ופרטי עסק אוטומטית (JPG, PNG, PDF)</p>
+          <h2 style={{margin:'0 0 0.5rem',color:'var(--text)',fontSize:'1.1rem'}}>העלה חשבונית לניתוח חכם</h2>
+          <p style={{color:'var(--text-muted)',fontSize:'0.875rem',marginBottom:'2rem'}}>Gemini AI יזהה מוצרים, מחירים ופרטי עסק אוטומטית (JPG, PNG, PDF)</p>
 
           <div style={{border:'2px dashed rgba(108,99,255,0.3)',borderRadius:'1rem',padding:'2rem',marginBottom:'1.5rem',transition:'all 0.2s',background:'rgba(108,99,255,0.05)'}}
             onDragOver={e=>{e.preventDefault();e.currentTarget.style.borderColor='rgba(108,99,255,0.6)'}}
@@ -237,7 +237,7 @@ export default function InvoiceScanner() {
             onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f){setFile(f);const r=new FileReader();r.onload=ev=>setPreview(ev.target.result);r.readAsDataURL(f)}}}>
             {preview
               ? <img src={preview} alt="preview" style={{maxWidth:'100%',maxHeight:220,borderRadius:'0.5rem',objectFit:'contain'}}/>
-              : <><Upload size={32} style={{color:'#6c63ff',margin:'0 auto 0.75rem'}}/><p style={{margin:0,color:'#94a3b8',fontSize:'0.875rem'}}>גרור קובץ לכאן</p></>
+              : <><Upload size={32} style={{color:'#6c63ff',margin:'0 auto 0.75rem'}}/><p style={{margin:0,color:'var(--text-sub)',fontSize:'0.875rem'}}>גרור קובץ לכאן</p></>
             }
           </div>
 
@@ -254,7 +254,7 @@ export default function InvoiceScanner() {
 
           {file && (
             <div style={{marginTop:'1.5rem'}}>
-              <div style={{fontSize:'0.85rem',color:'#94a3b8',marginBottom:'0.75rem'}}>✅ {file.name} ({(file.size/1024/1024).toFixed(1)}MB)</div>
+              <div style={{fontSize:'0.85rem',color:'var(--text-sub)',marginBottom:'0.75rem'}}>✅ {file.name} ({(file.size/1024/1024).toFixed(1)}MB)</div>
               <button className="btn-primary" onClick={analyzeInvoice} style={{width:'100%',justifyContent:'center',padding:'0.875rem',fontSize:'1rem'}}>
                 <ScanLine size={16}/>נתח עם Gemini AI
               </button>
@@ -274,14 +274,14 @@ export default function InvoiceScanner() {
         <div className="page-card" style={{textAlign:'center',padding:'3rem'}}>
           <div style={{width:56,height:56,borderRadius:'50%',border:'3px solid rgba(108,99,255,0.3)',borderTopColor:'#6c63ff',animation:'spin 1s linear infinite',margin:'0 auto 1.5rem'}}/>
           <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-          <h2 style={{color:'#e2e8f0',margin:'0 0 0.5rem'}}>Gemini AI מנתח את החשבונית...</h2>
-          <p style={{color:'#64748b',margin:'0 0 1.5rem',fontSize:'0.875rem'}}>מזהה מוצרים, מחירים ופרטי עסק</p>
+          <h2 style={{color:'var(--text)',margin:'0 0 0.5rem'}}>Gemini AI מנתח את החשבונית...</h2>
+          <p style={{color:'var(--text-muted)',margin:'0 0 1.5rem',fontSize:'0.875rem'}}>מזהה מוצרים, מחירים ופרטי עסק</p>
           {scanProgress > 0 && (
             <div style={{width:'100%',maxWidth:240,margin:'0 auto'}}>
               <div style={{background:'rgba(255,255,255,0.06)',borderRadius:'999px',height:6,overflow:'hidden'}}>
                 <div style={{width:`${scanProgress}%`,height:'100%',background:'linear-gradient(90deg,#6c63ff,#8b5cf6)',transition:'width 0.4s',borderRadius:'999px'}}/>
               </div>
-              <div style={{marginTop:'0.5rem',fontSize:'0.8rem',color:'#64748b'}}>{scanProgress}%</div>
+              <div style={{marginTop:'0.5rem',fontSize:'0.8rem',color:'var(--text-muted)'}}>{scanProgress}%</div>
             </div>
           )}
         </div>
@@ -294,8 +294,8 @@ export default function InvoiceScanner() {
             <AlertCircle size={28} color="#f87171"/>
           </div>
           <h2 style={{color:'#f87171',margin:'0 0 0.625rem',fontSize:'1.1rem'}}>לא ניתן לזהות חשבונית</h2>
-          <p style={{color:'#94a3b8',fontSize:'0.875rem',margin:'0 0 0.25rem'}}>לא מצאנו נתוני רכישה בתמונה.</p>
-          <p style={{color:'#64748b',fontSize:'0.8rem',margin:'0 0 2rem'}}>וודא שהתמונה ברורה ומכילה פרטי עסק וסכומים.</p>
+          <p style={{color:'var(--text-sub)',fontSize:'0.875rem',margin:'0 0 0.25rem'}}>לא מצאנו נתוני רכישה בתמונה.</p>
+          <p style={{color:'var(--text-muted)',fontSize:'0.8rem',margin:'0 0 2rem'}}>וודא שהתמונה ברורה ומכילה פרטי עסק וסכומים.</p>
           <div style={{display:'flex',gap:'0.75rem',justifyContent:'center',flexWrap:'wrap'}}>
             <button className="btn-ghost" onClick={reset}><ScanLine size={14}/>נסה שוב</button>
             <button className="btn-primary" onClick={enterManual}><Plus size={14}/>הזן נתונים ידנית</button>
@@ -308,31 +308,31 @@ export default function InvoiceScanner() {
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
 
           <div className="page-card">
-            <h2 style={{margin:'0 0 1rem',fontSize:'1rem',fontWeight:600,color:'#e2e8f0'}}>✅ בדוק ואשר את הנתונים שזוהו</h2>
+            <h2 style={{margin:'0 0 1rem',fontSize:'1rem',fontWeight:600,color:'var(--text)'}}>✅ בדוק ואשר את הנתונים שזוהו</h2>
 
             <div style={{marginBottom:'0.75rem'}}>
-              <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>שם עסק</label>
+              <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>שם עסק</label>
               <input className="input-field" value={result.business_name} onChange={e=>setResult({...result,business_name:e.target.value})} placeholder="שם העסק..."/>
             </div>
 
             {result.invoice_number && (
               <div style={{marginBottom:'0.75rem'}}>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>מספר חשבונית</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>מספר חשבונית</label>
                 <input className="input-field" value={result.invoice_number} onChange={e=>setResult({...result,invoice_number:e.target.value})} dir="ltr"/>
               </div>
             )}
 
             <div style={{display:'flex',gap:'0.75rem',marginBottom:'0.75rem',flexWrap:'wrap'}}>
               <div style={{flex:1,minWidth:120}}>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>תאריך</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>תאריך</label>
                 <input className="input-field" type="date" value={result.date} onChange={e=>setResult({...result,date:e.target.value})} dir="ltr" style={{width:'100%'}}/>
               </div>
               <div style={{flex:1,minWidth:100}}>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>סה"כ לתשלום (₪)</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>סה"כ לתשלום (₪)</label>
                 <input className="input-field" type="number" value={result.total} onChange={e=>setResult({...result,total:Number(e.target.value)})} dir="ltr" style={{width:'100%',border:'1px solid rgba(108,99,255,0.4)'}}/>
               </div>
               <div style={{flex:1,minWidth:80}}>
-                <label style={{fontSize:'0.75rem',color:'#64748b',display:'block',marginBottom:'0.25rem'}}>מע"מ (₪)</label>
+                <label style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'block',marginBottom:'0.25rem'}}>מע"מ (₪)</label>
                 <input className="input-field" type="number" value={result.vat} onChange={e=>setResult({...result,vat:Number(e.target.value)})} dir="ltr" style={{width:'100%'}}/>
               </div>
             </div>
@@ -340,7 +340,7 @@ export default function InvoiceScanner() {
 
           <div className="page-card">
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1rem'}}>
-              <h2 style={{margin:0,fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>פירוט מוצרים ({result.items.length})</h2>
+              <h2 style={{margin:0,fontSize:'0.9rem',fontWeight:600,color:'var(--text-sub)'}}>פירוט מוצרים ({result.items.length})</h2>
               <button className="btn-ghost" onClick={addItem} style={{fontSize:'0.8rem',padding:'0.3rem 0.75rem'}}><Plus size={13}/>הוסף שורה</button>
             </div>
             <div style={{overflowX:'auto'}}>
@@ -348,13 +348,13 @@ export default function InvoiceScanner() {
                 <thead>
                   <tr style={{borderBottom:'1px solid rgba(255,255,255,0.08)'}}>
                     {['שם מוצר','כמות','מחיר','סה"כ','קטגוריה',''].map(h=>(
-                      <th key={h} style={{padding:'0.5rem',textAlign:'right',fontSize:'0.73rem',color:'#64748b',whiteSpace:'nowrap'}}>{h}</th>
+                      <th key={h} style={{padding:'0.5rem',textAlign:'right',fontSize:'0.73rem',color:'var(--text-muted)',whiteSpace:'nowrap'}}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {result.items.length === 0 && (
-                    <tr><td colSpan={6} style={{padding:'1.5rem',textAlign:'center',color:'#475569',fontSize:'0.85rem'}}>אין פריטים — לחץ "הוסף שורה"</td></tr>
+                    <tr><td colSpan={6} style={{padding:'1.5rem',textAlign:'center',color:'var(--text-dim)',fontSize:'0.85rem'}}>אין פריטים — לחץ "הוסף שורה"</td></tr>
                   )}
                   {result.items.map((item, i) => (
                     <tr key={i} style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
@@ -395,9 +395,9 @@ export default function InvoiceScanner() {
           </div>
 
           <div className="page-card">
-            <h2 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'#94a3b8'}}>שיוך לארנק ושמירה</h2>
+            <h2 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text-sub)'}}>שיוך לארנק ושמירה</h2>
             <div>
-              <label style={{fontSize:'0.8rem',color:'#94a3b8',display:'block',marginBottom:'0.375rem'}}>ארנק לחיוב <span style={{color:'#f87171'}}>*</span></label>
+              <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>ארנק לחיוב <span style={{color:'#f87171'}}>*</span></label>
               <select className="input-field" value={selectedWallet} onChange={e=>setSelectedWallet(e.target.value)}>
                 <option value="">בחר ארנק</option>
                 {wallets.map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
@@ -421,7 +421,7 @@ export default function InvoiceScanner() {
         <div className="page-card" style={{textAlign:'center',padding:'3rem'}}>
           <div style={{fontSize:'4rem',marginBottom:'1rem'}}>✅</div>
           <h2 style={{color:'#4ade80',margin:'0 0 0.5rem'}}>חשבונית נשמרה בהצלחה!</h2>
-          <p style={{color:'#64748b',fontSize:'0.875rem',marginBottom:'2rem'}}>הנתונים נוספו לארכיון, לטרנזקציות ולאחסון</p>
+          <p style={{color:'var(--text-muted)',fontSize:'0.875rem',marginBottom:'2rem'}}>הנתונים נוספו לארכיון, לטרנזקציות ולאחסון</p>
           <div style={{display:'flex',gap:'0.75rem',justifyContent:'center',flexWrap:'wrap'}}>
             <button className="btn-ghost" onClick={() => setTxSheet(true)}>
               <Plus size={14}/>הוסף גם כעסקה
