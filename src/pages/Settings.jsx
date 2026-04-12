@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { Save } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -14,6 +15,7 @@ function loadLS(key, fallback) {
 
 export default function Settings() {
   const { profile } = useAuth()
+  const { theme, setTheme } = useTheme()
 
   const [dinnerDays, setDinnerDays] = useState(() => loadLS(DINNER_DAYS_KEY, [0,1,2,3,4,5]))
   const [dinnerTime, setDinnerTime] = useState(() => loadLS(DINNER_TIME_KEY, '19:00'))
@@ -51,6 +53,26 @@ export default function Settings() {
           {row('תפקיד', profile?.role === 'admin' ? 'אדמין' : 'משתמש')}
           {row('מטבע בסיס', '₪ שקל')}
           {row('גיבוי', 'Supabase Cloud – אוטומטי')}
+        </div>
+      </div>
+
+      {/* Appearance */}
+      <div className="page-card">
+        {sectionTitle('🎨 מראה')}
+        <div style={{display:'flex',gap:'0.625rem'}}>
+          {[['dark','🌙 כהה'],['light','☀️ בהיר']].map(([val, lbl]) => {
+            const active = theme === val
+            return (
+              <button key={val} onClick={() => setTheme(val)} style={{
+                flex:1, padding:'0.625rem 1rem', borderRadius:'0.75rem', fontSize:'0.875rem',
+                cursor:'pointer', fontWeight: active ? 600 : 400,
+                border: `1px solid ${active ? 'rgba(108,99,255,0.6)' : 'rgba(255,255,255,0.08)'}`,
+                background: active ? 'rgba(108,99,255,0.25)' : 'rgba(255,255,255,0.03)',
+                color: active ? '#a78bfa' : '#94a3b8',
+                transition:'all 0.15s',
+              }}>{lbl}</button>
+            )
+          })}
         </div>
       </div>
 

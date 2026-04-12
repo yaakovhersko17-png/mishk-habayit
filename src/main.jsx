@@ -3,6 +3,7 @@ import { Component } from 'react'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
+import { ThemeProvider } from './context/ThemeContext.jsx'
 import { Toaster } from 'react-hot-toast'
 
 class ErrorBoundary extends Component {
@@ -41,6 +42,7 @@ if ('serviceWorker' in navigator) {
 
 createRoot(document.getElementById('root')).render(
   <ErrorBoundary>
+    <ThemeProvider>
     <AuthProvider>
       <App />
       <Toaster
@@ -59,5 +61,6 @@ createRoot(document.getElementById('root')).render(
         }}
       />
     </AuthProvider>
+    </ThemeProvider>
   </ErrorBoundary>
 )

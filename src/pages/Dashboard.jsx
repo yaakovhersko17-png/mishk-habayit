@@ -54,14 +54,30 @@ export default function Dashboard() {
 
     // Today's events for daily widget
     const todayStr = now.toISOString().split('T')[0]
+    const tomorrowStr = new Date(now.getTime() + 86400000).toISOString().split('T')[0]
     const events = []
     ;(txData || []).filter(t => t.date === todayStr).forEach(t => {
       events.push({ type: 'transaction', icon: t.type === 'income' ? '💰' : t.type === 'transfer' ? '↔️' : t.type.startsWith('loan') ? '🏦' : '💸', label: t.description, sub: `${t.type === 'income' ? '+' : t.type === 'transfer' ? '↔' : '-'}₪${Number(t.amount).toLocaleString()}`, route: '/transactions', color: t.type === 'income' ? '#4ade80' : t.type === 'transfer' ? '#22d3ee' : t.type.startsWith('loan') ? '#fbbf24' : '#f87171' })
     })
-    const { data: remData } = await supabase.from('reminders').select('*').eq('due_date', todayStr)
+
+    // Reminders due today (fix: use date range to handle datetime values, fix field name is_completed)
+    const { data: remData } = await supabase.from('reminders').select('*').gte('due_date', todayStr).lt('due_date', tomorrowStr)
     ;(remData || []).forEach(r => {
-      events.push({ type: 'reminder', icon: r.completed ? '✅' : new Date(r.due_date) < now ? '⚠️' : '🔔', label: r.title, sub: r.completed ? 'הושלם' : 'תזכורת', route: '/reminders', color: r.completed ? '#4ade80' : '#fbbf24' })
+      events.push({ type: 'reminder', icon: r.is_completed ? '✅' : new Date(r.due_date) < now ? '⚠️' : '🔔', label: r.title, sub: r.is_completed ? 'הושלם' : 'תזכורת', route: '/reminders', color: r.is_completed ? '#4ade80' : '#fbbf24' })
     })
+
+    // Dinner reminder — show only after configured time on active days
+    try {
+      const dinnerDays = JSON.parse(localStorage.getItem('dinner_active_days') || '[0,1,2,3,4,5]')
+      const dinnerTime = JSON.parse(localStorage.getItem('dinner_default_time') || '"19:00"')
+      const todayDow = now.getDay()
+      const [dh, dm] = String(dinnerTime).split(':').map(Number)
+      const nowMins = now.getHours() * 60 + now.getMinutes()
+      const dinnerMins = dh * 60 + dm
+      if (dinnerDays.includes(todayDow) && nowMins >= dinnerMins) {
+        events.push({ type: 'dinner', icon: '🍽️', label: 'ארוחת ערב', sub: `הוגדרה ל-${dinnerTime}`, route: '/dinners', color: '#f97316' })
+      }
+    } catch (_) {}
     const { data: invData } = await supabase.from('invoices').select('business_name,total,currency').eq('date', todayStr)
     ;(invData || []).forEach(inv => {
       events.push({ type: 'invoice', icon: '🧾', label: inv.business_name, sub: `${inv.currency}${Number(inv.total).toLocaleString()}`, route: '/invoices', color: '#a78bfa' })
