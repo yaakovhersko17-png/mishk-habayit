@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase, cached, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Check, X, Star, ChevronLeft } from 'lucide-react'
+import { Check, X, Star } from 'lucide-react'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import toast from 'react-hot-toast'
 
@@ -250,6 +250,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
           {/* Wallet (hidden for debt_unpaid) */}
           {showWallet && (<>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52}}>
+              <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>{type==='transfer'?'מארנק':'חשבון לחיוב'}</span>
               <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
                 {selW && (
                   <div style={{width:26,height:26,borderRadius:'50%',background:'rgba(239,68,68,0.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.85rem',fontWeight:700,color:'#f87171',flexShrink:0}}>
@@ -262,47 +263,45 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
                   {wallets.map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
                 </select>
               </div>
-              <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>{type==='transfer'?'מארנק':'חשבון לחיוב'}</span>
             </div>
             {sep()}
           </>)}
 
           {type === 'transfer' && (<>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52}}>
+              <span style={{color:'#22d3ee',fontSize:'0.875rem',flexShrink:0}}>לארנק</span>
               <select value={form.to_wallet_id} onChange={e=>setForm(f=>({...f,to_wallet_id:e.target.value}))}
                 style={{background:'none',border:'none',outline:'none',color:form.to_wallet_id?'#e2e8f0':'#475569',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:160}}>
                 <option value="">בחר ארנק יעד</option>
                 {wallets.filter(w=>w.id!==form.wallet_id).map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
               </select>
-              <span style={{color:'#22d3ee',fontSize:'0.875rem',flexShrink:0}}>לארנק</span>
             </div>
             {sep()}
           </>)}
 
           {/* Amount */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52}}>
+            <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>סכום</span>
             <div style={{display:'flex',alignItems:'center',gap:'0.375rem',direction:'ltr'}}>
-              <ChevronLeft size={16} color={activeColor}/>
+              <input type="number" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))} placeholder="0.00"
+                style={{background:'none',border:'none',outline:'none',color:form.amount?'#e2e8f0':'#475569',fontSize:'1.1rem',fontWeight:700,width:100,textAlign:'right',fontFamily:'inherit'}} dir="ltr"/>
               <select value={form.currency} onChange={e=>setForm(f=>({...f,currency:e.target.value}))}
                 style={{background:'none',border:'none',outline:'none',color:'#64748b',fontSize:'0.875rem',fontFamily:'inherit'}}>
                 <option>₪</option><option>$</option><option>€</option>
               </select>
-              <input type="number" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))} placeholder="0.00"
-                style={{background:'none',border:'none',outline:'none',color:form.amount?'#e2e8f0':'#475569',fontSize:'1.1rem',fontWeight:700,width:100,textAlign:'left',fontFamily:'inherit'}} dir="ltr"/>
             </div>
-            <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>סכום</span>
           </div>
 
           {sep()}
           {/* Date + Time */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52,gap:'0.5rem'}}>
+            <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>תאריך</span>
             <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
-              <input type="time" value={form.time} onChange={e=>setForm(f=>({...f,time:e.target.value}))}
-                style={{background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.5rem',padding:'0.25rem 0.5rem',color:'#e2e8f0',fontSize:'0.82rem',outline:'none',fontFamily:'inherit'}} dir="ltr"/>
               <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}
                 style={{background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.5rem',padding:'0.25rem 0.5rem',color:'#e2e8f0',fontSize:'0.82rem',outline:'none',fontFamily:'inherit'}} dir="ltr"/>
+              <input type="time" value={form.time} onChange={e=>setForm(f=>({...f,time:e.target.value}))}
+                style={{background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.5rem',padding:'0.25rem 0.5rem',color:'#e2e8f0',fontSize:'0.82rem',outline:'none',fontFamily:'inherit'}} dir="ltr"/>
             </div>
-            <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>תאריך</span>
           </div>
         </div>
 
@@ -310,22 +309,22 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
         <div style={{background:'rgba(255,255,255,0.04)',borderRadius:'1rem',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden'}}>
           {type !== 'transfer' && (<>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52}}>
+              <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>קטגוריה</span>
               <select value={form.category_id} onChange={e=>setForm(f=>({...f,category_id:e.target.value}))}
                 style={{background:'none',border:'none',outline:'none',color:form.category_id?'#e2e8f0':'#475569',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:200}}>
                 <option value="">ללא קטגוריה</option>
                 {buildCatOptions(categories)}
               </select>
-              <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>קטגוריה</span>
             </div>
             {sep()}
           </>)}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52}}>
+            <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>בן משפחה</span>
             <select value={form.assigned_to||''} onChange={e=>setForm(f=>({...f,assigned_to:e.target.value}))}
               style={{background:'none',border:'none',outline:'none',color:form.assigned_to?'#e2e8f0':'#475569',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:180}}>
               <option value="">לא נבחר</option>
               {profiles.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <span style={{color:'#94a3b8',fontSize:'0.875rem',flexShrink:0}}>בן משפחה</span>
           </div>
         </div>
 
