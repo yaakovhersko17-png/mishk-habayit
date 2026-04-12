@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, cached, withRetry } from '../lib/supabase'
+import { supabase, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2, History, Lightbulb, ScanLine, Archive, ChevronDown } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
@@ -36,13 +36,11 @@ export default function Dashboard() {
 
   async function loadData() {
     setLoading(true)
-    const [{ data: walletsData }, { data: txData }, { data: cats }] = await Promise.all([
+    const [{ data: walletsData }, { data: txData }] = await Promise.all([
       withRetry(() => supabase.from('wallets').select('*').order('created_at')),
       withRetry(() => supabase.from('transactions').select('*,categories(name,color),profiles(name)').order('date', { ascending: false })),
-      cached('categories', () => supabase.from('categories').select('*'), 120_000),
     ])
     setWallets(walletsData || [])
-    setCategories(cats || [])
 
     const now = new Date()
     const monthTxs = (txData || []).filter(t => {
