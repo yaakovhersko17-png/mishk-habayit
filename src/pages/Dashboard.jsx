@@ -72,10 +72,12 @@ export default function Dashboard() {
       const dinnerTime = JSON.parse(localStorage.getItem('dinner_default_time') || '"19:00"')
       const todayDow = now.getDay()
       const [dh, dm] = String(dinnerTime).split(':').map(Number)
+      const dinnerMins = (dh || 0) * 60 + (dm || 0)
       const nowMins = now.getHours() * 60 + now.getMinutes()
-      const dinnerMins = dh * 60 + dm
-      if (dinnerDays.includes(todayDow) && nowMins >= dinnerMins) {
-        const { data: dinnerData } = await supabase.from('dinner_meals').select('id').eq('meal_date', todayStr).limit(1)
+      // Use LOCAL date — not toISOString() which is UTC and drifts at night
+      const localToday = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
+      if (dinnerDays.includes(todayDow) && dinnerMins > 0 && nowMins >= dinnerMins) {
+        const { data: dinnerData } = await supabase.from('dinner_meals').select('id').eq('meal_date', localToday).limit(1)
         if (!dinnerData || dinnerData.length === 0) {
           events.push({ type: 'dinner', icon: '🍽️', label: 'ארוחת ערב', sub: `הוגדרה ל-${dinnerTime}`, route: '/dinners', color: '#f97316' })
         }
