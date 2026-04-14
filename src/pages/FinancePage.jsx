@@ -4,15 +4,6 @@ import { supabase } from '../lib/supabase'
 import { Wallet, Tag, ArrowLeftRight, ChevronLeft, ScanLine, Archive, Lightbulb, BarChart2 } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 
-function MiniStat({ label, value, color, sub }) {
-  return (
-    <div style={{padding:'0.875rem',borderRadius:'0.875rem',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
-      <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginBottom:'0.375rem'}}>{label}</div>
-      <div style={{fontSize:'1.2rem',fontWeight:700,color:'var(--text)'}}>{value}</div>
-      {sub && <div style={{fontSize:'0.7rem',color,marginTop:'0.2rem'}}>{sub}</div>}
-    </div>
-  )
-}
 
 function NavRow({ icon, label, sub, color, onClick, isLast }) {
   return (
@@ -77,13 +68,23 @@ export default function FinancePage() {
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>סקירה פיננסית</h1>
 
-      {/* 4 mini stat cards */}
-      <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'0.75rem'}}>
-        <MiniStat label="יתרה כוללת"     value={`₪${totalBalance.toLocaleString()}`}       color="#6c63ff" />
-        <MiniStat label="הכנסות החודש"    value={`₪${monthly.income.toLocaleString()}`}     color="#4ade80" />
-        <MiniStat label="הוצאות החודש"    value={`₪${monthly.expense.toLocaleString()}`}    color="#f87171" />
-        <MiniStat label="הלוואות פתוחות"  value={openLoans.length}                          color="#fbbf24"
-          sub={openLoans.length > 0 ? `₪${openLoans.reduce((s,l)=>s+Number(l.amount)-Number(l.loan_returned||0),0).toLocaleString()} סה"כ` : undefined} />
+      {/* 3D Carousel */}
+      <div className="carousel-scene">
+        <div className="carousel-inner">
+          {[
+            { index:0, icon:'💰', color:'#6c63ff', bg:'rgba(108,99,255,0.22)',  label:'יתרה כוללת',     value:`₪${totalBalance.toLocaleString()}` },
+            { index:1, icon:'📈', color:'#4ade80', bg:'rgba(74,222,128,0.22)',  label:'הכנסות החודש',   value:`₪${monthly.income.toLocaleString()}` },
+            { index:2, icon:'📉', color:'#f87171', bg:'rgba(248,113,113,0.22)', label:'הוצאות החודש',   value:`₪${monthly.expense.toLocaleString()}` },
+            { index:3, icon:'🏦', color:'#fbbf24', bg:'rgba(251,191,36,0.22)',  label:'הלוואות פתוחות', value: openLoans.length },
+          ].map(c => (
+            <div key={c.index} className="carousel-card"
+              style={{'--index':c.index, background:`linear-gradient(135deg, ${c.bg}, rgba(255,255,255,0.04))`}}>
+              <div className="carousel-card__icon" style={{background:c.bg, color:c.color}}>{c.icon}</div>
+              <div className="carousel-card__value">{c.value}</div>
+              <div className="carousel-card__label">{c.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Navigation list */}
