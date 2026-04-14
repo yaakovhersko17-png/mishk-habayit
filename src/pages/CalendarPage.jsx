@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { ChevronRight, ChevronLeft, Plus, X } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Plus, X, CalendarDays } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
 
@@ -11,20 +11,27 @@ const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','�
 function dateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
-
 function sameDay(a, b) { return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate() }
 
 export default function CalendarPage() {
-  const [today] = useState(new Date())
-  const [current, setCurrent] = useState(new Date())
-  const [txByDate, setTxByDate] = useState({})
+  const [today]   = useState(new Date())
+  const [current, setCurrent]     = useState(new Date())
+  const [txByDate, setTxByDate]   = useState({})
   const [remByDate, setRemByDate] = useState({})
-  const [selected, setSelected] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [view, setView] = useState('month') // month | week | day
-  const [showAdd, setShowAdd] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [addForm, setAddForm] = useState({ title: '', date: '', time: '09:00', description: '' })
+  const [evByDate, setEvByDate]   = useState({})
+  const [selected, setSelected]   = useState(null)
+  const [loading, setLoading]     = useState(true)
+  const [view, setView]           = useState('month')
+
+  // Add event modal
+  const [showAdd, setShowAdd]     = useState(false)
+  const [saving, setSaving]       = useState(false)
+  const [addForm, setAddForm]     = useState({ title:'', date:'', time:'09:00', description:'' })
+
+  // All events modal
+  const [showAll, setShowAll]       = useState(false)
+  const [allEvents, setAllEvents]   = useState([])
+  const [loadingAll, setLoadingAll] = useState(false)
 
   useEffect(() => { load() }, [current, view])
 
@@ -33,74 +40,85 @@ export default function CalendarPage() {
     if (view === 'month') {
       const y = current.getFullYear(), m = current.getMonth()
       from = `${y}-${String(m+1).padStart(2,'0')}-01`
-      to = `${y}-${String(m+1).padStart(2,'0')}-${new Date(y,m+1,0).getDate()}`
+      to   = `${y}-${String(m+1).padStart(2,'0')}-${new Date(y,m+1,0).getDate()}`
     } else if (view === 'week') {
       const start = getWeekStart(current)
       from = dateStr(start)
       const end = new Date(start); end.setDate(end.getDate()+6)
       to = dateStr(end)
     } else {
-      from = dateStr(current)
-      to = dateStr(current)
+      from = dateStr(current); to = dateStr(current)
     }
-    const [{ data: txData }, { data: remData }] = await Promise.all([
+    const [{ data: txData }, { data: remData }, { data: evData }] = await Promise.all([
       supabase.from('transactions').select('date,type,amount,description,currency').gte('date',from).lte('date',to),
       supabase.from('reminders').select('due_date,title,is_completed').gte('due_date',from+'T00:00:00').lte('due_date',to+'T23:59:59'),
+      supabase.from('calendar_events').select('id,title,description,event_date,event_time,color').gte('event_date',from).lte('event_date',to),
     ])
-    const tbd = {}, rbd = {}
-    ;(txData||[]).forEach(t => { if (!tbd[t.date]) tbd[t.date] = []; tbd[t.date].push(t) })
-    ;(remData||[]).forEach(r => { const d = r.due_date?.split('T')[0]; if (d) { if (!rbd[d]) rbd[d]=[]; rbd[d].push(r) } })
-    setTxByDate(tbd); setRemByDate(rbd); setLoading(false)
+    const tbd={}, rbd={}, ebd={}
+    ;(txData||[]).forEach(t  => { if(!tbd[t.date]) tbd[t.date]=[]; tbd[t.date].push(t) })
+    ;(remData||[]).forEach(r => { const d=r.due_date?.split('T')[0]; if(d){if(!rbd[d])rbd[d]=[]; rbd[d].push(r)} })
+    ;(evData||[]).forEach(e  => { if(!ebd[e.event_date]) ebd[e.event_date]=[]; ebd[e.event_date].push(e) })
+    setTxByDate(tbd); setRemByDate(rbd); setEvByDate(ebd); setLoading(false)
+  }
+
+  async function loadAll() {
+    setLoadingAll(true)
+    const { data } = await supabase.from('calendar_events')
+      .select('id,title,description,event_date,event_time,color')
+      .order('event_date', { ascending: true })
+      .order('event_time', { ascending: true })
+    setAllEvents(data || [])
+    setLoadingAll(false)
+  }
+
+  async function deleteEvent(id) {
+    const { error } = await supabase.from('calendar_events').delete().eq('id', id)
+    if (error) { toast.error('שגיאה במחיקה'); return }
+    toast.success('אירוע נמחק')
+    setAllEvents(prev => prev.filter(e => e.id !== id))
+    load()
   }
 
   function getWeekStart(d) {
-    const start = new Date(d)
-    start.setDate(start.getDate() - start.getDay())
-    return start
+    const s = new Date(d); s.setDate(s.getDate()-s.getDay()); return s
   }
-
-  // Navigation
   function prev() {
-    if (view === 'month') setCurrent(new Date(current.getFullYear(), current.getMonth() - 1, 1))
-    else if (view === 'week') { const d = new Date(current); d.setDate(d.getDate() - 7); setCurrent(d) }
-    else { const d = new Date(current); d.setDate(d.getDate() - 1); setCurrent(d) }
+    if (view==='month') setCurrent(new Date(current.getFullYear(),current.getMonth()-1,1))
+    else if (view==='week') { const d=new Date(current); d.setDate(d.getDate()-7); setCurrent(d) }
+    else { const d=new Date(current); d.setDate(d.getDate()-1); setCurrent(d) }
   }
   function next() {
-    if (view === 'month') setCurrent(new Date(current.getFullYear(), current.getMonth() + 1, 1))
-    else if (view === 'week') { const d = new Date(current); d.setDate(d.getDate() + 7); setCurrent(d) }
-    else { const d = new Date(current); d.setDate(d.getDate() + 1); setCurrent(d) }
+    if (view==='month') setCurrent(new Date(current.getFullYear(),current.getMonth()+1,1))
+    else if (view==='week') { const d=new Date(current); d.setDate(d.getDate()+7); setCurrent(d) }
+    else { const d=new Date(current); d.setDate(d.getDate()+1); setCurrent(d) }
   }
-
   function headerTitle() {
-    if (view === 'month') return `${MONTHS_HE[current.getMonth()]} ${current.getFullYear()}`
-    if (view === 'day') return `${DAYS_FULL[current.getDay()]}, ${current.getDate()} ${MONTHS_HE[current.getMonth()]}`
-    const start = getWeekStart(current)
-    const end = new Date(start); end.setDate(end.getDate()+6)
-    return `${start.getDate()}–${end.getDate()} ${MONTHS_HE[current.getMonth()]} ${current.getFullYear()}`
+    if (view==='month') return `${MONTHS_HE[current.getMonth()]} ${current.getFullYear()}`
+    if (view==='day')   return `${DAYS_FULL[current.getDay()]}, ${current.getDate()} ${MONTHS_HE[current.getMonth()]}`
+    const s=getWeekStart(current), e=new Date(s); e.setDate(e.getDate()+6)
+    return `${s.getDate()}–${e.getDate()} ${MONTHS_HE[current.getMonth()]} ${current.getFullYear()}`
   }
 
-  // Selected day events
-  const selectedDateStr2 = selected || (view === 'day' ? dateStr(current) : null)
-  const selectedTx  = selectedDateStr2 ? (txByDate[selectedDateStr2] || []) : []
-  const selectedRem = selectedDateStr2 ? (remByDate[selectedDateStr2] || []) : []
+  // ── Selected day ──────────────────────────────────────────────────────────
+  const selDs    = selected || (view==='day' ? dateStr(current) : null)
+  const selTx    = selDs ? (txByDate[selDs]  || []) : []
+  const selRem   = selDs ? (remByDate[selDs] || []) : []
+  const selEv    = selDs ? (evByDate[selDs]  || []) : []
 
-  if (loading) return <LoadingSpinner />
-
+  // ── FAB / Add ─────────────────────────────────────────────────────────────
   function openAdd() {
     const d = selected || dateStr(current)
-    setAddForm({ title: '', date: d, time: '09:00', description: '' })
+    setAddForm({ title:'', date:d, time:'09:00', description:'' })
     setShowAdd(true)
   }
-
   async function saveEvent() {
     if (!addForm.title.trim() || !addForm.date) { toast.error('כותרת ותאריך חובה'); return }
     setSaving(true)
-    const due_date = `${addForm.date}T${addForm.time}:00`
-    const { error } = await supabase.from('reminders').insert({
+    const { error } = await supabase.from('calendar_events').insert({
       title: addForm.title.trim(),
       description: addForm.description.trim() || null,
-      due_date,
-      is_completed: false,
+      event_date: addForm.date,
+      event_time: addForm.time || null,
     })
     setSaving(false)
     if (error) { toast.error('שגיאה בשמירה'); return }
@@ -109,40 +127,41 @@ export default function CalendarPage() {
     load()
   }
 
-  // Month view cells
-  const year = current.getFullYear(), month = current.getMonth()
-  const firstDay = new Date(year, month, 1).getDay()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const monthCells = []
-  for (let i = 0; i < firstDay; i++) monthCells.push(null)
-  for (let d = 1; d <= daysInMonth; d++) monthCells.push(d)
+  if (loading) return <LoadingSpinner />
 
-  // Week view days
-  const weekStart = getWeekStart(current)
-  const weekDays = Array.from({length:7}, (_, i) => { const d = new Date(weekStart); d.setDate(d.getDate()+i); return d })
+  // ── Month cells ───────────────────────────────────────────────────────────
+  const year=current.getFullYear(), month=current.getMonth()
+  const firstDay=new Date(year,month,1).getDay()
+  const daysInMonth=new Date(year,month+1,0).getDate()
+  const monthCells=[]
+  for(let i=0;i<firstDay;i++) monthCells.push(null)
+  for(let d=1;d<=daysInMonth;d++) monthCells.push(d)
+  const weekStart=getWeekStart(current)
+  const weekDays=Array.from({length:7},(_,i)=>{const d=new Date(weekStart);d.setDate(d.getDate()+i);return d})
 
   function renderDayCell(day, ds, compact) {
-    const hasTx  = txByDate[ds]?.length > 0
+    const hasTx  = txByDate[ds]?.length  > 0
     const hasRem = remByDate[ds]?.length > 0
-    const isToday = sameDay(day instanceof Date ? day : new Date(year, month, day), today)
-    const isSel = selected === ds
+    const hasEv  = evByDate[ds]?.length  > 0
+    const isToday= sameDay(day instanceof Date ? day : new Date(year,month,day), today)
+    const isSel  = selected===ds
     return (
       <div key={ds} onClick={()=>setSelected(ds===selected?null:ds)} style={{
-        aspectRatio: compact ? '1' : undefined,
-        minHeight: compact ? undefined : 60,
+        aspectRatio:compact?'1':undefined, minHeight:compact?undefined:60,
         display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
         borderRadius:'0.625rem',cursor:'pointer',transition:'all 0.15s',position:'relative',
         background:isSel?'rgba(108,99,255,0.3)':isToday?'rgba(108,99,255,0.15)':'transparent',
         border:isSel?'1px solid rgba(108,99,255,0.5)':isToday?'1px solid rgba(108,99,255,0.3)':'1px solid transparent',
         color:isSel?'#a78bfa':isToday?'#c4b5fd':'var(--text)',
         fontSize:'0.875rem',fontWeight:isToday||isSel?700:400,
-        padding: compact ? 0 : '0.5rem',
+        padding:compact?0:'0.5rem',
       }}>
-        {typeof day === 'number' ? day : day.getDate()}
-        {(hasTx || hasRem) && (
+        {typeof day==='number' ? day : day.getDate()}
+        {(hasTx||hasRem||hasEv) && (
           <div style={{position:'absolute',bottom:3,display:'flex',gap:'2px'}}>
             {hasTx  && <div style={{width:4,height:4,borderRadius:'50%',background:'#6c63ff'}}/>}
             {hasRem && <div style={{width:4,height:4,borderRadius:'50%',background:'#fbbf24'}}/>}
+            {hasEv  && <div style={{width:4,height:4,borderRadius:'50%',background:'#22d3ee'}}/>}
           </div>
         )}
       </div>
@@ -150,12 +169,36 @@ export default function CalendarPage() {
   }
 
   function renderEvents(ds) {
-    const tx = txByDate[ds] || []
+    const tx  = txByDate[ds]  || []
     const rem = remByDate[ds] || []
-    if (!tx.length && !rem.length) return <p style={{color:'var(--text-dim)',fontSize:'0.85rem',textAlign:'center',marginTop:'1rem'}}>אין אירועים</p>
+    const ev  = evByDate[ds]  || []
+    if (!tx.length && !rem.length && !ev.length)
+      return <p style={{color:'var(--text-dim)',fontSize:'0.85rem',textAlign:'center',marginTop:'1rem'}}>אין אירועים</p>
     return <>
-      {tx.length > 0 && (
+      {ev.length > 0 && (
         <div style={{marginBottom:'1rem'}}>
+          <div style={{fontSize:'0.75rem',color:'#22d3ee',fontWeight:600,marginBottom:'0.5rem'}}>📅 אירועים</div>
+          {ev.map((e,i)=>(
+            <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(34,211,238,0.08)',border:'1px solid rgba(34,211,238,0.15)',marginBottom:'0.375rem'}}>
+              <div style={{fontSize:'0.8rem',color:'var(--text)',fontWeight:500}}>{e.title}</div>
+              {e.event_time && <div style={{fontSize:'0.7rem',color:'#22d3ee',marginTop:'0.1rem'}}>🕐 {e.event_time.slice(0,5)}</div>}
+              {e.description && <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{e.description}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+      {rem.length > 0 && (
+        <div style={{marginBottom:'1rem'}}>
+          <div style={{fontSize:'0.75rem',color:'#fbbf24',fontWeight:600,marginBottom:'0.5rem'}}>🔔 תזכורות</div>
+          {rem.map((r,i)=>(
+            <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
+              <div style={{fontSize:'0.8rem',color:'var(--text)',textDecoration:r.is_completed?'line-through':'none'}}>{r.title}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {tx.length > 0 && (
+        <div>
           <div style={{fontSize:'0.75rem',color:'#6c63ff',fontWeight:600,marginBottom:'0.5rem'}}>💳 טרנזקציות</div>
           {tx.map((t,i)=>(
             <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
@@ -167,24 +210,24 @@ export default function CalendarPage() {
           ))}
         </div>
       )}
-      {rem.length > 0 && (
-        <div>
-          <div style={{fontSize:'0.75rem',color:'#fbbf24',fontWeight:600,marginBottom:'0.5rem'}}>🔔 תזכורות</div>
-          {rem.map((r,i)=>(
-            <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
-              <div style={{fontSize:'0.8rem',color:'var(--text)',textDecoration:r.is_completed?'line-through':'none'}}>{r.title}</div>
-            </div>
-          ))}
-        </div>
-      )}
     </>
   }
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
+      {/* Header */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'0.75rem'}}>
         <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>לוח שנה</h1>
-        <div style={{display:'flex',gap:'0.375rem'}}>
+        <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
+          {/* All events button */}
+          <button onClick={()=>{setShowAll(true);loadAll()}} style={{
+            display:'flex',alignItems:'center',gap:'0.375rem',
+            padding:'0.375rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',
+            border:'1px solid rgba(34,211,238,0.4)',background:'rgba(34,211,238,0.1)',color:'#22d3ee',
+          }}>
+            <CalendarDays size={14}/> כל האירועים
+          </button>
+          {/* View toggle */}
           {[['month','חודש'],['week','שבוע'],['day','יום']].map(([v,label])=>(
             <button key={v} onClick={()=>{setView(v);setSelected(null)}} style={{
               padding:'0.375rem 0.875rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',
@@ -206,41 +249,32 @@ export default function CalendarPage() {
           </div>
 
           {/* MONTH VIEW */}
-          {view === 'month' && <>
+          {view==='month' && <>
             <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem',marginBottom:'0.5rem'}}>
-              {DAYS_HE.map(d=>(
-                <div key={d} style={{textAlign:'center',fontSize:'0.75rem',color:'var(--text-muted)',fontWeight:600,padding:'0.25rem'}}>{d}</div>
-              ))}
+              {DAYS_HE.map(d=><div key={d} style={{textAlign:'center',fontSize:'0.75rem',color:'var(--text-muted)',fontWeight:600,padding:'0.25rem'}}>{d}</div>)}
             </div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem'}}>
-              {monthCells.map((day, i) => {
-                if (!day) return <div key={`e${i}`}/>
-                const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
-                return renderDayCell(day, ds, true)
+              {monthCells.map((day,i)=>{
+                if(!day) return <div key={`e${i}`}/>
+                const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+                return renderDayCell(day,ds,true)
               })}
             </div>
           </>}
 
           {/* WEEK VIEW */}
-          {view === 'week' && <>
+          {view==='week' && <>
             <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem',marginBottom:'0.5rem'}}>
-              {weekDays.map((d,i)=>(
-                <div key={i} style={{textAlign:'center',fontSize:'0.7rem',color:'var(--text-muted)',fontWeight:600}}>{DAYS_HE[i]}</div>
-              ))}
+              {weekDays.map((_,i)=><div key={i} style={{textAlign:'center',fontSize:'0.7rem',color:'var(--text-muted)',fontWeight:600}}>{DAYS_HE[i]}</div>)}
             </div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem'}}>
-              {weekDays.map(d => {
-                const ds = dateStr(d)
-                return renderDayCell(d, ds, true)
-              })}
+              {weekDays.map(d=>{const ds=dateStr(d);return renderDayCell(d,ds,true)})}
             </div>
-            {/* Show events for all week days below */}
             <div style={{marginTop:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
-              {weekDays.map(d => {
-                const ds = dateStr(d)
-                const tx = txByDate[ds] || []
-                const rem = remByDate[ds] || []
-                if (!tx.length && !rem.length) return null
+              {weekDays.map(d=>{
+                const ds=dateStr(d)
+                const tx=txByDate[ds]||[], rem=remByDate[ds]||[], ev=evByDate[ds]||[]
+                if(!tx.length&&!rem.length&&!ev.length) return null
                 return (
                   <div key={ds}>
                     <div style={{fontSize:'0.8rem',fontWeight:600,color:'#a78bfa',marginBottom:'0.5rem'}}>{DAYS_FULL[d.getDay()]} {d.getDate()}/{d.getMonth()+1}</div>
@@ -252,7 +286,7 @@ export default function CalendarPage() {
           </>}
 
           {/* DAY VIEW */}
-          {view === 'day' && (
+          {view==='day' && (
             <div>
               <div style={{fontSize:'0.85rem',color:'var(--text-sub)',marginBottom:'1rem',textAlign:'center'}}>
                 {current.getDate()} {MONTHS_HE[current.getMonth()]} {current.getFullYear()}
@@ -262,11 +296,10 @@ export default function CalendarPage() {
           )}
 
           {/* Legend */}
-          <div style={{marginTop:'1rem',display:'flex',gap:'1rem',justifyContent:'center'}}>
-            {[['#6c63ff','טרנזקציות'],['#fbbf24','תזכורות']].map(([c,l])=>(
+          <div style={{marginTop:'1rem',display:'flex',gap:'1rem',justifyContent:'center',flexWrap:'wrap'}}>
+            {[['#22d3ee','אירועים'],['#fbbf24','תזכורות'],['#6c63ff','טרנזקציות']].map(([c,l])=>(
               <div key={l} style={{display:'flex',alignItems:'center',gap:'0.375rem',fontSize:'0.75rem',color:'var(--text-muted)'}}>
-                <div style={{width:8,height:8,borderRadius:'50%',background:c}}/>
-                {l}
+                <div style={{width:8,height:8,borderRadius:'50%',background:c}}/>{l}
               </div>
             ))}
           </div>
@@ -274,12 +307,12 @@ export default function CalendarPage() {
 
         {/* Side panel */}
         <div className="page-card">
-          {selectedDateStr2 ? (
+          {selDs ? (
             <>
               <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text)'}}>
-                {(() => { const d = new Date(selectedDateStr2+'T00:00:00'); return `${d.getDate()} ${MONTHS_HE[d.getMonth()]}` })()}
+                {(()=>{const d=new Date(selDs+'T00:00:00');return `${d.getDate()} ${MONTHS_HE[d.getMonth()]}`})()}
               </h3>
-              {renderEvents(selectedDateStr2)}
+              {renderEvents(selDs)}
             </>
           ) : (
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:'var(--text-dim)',textAlign:'center',gap:'0.5rem'}}>
@@ -292,11 +325,11 @@ export default function CalendarPage() {
 
       {/* FAB */}
       <button onClick={openAdd} style={{
-        position:'fixed', bottom:'5rem', left:'1.25rem', zIndex:50,
-        width:52, height:52, borderRadius:'50%',
+        position:'fixed',bottom:'5rem',left:'1.25rem',zIndex:50,
+        width:52,height:52,borderRadius:'50%',
         background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',
-        border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
-        boxShadow:'0 4px 20px rgba(108,99,255,0.5)', transition:'transform 0.15s',
+        border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',
+        boxShadow:'0 4px 20px rgba(108,99,255,0.5)',transition:'transform 0.15s',
       }}
         onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
         onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}
@@ -310,7 +343,7 @@ export default function CalendarPage() {
           onClick={e=>{if(e.target===e.currentTarget)setShowAdd(false)}}>
           <div style={{width:'100%',maxWidth:480,background:'var(--bg2)',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <h3 style={{margin:0,fontSize:'1rem',fontWeight:700,color:'var(--text)'}}>➕ אירוע חדש</h3>
+              <h3 style={{margin:0,fontSize:'1rem',fontWeight:700,color:'var(--text)'}}>📅 אירוע חדש</h3>
               <button onClick={()=>setShowAdd(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',display:'flex'}}><X size={20}/></button>
             </div>
             <input className="input-field" placeholder="כותרת האירוע *" value={addForm.title}
@@ -329,12 +362,43 @@ export default function CalendarPage() {
             </div>
             <input className="input-field" placeholder="תיאור (אופציונלי)" value={addForm.description}
               onChange={e=>setAddForm(f=>({...f,description:e.target.value}))}/>
-            <div style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'flex',alignItems:'center',gap:'0.375rem'}}>
-              🔔 התראה תישלח אוטומטית בשעת האירוע (עד 7 ימים מראש)
-            </div>
             <button className="btn-primary" onClick={saveEvent} disabled={saving} style={{justifyContent:'center'}}>
               {saving ? 'שומר...' : 'שמור אירוע'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* All events modal */}
+      {showAll && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:100,display:'flex',alignItems:'flex-end',justifyContent:'center'}}
+          onClick={e=>{if(e.target===e.currentTarget)setShowAll(false)}}>
+          <div style={{width:'100%',maxWidth:480,background:'var(--bg2)',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',maxHeight:'75vh',display:'flex',flexDirection:'column',gap:'1rem'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+              <h3 style={{margin:0,fontSize:'1rem',fontWeight:700,color:'var(--text)'}}>📅 כל האירועים</h3>
+              <button onClick={()=>setShowAll(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',display:'flex'}}><X size={20}/></button>
+            </div>
+            <div style={{overflowY:'auto',flex:1,display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+              {loadingAll ? (
+                <div style={{textAlign:'center',color:'var(--text-muted)',padding:'2rem'}}>טוען...</div>
+              ) : allEvents.length === 0 ? (
+                <div style={{textAlign:'center',color:'var(--text-dim)',padding:'2rem'}}>אין אירועים עדיין</div>
+              ) : allEvents.map(e => (
+                <div key={e.id} style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.75rem',borderRadius:'0.75rem',background:'rgba(34,211,238,0.08)',border:'1px solid rgba(34,211,238,0.15)'}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:'0.875rem',fontWeight:600,color:'var(--text)'}}>{e.title}</div>
+                    <div style={{fontSize:'0.75rem',color:'#22d3ee',marginTop:'0.1rem'}}>
+                      {new Date(e.event_date+'T00:00:00').toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'long'})}
+                      {e.event_time ? ` • ${e.event_time.slice(0,5)}` : ''}
+                    </div>
+                    {e.description && <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{e.description}</div>}
+                  </div>
+                  <button onClick={()=>deleteEvent(e.id)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',display:'flex',padding:'0.25rem',flexShrink:0}}>
+                    <X size={16}/>
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

@@ -276,6 +276,21 @@ CREATE INDEX IF NOT EXISTS idx_wallets_created_by ON wallets (created_by);
 CREATE INDEX IF NOT EXISTS idx_categories_type ON categories (type);
 
 -- =====================
+-- CALENDAR EVENTS
+-- =====================
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT,
+  event_date DATE NOT NULL,
+  event_time TIME,
+  color TEXT DEFAULT '#22d3ee',
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON calendar_events (event_date);
+
+-- =====================
 -- DONE!
 -- עכשיו צור את המשתמשים ב-Supabase Auth:
 -- Authentication → Users → Add User:

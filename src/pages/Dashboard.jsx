@@ -60,6 +60,13 @@ export default function Dashboard() {
       events.push({ type: 'transaction', icon: t.type === 'income' ? '💰' : t.type === 'transfer' ? '↔️' : t.type.startsWith('loan') ? '🏦' : '💸', label: t.description, sub: `${t.type === 'income' ? '+' : t.type === 'transfer' ? '↔' : '-'}₪${Number(t.amount).toLocaleString()}`, route: '/transactions', color: t.type === 'income' ? '#4ade80' : t.type === 'transfer' ? '#22d3ee' : t.type.startsWith('loan') ? '#fbbf24' : '#f87171' })
     })
 
+    // Calendar events today
+    const { data: calEvData } = await supabase.from('calendar_events').select('title,description,event_time').eq('event_date', todayStr)
+    ;(calEvData || []).forEach(e => {
+      const timeSub = e.event_time ? `🕐 ${e.event_time.slice(0,5)}` : 'אירוע'
+      events.push({ type: 'calendar_event', icon: '📅', label: e.title, sub: timeSub, route: '/calendar', color: '#22d3ee' })
+    })
+
     // Reminders due today (fix: use date range to handle datetime values, fix field name is_completed)
     const { data: remData } = await supabase.from('reminders').select('*').gte('due_date', todayStr).lt('due_date', tomorrowStr)
     ;(remData || []).forEach(r => {
