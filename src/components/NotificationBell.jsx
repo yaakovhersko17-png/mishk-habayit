@@ -169,10 +169,9 @@ export default function NotificationBell() {
         // Already overdue — show immediately in bell
         overdue.push(r)
       } else if (diff <= 7 * 24 * 60 * 60 * 1000) {
-        // Future within 7 days — schedule browser notification
+        // Future within 7 days — wait until exact time, then show in bell/badge only (no push)
         // NOTE: never schedule diff > 2^31-1 ms (≈24 days) — setTimeout overflows → fires immediately → infinite loop
         const id = setTimeout(() => {
-          notify(`🔔 תזכורת: ${r.title}`, r.description || '')
           setOverdueReminders(prev => [...prev, r])
         }, diff)
         timersRef.current.push(id)
