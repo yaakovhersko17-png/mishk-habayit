@@ -330,12 +330,12 @@
     opacity: 0.5;
   }
   @keyframes animStar {
-    from { transform: translateY(0); }
-    to   { transform: translateY(-135rem); }
+    from { transform: translateY(-135rem); }
+    to   { transform: translateY(0); }
   }
   @keyframes animStarRotate {
-    from { transform: rotate(360deg); }
-    to   { transform: rotate(0); }
+    from { transform: rotate(0); }
+    to   { transform: rotate(360deg); }
   }
   @keyframes gradient_301 {
     0%   { background-position: 0% 50%; }
