@@ -251,29 +251,29 @@ export default function CalendarPage() {
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
 
       {/* Header */}
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'0.75rem',flexWrap:'wrap'}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>לוח שנה</h1>
-        <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
-          <div style={{display:'flex',gap:'0.375rem'}}>
-            {[['month','חודש'],['week','שבוע'],['day','יום']].map(([v,label])=>(
-              <button key={v} onClick={()=>{setView(v);setSelected(null)}} style={{
-                padding:'0.375rem 0.875rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',
-                border:`1px solid ${view===v?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,
-                background:view===v?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',
-                color:view===v?'#a78bfa':'var(--text-sub)',
-              }}>{label}</button>
-            ))}
-          </div>
-          <button className="btn-primary" onClick={openAdd}><Plus size={14}/>אירוע חדש</button>
-        </div>
+        <button className="btn-primary" onClick={openAdd}><Plus size={14}/>אירוע חדש</button>
       </div>
 
       {/* Calendar card (full width) */}
       <div className="page-card">
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.5rem'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'0.875rem'}}>
           <button onClick={prev} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'var(--text)',padding:'0.375rem',display:'flex'}}><ChevronRight size={18}/></button>
           <h2 style={{margin:0,fontSize:'1.1rem',fontWeight:600,color:'var(--text)'}}>{headerTitle()}</h2>
           <button onClick={next} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'var(--text)',padding:'0.375rem',display:'flex'}}><ChevronLeft size={18}/></button>
+        </div>
+
+        {/* View tabs */}
+        <div style={{display:'flex',gap:'0.375rem',justifyContent:'center',marginBottom:'1rem'}}>
+          {[['month','חודש'],['week','שבוע'],['day','יום']].map(([v,label])=>(
+            <button key={v} onClick={()=>{setView(v);setSelected(null)}} style={{
+              padding:'0.3rem 0.875rem',borderRadius:'0.5rem',fontSize:'0.78rem',cursor:'pointer',
+              border:`1px solid ${view===v?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,
+              background:view===v?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',
+              color:view===v?'#a78bfa':'var(--text-sub)',
+            }}>{label}</button>
+          ))}
         </div>
 
         {view==='month' && <>

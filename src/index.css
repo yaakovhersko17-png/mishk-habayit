@@ -583,23 +583,20 @@
 
 /* ── Hersko shine text ─────────────────────────────── */
 .hersko-shine {
-  background: linear-gradient(to right, #9f9f9f 0, #fff 10%, #868686 20%);
-  background-position: 0;
+  background: linear-gradient(to right, #9f9f9f 0%, #fff 50%, #868686 100%);
+  background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: bounce-top 0.9s both, hersko-shine 3s infinite linear;
-  animation-fill-mode: forwards;
+  animation: bounce-top 0.9s both, hersko-shine 2.5s linear infinite;
 }
 @keyframes hersko-shine {
-  0%   { background-position: 0; }
-  60%  { background-position: 180px; }
-  100% { background-position: 180px; }
+  0%   { background-position: 150% center; }
+  100% { background-position: -50% center; }
 }
 @-webkit-keyframes hersko-shine {
-  0%   { background-position: 0; }
-  60%  { background-position: 180px; }
-  100% { background-position: 180px; }
+  0%   { background-position: 150% center; }
+  100% { background-position: -50% center; }
 }
 
 /* ── tracking-in-expand-fwd-bottom ─────────────────── */
