@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2, History, Lightbulb, ScanLine, Archive, ChevronDown } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2, Lightbulb, ScanLine, Archive, ChevronDown } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import toast from 'react-hot-toast'
@@ -173,7 +173,6 @@ export default function Dashboard() {
           <span style={{fontSize:'0.8rem',fontWeight:600,color:'var(--text-muted)'}}>כלים</span>
         </div>
         {[
-          { icon: <History size={18}/>, label: 'היסטוריה', sub: 'יומן פעילות ושינויים', color: '#4ade80', route: '/history' },
           { icon: <Settings size={18}/>, label: 'הגדרות', sub: 'ניהול משתמשים והעדפות', color: '#60a5fa', route: '/settings' },
         ].map((item, i, arr) => (
           <div key={item.route} onClick={() => navigate(item.route)}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 import { ChevronRight, ChevronLeft, Plus, X } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
@@ -16,6 +17,7 @@ function sameDay(a, b) {
 }
 
 export default function CalendarPage() {
+  const { user } = useAuth()
   const [today]   = useState(new Date())
   const [current, setCurrent]     = useState(new Date())
   const [txByDate, setTxByDate]   = useState({})
@@ -28,6 +30,9 @@ export default function CalendarPage() {
   // All events for side panel
   const [allEvents, setAllEvents]   = useState([])
   const [evFilter, setEvFilter]     = useState('future') // future | past | all
+
+  // Filter FAB
+  const [showFilterFab, setShowFilterFab] = useState(false)
 
   // Add event modal
   const [showAdd, setShowAdd] = useState(false)
@@ -118,12 +123,13 @@ export default function CalendarPage() {
       description: addForm.description.trim() || null,
       event_date: addForm.date,
       event_time: addForm.time || null,
+      created_by: user?.id ?? null,
     })
     setSaving(false)
-    if (error) { toast.error('שגיאה בשמירה'); return }
+    if (error) { toast.error(`שגיאה בשמירה: ${error.message}`); return }
     toast.success('אירוע נוסף!')
     setShowAdd(false)
-    load(); loadAllEvents()
+    await Promise.all([load(), loadAllEvents()])
   }
 
   if (loading) return <LoadingSpinner />
@@ -215,15 +221,20 @@ export default function CalendarPage() {
       {/* Header */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'0.75rem'}}>
         <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>לוח שנה</h1>
-        <div style={{display:'flex',gap:'0.375rem'}}>
-          {[['month','חודש'],['week','שבוע'],['day','יום']].map(([v,label])=>(
-            <button key={v} onClick={()=>{setView(v);setSelected(null)}} style={{
-              padding:'0.375rem 0.875rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',
-              border:`1px solid ${view===v?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,
-              background:view===v?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',
-              color:view===v?'#a78bfa':'var(--text-sub)',
-            }}>{label}</button>
-          ))}
+        <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
+          <div style={{display:'flex',gap:'0.375rem'}}>
+            {[['month','חודש'],['week','שבוע'],['day','יום']].map(([v,label])=>(
+              <button key={v} onClick={()=>{setView(v);setSelected(null)}} style={{
+                padding:'0.375rem 0.875rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',
+                border:`1px solid ${view===v?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.08)'}`,
+                background:view===v?'rgba(108,99,255,0.2)':'rgba(255,255,255,0.03)',
+                color:view===v?'#a78bfa':'var(--text-sub)',
+              }}>{label}</button>
+            ))}
+          </div>
+          <button className="btn-primary" onClick={openAdd} style={{gap:'0.375rem'}}>
+            <Plus size={15}/>אירוע חדש
+          </button>
         </div>
       </div>
 
@@ -341,19 +352,30 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* FAB — bottom right */}
-      <button onClick={openAdd} style={{
-        position:'fixed',bottom:'5rem',right:'1.25rem',zIndex:50,
-        width:56,height:56,borderRadius:'50%',
-        background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',
-        border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',
-        boxShadow:'0 4px 24px rgba(108,99,255,0.55)',transition:'transform 0.15s',
-      }}
-        onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
-        onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}
-      >
-        <Plus size={26} color="#fff"/>
-      </button>
+      {/* FAB — filter picker, bottom right */}
+      <div style={{position:'fixed',bottom:'5rem',right:'1.25rem',zIndex:50,display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'0.5rem'}}>
+        {showFilterFab && (
+          <div style={{display:'flex',flexDirection:'column',gap:'0.375rem',background:'#1a1a2e',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.875rem',padding:'0.5rem',boxShadow:'0 4px 24px rgba(0,0,0,0.4)'}}>
+            {[['future','עתידיים','#22d3ee'],['past','שעברו','#f87171'],['all','הכל','#a78bfa']].map(([f,label,color])=>(
+              <button key={f} onClick={()=>{setEvFilter(f);setShowFilterFab(false)}} style={{
+                padding:'0.5rem 1rem',borderRadius:'0.625rem',fontSize:'0.8rem',cursor:'pointer',textAlign:'right',
+                border:`1px solid ${evFilter===f?`${color}40`:'rgba(255,255,255,0.06)'}`,
+                background:evFilter===f?`${color}18`:'transparent',
+                color:evFilter===f?color:'var(--text-sub)',fontWeight:evFilter===f?600:400,
+              }}>{label}</button>
+            ))}
+          </div>
+        )}
+        <button onClick={()=>setShowFilterFab(v=>!v)} style={{
+          width:48,height:48,borderRadius:'50%',
+          background:showFilterFab?'rgba(34,211,238,0.25)':'rgba(34,211,238,0.15)',
+          border:'1px solid rgba(34,211,238,0.35)',
+          cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',
+          boxShadow:'0 4px 16px rgba(34,211,238,0.25)',transition:'all 0.15s',fontSize:'1.1rem',
+        }}>
+          🗂️
+        </button>
+      </div>
 
       {/* Add event sheet */}
       {showAdd && (
