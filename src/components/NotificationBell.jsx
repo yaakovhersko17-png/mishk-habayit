@@ -164,18 +164,20 @@ export default function NotificationBell() {
 
     ;(data || []).forEach(r => {
       const dueMs = new Date(r.due_date).getTime()
-      if (dueMs <= now) {
+      const diff  = dueMs - now
+      if (diff <= 0) {
         // Already overdue — show immediately in bell
         overdue.push(r)
-      } else {
-        // Future — schedule browser notification + re-load when it fires
-        const diff = dueMs - now
+      } else if (diff <= 7 * 24 * 60 * 60 * 1000) {
+        // Future within 7 days — schedule browser notification
+        // NOTE: never schedule diff > 2^31-1 ms (≈24 days) — setTimeout overflows → fires immediately → infinite loop
         const id = setTimeout(() => {
           notify(`🔔 תזכורת: ${r.title}`, r.description || '')
-          loadReminders() // refresh overdue list
+          setOverdueReminders(prev => [...prev, r])
         }, diff)
         timersRef.current.push(id)
       }
+      // else: far-future (>7 days) — skip scheduling; picked up on next app load
     })
 
     setOverdueReminders(overdue)

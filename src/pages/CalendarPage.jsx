@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { ChevronRight, ChevronLeft } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Plus, X } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
+import toast from 'react-hot-toast'
 
 const DAYS_HE = ['א','ב','ג','ד','ה','ו','ש']
 const DAYS_FULL = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת']
@@ -21,6 +22,9 @@ export default function CalendarPage() {
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('month') // month | week | day
+  const [showAdd, setShowAdd] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [addForm, setAddForm] = useState({ title: '', date: '', time: '09:00', description: '' })
 
   useEffect(() => { load() }, [current, view])
 
@@ -81,6 +85,29 @@ export default function CalendarPage() {
   const selectedRem = selectedDateStr2 ? (remByDate[selectedDateStr2] || []) : []
 
   if (loading) return <LoadingSpinner />
+
+  function openAdd() {
+    const d = selected || dateStr(current)
+    setAddForm({ title: '', date: d, time: '09:00', description: '' })
+    setShowAdd(true)
+  }
+
+  async function saveEvent() {
+    if (!addForm.title.trim() || !addForm.date) { toast.error('כותרת ותאריך חובה'); return }
+    setSaving(true)
+    const due_date = `${addForm.date}T${addForm.time}:00`
+    const { error } = await supabase.from('reminders').insert({
+      title: addForm.title.trim(),
+      description: addForm.description.trim() || null,
+      due_date,
+      is_completed: false,
+    })
+    setSaving(false)
+    if (error) { toast.error('שגיאה בשמירה'); return }
+    toast.success('אירוע נוסף!')
+    setShowAdd(false)
+    load()
+  }
 
   // Month view cells
   const year = current.getFullYear(), month = current.getMonth()
@@ -262,6 +289,55 @@ export default function CalendarPage() {
           )}
         </div>
       </div>
+
+      {/* FAB */}
+      <button onClick={openAdd} style={{
+        position:'fixed', bottom:'5rem', left:'1.25rem', zIndex:50,
+        width:52, height:52, borderRadius:'50%',
+        background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',
+        border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+        boxShadow:'0 4px 20px rgba(108,99,255,0.5)', transition:'transform 0.15s',
+      }}
+        onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
+        onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}
+      >
+        <Plus size={24} color="#fff"/>
+      </button>
+
+      {/* Add event modal */}
+      {showAdd && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:100,display:'flex',alignItems:'flex-end',justifyContent:'center'}}
+          onClick={e=>{if(e.target===e.currentTarget)setShowAdd(false)}}>
+          <div style={{width:'100%',maxWidth:480,background:'var(--bg2)',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <h3 style={{margin:0,fontSize:'1rem',fontWeight:700,color:'var(--text)'}}>➕ אירוע חדש</h3>
+              <button onClick={()=>setShowAdd(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',display:'flex'}}><X size={20}/></button>
+            </div>
+            <input className="input-field" placeholder="כותרת האירוע *" value={addForm.title}
+              onChange={e=>setAddForm(f=>({...f,title:e.target.value}))} autoFocus/>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
+              <div>
+                <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginBottom:'0.25rem'}}>תאריך</div>
+                <input type="date" className="input-field" value={addForm.date}
+                  onChange={e=>setAddForm(f=>({...f,date:e.target.value}))}/>
+              </div>
+              <div>
+                <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginBottom:'0.25rem'}}>שעה</div>
+                <input type="time" className="input-field" value={addForm.time}
+                  onChange={e=>setAddForm(f=>({...f,time:e.target.value}))}/>
+              </div>
+            </div>
+            <input className="input-field" placeholder="תיאור (אופציונלי)" value={addForm.description}
+              onChange={e=>setAddForm(f=>({...f,description:e.target.value}))}/>
+            <div style={{fontSize:'0.75rem',color:'var(--text-muted)',display:'flex',alignItems:'center',gap:'0.375rem'}}>
+              🔔 התראה תישלח אוטומטית בשעת האירוע (עד 7 ימים מראש)
+            </div>
+            <button className="btn-primary" onClick={saveEvent} disabled={saving} style={{justifyContent:'center'}}>
+              {saving ? 'שומר...' : 'שמור אירוע'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
