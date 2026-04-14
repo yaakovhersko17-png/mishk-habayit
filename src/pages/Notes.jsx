@@ -66,12 +66,12 @@ export default function Notes() {
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>פתקים</h1>
-        <div style={{display:'flex',gap:'0.75rem',alignItems:'center'}}>
+        <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
           <div style={{position:'relative'}}>
             <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)'}}/>
-            <input className="input-field" style={{paddingRight:'2.25rem',width:200}} placeholder="חיפוש..." value={search} onChange={e=>setSearch(e.target.value)}/>
+            <input className="input-field" style={{paddingRight:'2.25rem',width:160}} placeholder="חיפוש..." value={search} onChange={e=>setSearch(e.target.value)}/>
           </div>
-          <button className="btn-primary" onClick={openAdd} style={{padding:'0.4rem 0.875rem',minHeight:'unset',fontSize:'0.875rem'}}><Plus size={14}/>פתק חדש</button>
+          <button className="btn-primary" onClick={openAdd}><Plus size={14}/>פתק חדש</button>
         </div>
       </div>
 

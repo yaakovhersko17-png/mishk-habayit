@@ -120,13 +120,14 @@ export default function CalendarPage() {
   }
   async function saveEvent() {
     if (!addForm.title.trim() || !addForm.date) { toast.error('כותרת ותאריך חובה'); return }
+    if (!user?.id) { toast.error('משתמש לא מחובר'); return }
     setSaving(true)
     const { error } = await supabase.from('calendar_events').insert({
       title: addForm.title.trim(),
       description: addForm.description.trim() || null,
       event_date: addForm.date,
       event_time: addForm.time || null,
-      created_by: user?.id ?? null,
+      created_by: user.id,
     })
     setSaving(false)
     if (error) { toast.error(`שגיאה בשמירה: ${error.message}`); return }
@@ -249,10 +250,10 @@ export default function CalendarPage() {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
 
-      {/* Header: title + view tabs on right (first in RTL), "אירוע חדש" on left (last in RTL) */}
+      {/* Header */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'0.75rem',flexWrap:'wrap'}}>
-        <div style={{display:'flex',alignItems:'center',gap:'0.75rem',flexWrap:'wrap'}}>
-          <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>לוח שנה</h1>
+        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>לוח שנה</h1>
+        <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
           <div style={{display:'flex',gap:'0.375rem'}}>
             {[['month','חודש'],['week','שבוע'],['day','יום']].map(([v,label])=>(
               <button key={v} onClick={()=>{setView(v);setSelected(null)}} style={{
@@ -263,11 +264,8 @@ export default function CalendarPage() {
               }}>{label}</button>
             ))}
           </div>
+          <button className="btn-primary" onClick={openAdd}><Plus size={14}/>אירוע חדש</button>
         </div>
-        {/* Last in RTL flex = left side */}
-        <button className="btn-primary" onClick={openAdd} style={{gap:'0.375rem'}}>
-          <Plus size={15}/>אירוע חדש
-        </button>
       </div>
 
       {/* Calendar card (full width) */}

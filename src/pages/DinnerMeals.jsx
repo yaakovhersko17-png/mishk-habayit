@@ -793,31 +793,30 @@ export default function DinnerMeals() {
           <span style={{ fontSize: '1.6rem' }}>🍽️</span>
           <h1 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text)' }}>ארוחות ערב</h1>
         </div>
-        {missingDays.length > 0 && (
-          <button
-            onClick={() => setShowMissing(true)}
-            style={{
-              background: 'rgba(239,68,68,0.12)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 20,
-              padding: '4px 12px',
-              cursor: 'pointer',
-              color: '#fca5a5',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-            }}
-          >
-            {missingDays.length} ימים חסרים
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {missingDays.length > 0 && (
+            <button
+              onClick={() => setShowMissing(true)}
+              style={{
+                background: 'rgba(239,68,68,0.12)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                borderRadius: 20,
+                padding: '4px 12px',
+                cursor: 'pointer',
+                color: '#fca5a5',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+              }}
+            >
+              {missingDays.length} ימים חסרים
+            </button>
+          )}
+          <button className="btn-primary" onClick={openAdd}><Plus size={14}/>הוסף ארוחה</button>
+        </div>
       </div>
 
       {/* Action buttons */}
       <div style={{ display: 'flex', gap: 8, marginBottom: eatSuggestion ? '0.5rem' : '1rem', flexWrap: 'wrap' }}>
-        <button className="btn-primary" onClick={openAdd} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Plus size={16} />
-          הוסף ארוחה
-        </button>
         <button
           className="btn-ghost"
           onClick={handleWhatToEat}

@@ -162,7 +162,10 @@ export default function Reminders() {
     <div style={{display:'flex',flexDirection:'column',gap:'1rem',paddingBottom:'6rem'}}>
 
       {/* Header */}
-      <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>תזכורות</h1>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>תזכורות</h1>
+        <button className="btn-primary" onClick={openAdd}><Plus size={15}/>תזכורת חדשה</button>
+      </div>
 
       {/* ── Stat cards 2×3 grid ── */}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.75rem'}}>
@@ -257,21 +260,6 @@ export default function Reminders() {
           })}
         </div>
       )}
-
-      {/* ── FAB ── */}
-      <button onClick={openAdd} style={{
-        position:'fixed',bottom:'1.5rem',left:'1.5rem',zIndex:50,
-        width:52,height:52,borderRadius:'50%',
-        background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',
-        border:'none',cursor:'pointer',
-        display:'flex',alignItems:'center',justifyContent:'center',
-        boxShadow:'0 4px 20px rgba(108,99,255,0.5)',
-        transition:'transform 0.15s',
-      }}
-        onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
-        onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
-        <Plus size={22} color="#fff"/>
-      </button>
 
       {/* ── Modal ── */}
       <Modal open={modal} onClose={()=>setModal(false)} title={editing?'ערוך תזכורת':'תזכורת חדשה'} size="lg">
