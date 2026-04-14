@@ -210,6 +210,16 @@ export default function NotificationBell() {
 
   const count = missingDinners.length + overdueReminders.length
 
+  // Sync count to PWA app icon badge (iOS 16.4+ / Android Chrome)
+  useEffect(() => {
+    if (!('setAppBadge' in navigator)) return
+    if (count > 0) {
+      navigator.setAppBadge(count).catch(() => {})
+    } else {
+      navigator.clearAppBadge().catch(() => {})
+    }
+  }, [count])
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
