@@ -153,7 +153,7 @@ export default function Dashboard() {
       </div>
 
       {/* Finance button */}
-      <div style={{display:'flex',justifyContent:'center'}}>
+      <div className="tracking-in-expand-fwd-bottom" style={{display:'flex',justifyContent:'center',animationDelay:'0.1s'}}>
         <button className="finance-btn" onClick={() => navigate('/finance')}>
           <strong className="finance-btn__label">סקירה פיננסית</strong>
           <div className="finance-btn__stars-container">
@@ -168,7 +168,7 @@ export default function Dashboard() {
 
 
       {/* Quick links */}
-      <div className="page-card" style={{padding:0,overflow:'hidden'}}>
+      <div className="page-card tracking-in-expand-fwd-bottom" style={{padding:0,overflow:'hidden',animationDelay:'0.25s'}}>
         <div style={{padding:'0.875rem 1rem',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
           <span style={{fontSize:'0.8rem',fontWeight:600,color:'var(--text-muted)'}}>כלים</span>
         </div>

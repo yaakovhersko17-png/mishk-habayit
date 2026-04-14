@@ -22,7 +22,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Star, ChefHat, X, SlidersHorizontal, Edit2, BarChart2, GitMerge, TrendingDown, SkipForward } from 'lucide-react'
+import { Plus, Star, ChefHat, X, SlidersHorizontal, Edit2, BarChart2, GitMerge, SkipForward } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import toast from 'react-hot-toast'
 
@@ -49,6 +49,18 @@ function isWeekend(dateStr) {
   return day === 5 || day === 6
 }
 
+function isDinnerTime() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('dinner_default_time') || '"19:00"')
+    const m = String(raw).match(/^(\d{1,2}):(\d{2})$/)
+    if (!m) return false
+    const dinnerMins = parseInt(m[1], 10) * 60 + parseInt(m[2], 10)
+    if (dinnerMins === 0) return false
+    const { hour, minute } = getIsraeliTime()
+    return (hour * 60 + minute) >= dinnerMins
+  } catch (_) { return false }
+}
+
 function getMissingDays(meals, startDate) {
   const mealDates = new Set(meals.map(m => m.meal_date))
   const result = []
@@ -58,8 +70,13 @@ function getMissingDays(meals, startDate) {
 
   while (cursor <= end) {
     const dateStr = new Intl.DateTimeFormat('en-CA').format(cursor)
+    // Today: only count as missing after dinner time
     if (!isWeekend(dateStr) && !mealDates.has(dateStr)) {
-      result.push(dateStr)
+      if (dateStr === today && !isDinnerTime()) {
+        // skip — too early to count today as missing
+      } else {
+        result.push(dateStr)
+      }
     }
     cursor.setDate(cursor.getDate() + 1)
   }
@@ -344,19 +361,6 @@ function SmartMealsView({ meals, onMerge, onClose }) {
       .map(([text, count]) => ({ text, count }))
   }, [meals])
 
-  const forgottenMeals = useMemo(() => {
-    const lastDate = {}
-    meals.forEach(m => {
-      const key = m.meal_text.trim().toLowerCase()
-      if (!lastDate[key] || m.meal_date > lastDate[key].date) {
-        lastDate[key] = { text: m.meal_text.trim(), date: m.meal_date }
-      }
-    })
-    return Object.values(lastDate)
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(0, 5)
-  }, [meals])
-
   const dayDistribution = useMemo(() => {
     const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
     const counts = Array(7).fill(0)
@@ -482,29 +486,6 @@ function SmartMealsView({ meals, onMerge, onClose }) {
               ))}
             </div>
 
-            {/* Forgotten meals */}
-            <div style={sectionStyle}>
-              <div style={sectionHeaderStyle}>
-                <TrendingDown size={17} color="#ef4444" />
-                <span>ארוחות שנשכחו</span>
-              </div>
-              {forgottenMeals.map((item, idx) => (
-                <div
-                  key={item.text}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '0.4rem 0',
-                    borderBottom: idx < forgottenMeals.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                  }}
-                >
-                  <span style={{ color: 'var(--text)', fontSize: '0.9rem' }}>{item.text}</span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{formatDateHebrew(item.date)}</span>
-                </div>
-              ))}
-            </div>
-
             {/* Distribution chart */}
             <div style={sectionStyle}>
               <div style={sectionHeaderStyle}>
@@ -610,6 +591,9 @@ export default function DinnerMeals() {
   const [filterFrom, setFilterFrom] = useState('')
   const [filterTo, setFilterTo] = useState('')
   const [filterText, setFilterText] = useState('')
+  const [eatSuggestion, setEatSuggestion] = useState(null)
+  const [eatIdx, setEatIdx] = useState(0)
+  const [eatPool, setEatPool] = useState([])
 
   const today = israeliToday()
   const todayIsWeekend = isWeekend(today)
@@ -632,7 +616,7 @@ export default function DinnerMeals() {
 
   const missingDays = useMemo(() => {
     if (meals.length === 0) {
-      return isWeekend(today) ? [] : [today]
+      return isWeekend(today) || !isDinnerTime() ? [] : [today]
     }
     const earliest = [...meals].sort((a, b) => a.meal_date.localeCompare(b.meal_date))[0].meal_date
     return getMissingDays(meals, earliest)
@@ -741,6 +725,42 @@ export default function DinnerMeals() {
     setFilterTo('')
   }
 
+  function handleWhatToEat() {
+    let pool = eatPool
+    let idx  = eatIdx
+    // Build pool on first call (or if meals changed)
+    if (pool.length === 0) {
+      const todayDate = new Date()
+      const from = new Date(todayDate); from.setDate(from.getDate() - 37)
+      const to   = new Date(todayDate); to.setDate(to.getDate() - 23)
+      const fromStr = from.toISOString().split('T')[0]
+      const toStr   = to.toISOString().split('T')[0]
+      // Recent frequency (last 14 days)
+      const recentFrom = new Date(todayDate); recentFrom.setDate(recentFrom.getDate() - 14)
+      const recentFromStr = recentFrom.toISOString().split('T')[0]
+      const recentCounts = {}
+      meals.filter(m => m.meal_text !== '__skip__' && m.meal_date >= recentFromStr).forEach(m => {
+        const k = m.meal_text.trim().toLowerCase()
+        recentCounts[k] = (recentCounts[k] || 0) + 1
+      })
+      // Candidates from ~1 month ago window
+      const seen = new Set()
+      pool = meals
+        .filter(m => m.meal_text !== '__skip__' && m.meal_date >= fromStr && m.meal_date <= toStr)
+        .filter(m => { const k = m.meal_text.trim().toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true })
+        .sort((a, b) =>
+          (recentCounts[a.meal_text.trim().toLowerCase()] || 0) -
+          (recentCounts[b.meal_text.trim().toLowerCase()] || 0)
+        )
+        .map(m => m.meal_text)
+      if (pool.length === 0) { toast('אין נתונים מלפני חודש — נסה להוסיף ארוחות'); return }
+      setEatPool(pool)
+      idx = 0
+    }
+    setEatSuggestion(pool[idx % pool.length])
+    setEatIdx(idx + 1)
+  }
+
   // ── Styles ──────────────────────────────────────────────────────────────────
 
   const containerStyle = {
@@ -793,10 +813,17 @@ export default function DinnerMeals() {
       </div>
 
       {/* Action buttons */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: eatSuggestion ? '0.5rem' : '1rem', flexWrap: 'wrap' }}>
         <button className="btn-primary" onClick={openAdd} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Plus size={16} />
           הוסף ארוחה
+        </button>
+        <button
+          className="btn-ghost"
+          onClick={handleWhatToEat}
+          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+        >
+          🍽️ מה נאכל היום?
         </button>
         <button
           className="btn-ghost"
@@ -807,6 +834,30 @@ export default function DinnerMeals() {
           ארוחות חכמות
         </button>
       </div>
+
+      {/* What to eat suggestion */}
+      {eatSuggestion && (
+        <div style={{
+          background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)',
+          borderRadius: 12, padding: '0.75rem 1rem', marginBottom: '1rem',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+        }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: '#fbbf24', marginBottom: 2 }}>💡 הצעה מהעבר</div>
+            <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: '0.95rem' }}>{eatSuggestion}</div>
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <button onClick={handleWhatToEat}
+              style={{ fontSize: '0.8rem', padding: '5px 10px', borderRadius: 8, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)', color: '#fbbf24', cursor: 'pointer' }}>
+              הצעה אחרת
+            </button>
+            <button onClick={() => setEatSuggestion(null)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex' }}>
+              <X size={16}/>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Today status card */}
       {!todayIsWeekend && (

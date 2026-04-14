@@ -71,7 +71,7 @@ export default function Notes() {
             <Search size={14} style={{position:'absolute',right:'0.75rem',top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)'}}/>
             <input className="input-field" style={{paddingRight:'2.25rem',width:200}} placeholder="חיפוש..." value={search} onChange={e=>setSearch(e.target.value)}/>
           </div>
-          <button className="btn-primary" onClick={openAdd}><Plus size={15}/>פתק חדש</button>
+          <button className="btn-primary" onClick={openAdd} style={{padding:'0.4rem 0.875rem',minHeight:'unset',fontSize:'0.875rem'}}><Plus size={14}/>פתק חדש</button>
         </div>
       </div>
 

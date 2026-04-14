@@ -6,21 +6,22 @@ import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import toast from 'react-hot-toast'
 
 function buildCatOptions(cats) {
-  const parents = cats.filter(c => !c.parent_id)
-  const byParent = {}
-  cats.filter(c => c.parent_id).forEach(c => {
-    if (!byParent[c.parent_id]) byParent[c.parent_id] = []
-    byParent[c.parent_id].push(c)
-  })
-  return parents.map(p => {
-    const kids = byParent[p.id] || []
-    if (kids.length === 0) return <option key={p.id} value={p.id}>{p.icon} {p.name}</option>
-    return (
-      <optgroup key={`g-${p.id}`} label={`${p.icon} ${p.name}`}>
-        {kids.map(k => <option key={k.id} value={k.id}>{k.icon} {k.name}</option>)}
-      </optgroup>
-    )
-  })
+  const children = cats.filter(c => c.parent_id)
+  const parents  = cats.filter(c => !c.parent_id)
+  return (
+    <>
+      {children.length > 0 && (
+        <optgroup label="תת-קטגוריות">
+          {children.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+        </optgroup>
+      )}
+      {parents.length > 0 && (
+        <optgroup label="קטגוריות">
+          {parents.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+        </optgroup>
+      )}
+    </>
+  )
 }
 
 const mkForm = () => ({

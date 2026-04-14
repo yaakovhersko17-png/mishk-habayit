@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Edit2, Trash2, ChevronDown, ChevronLeft } from 'lucide-react'
+import { Plus, Edit2, Trash2 } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
@@ -21,8 +21,6 @@ export default function Categories() {
   const [editing, setEditing] = useState(null)
   const [form, setForm]       = useState(emptyForm)
   const [saving, setSaving]   = useState(false)
-  const [expanded, setExpanded] = useState(new Set())
-
   useEffect(() => { load() }, [])
   useRealtime('categories', load)
 
@@ -44,16 +42,7 @@ export default function Categories() {
     setLoading(false)
   }
 
-  function toggleExpand(id) {
-    setExpanded(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  function openAdd()   { setEditing(null); setForm(emptyForm); setModal(true) }
+  function openAdd()  { setEditing(null); setForm(emptyForm); setModal(true) }
   function openEdit(c) { setEditing(c); setForm({ name:c.name, icon:c.icon, color:c.color, type:c.type, parent_id:c.parent_id||'' }); setModal(true) }
 
   async function handleSave() {
@@ -119,18 +108,11 @@ export default function Categories() {
       <div className="page-card" style={{padding:0,overflow:'hidden'}}>
         {parents.map((c, i) => {
           const kids = childrenByParent[c.id] || []
-          const isOpen = expanded.has(c.id)
           return (
             <div key={c.id}>
               {/* Parent row */}
               <div style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.625rem 1rem',borderTop:i>0?'1px solid rgba(255,255,255,0.04)':'none'}}>
-                {/* Chevron toggle */}
-                <button
-                  onClick={() => kids.length && toggleExpand(c.id)}
-                  style={{background:'none',border:'none',padding:'0.125rem',display:'flex',alignItems:'center',flexShrink:0,width:18,cursor:kids.length?'pointer':'default',color:kids.length?(isOpen?'#a78bfa':'var(--text-muted)'):'transparent'}}
-                >
-                  {kids.length > 0 && (isOpen ? <ChevronDown size={15}/> : <ChevronLeft size={15}/>)}
-                </button>
+                <div style={{width:18,flexShrink:0}}/>
                 <div style={{width:32,height:32,borderRadius:'0.625rem',background:`${c.color}25`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',flexShrink:0,border:`1px solid ${c.color}30`}}>{c.icon}</div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:'0.875rem',fontWeight:600,color:'var(--text)'}}>{c.name}</div>
@@ -145,8 +127,8 @@ export default function Categories() {
                   <button onClick={()=>handleDelete(c)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.3rem'}}><Trash2 size={13}/></button>
                 </div>
               </div>
-              {/* Child rows */}
-              {isOpen && kids.map(k => renderCatRow(k, true))}
+              {/* Always-visible child rows */}
+              {kids.map(k => renderCatRow(k, true))}
             </div>
           )
         })}
