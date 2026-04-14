@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { ChevronRight, ChevronLeft, Plus, X, CalendarDays } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Plus, X } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
 
-const DAYS_HE = ['א','ב','ג','ד','ה','ו','ש']
+const DAYS_HE   = ['א','ב','ג','ד','ה','ו','ש']
 const DAYS_FULL = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת']
 const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
 
 function dateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
-function sameDay(a, b) { return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate() }
+function sameDay(a, b) {
+  return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate()
+}
 
 export default function CalendarPage() {
   const [today]   = useState(new Date())
@@ -23,31 +25,29 @@ export default function CalendarPage() {
   const [loading, setLoading]     = useState(true)
   const [view, setView]           = useState('month')
 
-  // Add event modal
-  const [showAdd, setShowAdd]     = useState(false)
-  const [saving, setSaving]       = useState(false)
-  const [addForm, setAddForm]     = useState({ title:'', date:'', time:'09:00', description:'' })
-
-  // All events modal
-  const [showAll, setShowAll]       = useState(false)
+  // All events for side panel
   const [allEvents, setAllEvents]   = useState([])
-  const [loadingAll, setLoadingAll] = useState(false)
+  const [evFilter, setEvFilter]     = useState('future') // future | past | all
+
+  // Add event modal
+  const [showAdd, setShowAdd] = useState(false)
+  const [saving, setSaving]   = useState(false)
+  const [addForm, setAddForm] = useState({ title:'', date:'', time:'09:00', description:'' })
 
   useEffect(() => { load() }, [current, view])
+  useEffect(() => { loadAllEvents() }, [])
 
   async function load() {
     let from, to
     if (view === 'month') {
-      const y = current.getFullYear(), m = current.getMonth()
-      from = `${y}-${String(m+1).padStart(2,'0')}-01`
-      to   = `${y}-${String(m+1).padStart(2,'0')}-${new Date(y,m+1,0).getDate()}`
+      const y=current.getFullYear(), m=current.getMonth()
+      from=`${y}-${String(m+1).padStart(2,'0')}-01`
+      to=`${y}-${String(m+1).padStart(2,'0')}-${new Date(y,m+1,0).getDate()}`
     } else if (view === 'week') {
-      const start = getWeekStart(current)
-      from = dateStr(start)
-      const end = new Date(start); end.setDate(end.getDate()+6)
-      to = dateStr(end)
+      const s=getWeekStart(current); from=dateStr(s)
+      const e=new Date(s); e.setDate(e.getDate()+6); to=dateStr(e)
     } else {
-      from = dateStr(current); to = dateStr(current)
+      from=dateStr(current); to=dateStr(current)
     }
     const [{ data: txData }, { data: remData }, { data: evData }] = await Promise.all([
       supabase.from('transactions').select('date,type,amount,description,currency').gte('date',from).lte('date',to),
@@ -55,20 +55,18 @@ export default function CalendarPage() {
       supabase.from('calendar_events').select('id,title,description,event_date,event_time,color').gte('event_date',from).lte('event_date',to),
     ])
     const tbd={}, rbd={}, ebd={}
-    ;(txData||[]).forEach(t  => { if(!tbd[t.date]) tbd[t.date]=[]; tbd[t.date].push(t) })
+    ;(txData||[]).forEach(t  => { if(!tbd[t.date])       tbd[t.date]=[]; tbd[t.date].push(t) })
     ;(remData||[]).forEach(r => { const d=r.due_date?.split('T')[0]; if(d){if(!rbd[d])rbd[d]=[]; rbd[d].push(r)} })
     ;(evData||[]).forEach(e  => { if(!ebd[e.event_date]) ebd[e.event_date]=[]; ebd[e.event_date].push(e) })
     setTxByDate(tbd); setRemByDate(rbd); setEvByDate(ebd); setLoading(false)
   }
 
-  async function loadAll() {
-    setLoadingAll(true)
+  async function loadAllEvents() {
     const { data } = await supabase.from('calendar_events')
       .select('id,title,description,event_date,event_time,color')
       .order('event_date', { ascending: true })
-      .order('event_time', { ascending: true })
+      .order('event_time', { ascending: true, nullsFirst: false })
     setAllEvents(data || [])
-    setLoadingAll(false)
   }
 
   async function deleteEvent(id) {
@@ -79,9 +77,7 @@ export default function CalendarPage() {
     load()
   }
 
-  function getWeekStart(d) {
-    const s = new Date(d); s.setDate(s.getDate()-s.getDay()); return s
-  }
+  function getWeekStart(d) { const s=new Date(d); s.setDate(s.getDate()-s.getDay()); return s }
   function prev() {
     if (view==='month') setCurrent(new Date(current.getFullYear(),current.getMonth()-1,1))
     else if (view==='week') { const d=new Date(current); d.setDate(d.getDate()-7); setCurrent(d) }
@@ -99,16 +95,19 @@ export default function CalendarPage() {
     return `${s.getDate()}–${e.getDate()} ${MONTHS_HE[current.getMonth()]} ${current.getFullYear()}`
   }
 
-  // ── Selected day ──────────────────────────────────────────────────────────
-  const selDs    = selected || (view==='day' ? dateStr(current) : null)
-  const selTx    = selDs ? (txByDate[selDs]  || []) : []
-  const selRem   = selDs ? (remByDate[selDs] || []) : []
-  const selEv    = selDs ? (evByDate[selDs]  || []) : []
+  const todayStr = dateStr(today)
+  const selDs  = selected || (view==='day' ? dateStr(current) : null)
+
+  // Filtered events for side panel
+  const filteredEvents = allEvents.filter(e => {
+    if (evFilter === 'future') return e.event_date >= todayStr
+    if (evFilter === 'past')   return e.event_date <  todayStr
+    return true
+  })
 
   // ── FAB / Add ─────────────────────────────────────────────────────────────
   function openAdd() {
-    const d = selected || dateStr(current)
-    setAddForm({ title:'', date:d, time:'09:00', description:'' })
+    setAddForm({ title:'', date: selected || dateStr(current), time:'09:00', description:'' })
     setShowAdd(true)
   }
   async function saveEvent() {
@@ -124,12 +123,11 @@ export default function CalendarPage() {
     if (error) { toast.error('שגיאה בשמירה'); return }
     toast.success('אירוע נוסף!')
     setShowAdd(false)
-    load()
+    load(); loadAllEvents()
   }
 
   if (loading) return <LoadingSpinner />
 
-  // ── Month cells ───────────────────────────────────────────────────────────
   const year=current.getFullYear(), month=current.getMonth()
   const firstDay=new Date(year,month,1).getDay()
   const daysInMonth=new Date(year,month+1,0).getDate()
@@ -153,8 +151,7 @@ export default function CalendarPage() {
         background:isSel?'rgba(108,99,255,0.3)':isToday?'rgba(108,99,255,0.15)':'transparent',
         border:isSel?'1px solid rgba(108,99,255,0.5)':isToday?'1px solid rgba(108,99,255,0.3)':'1px solid transparent',
         color:isSel?'#a78bfa':isToday?'#c4b5fd':'var(--text)',
-        fontSize:'0.875rem',fontWeight:isToday||isSel?700:400,
-        padding:compact?0:'0.5rem',
+        fontSize:'0.875rem',fontWeight:isToday||isSel?700:400,padding:compact?0:'0.5rem',
       }}>
         {typeof day==='number' ? day : day.getDate()}
         {(hasTx||hasRem||hasEv) && (
@@ -168,7 +165,7 @@ export default function CalendarPage() {
     )
   }
 
-  function renderEvents(ds) {
+  function renderDayEvents(ds) {
     const tx  = txByDate[ds]  || []
     const rem = remByDate[ds] || []
     const ev  = evByDate[ds]  || []
@@ -218,16 +215,7 @@ export default function CalendarPage() {
       {/* Header */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'0.75rem'}}>
         <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>לוח שנה</h1>
-        <div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
-          {/* All events button */}
-          <button onClick={()=>{setShowAll(true);loadAll()}} style={{
-            display:'flex',alignItems:'center',gap:'0.375rem',
-            padding:'0.375rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',
-            border:'1px solid rgba(34,211,238,0.4)',background:'rgba(34,211,238,0.1)',color:'#22d3ee',
-          }}>
-            <CalendarDays size={14}/> כל האירועים
-          </button>
-          {/* View toggle */}
+        <div style={{display:'flex',gap:'0.375rem'}}>
           {[['month','חודש'],['week','שבוע'],['day','יום']].map(([v,label])=>(
             <button key={v} onClick={()=>{setView(v);setSelected(null)}} style={{
               padding:'0.375rem 0.875rem',borderRadius:'0.5rem',fontSize:'0.8rem',cursor:'pointer',
@@ -240,15 +228,14 @@ export default function CalendarPage() {
       </div>
 
       <div className="cal-grid">
+        {/* Calendar panel */}
         <div className="page-card">
-          {/* Navigation */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.5rem'}}>
             <button onClick={prev} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'var(--text)',padding:'0.375rem',display:'flex'}}><ChevronRight size={18}/></button>
             <h2 style={{margin:0,fontSize:'1.1rem',fontWeight:600,color:'var(--text)'}}>{headerTitle()}</h2>
             <button onClick={next} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'var(--text)',padding:'0.375rem',display:'flex'}}><ChevronLeft size={18}/></button>
           </div>
 
-          {/* MONTH VIEW */}
           {view==='month' && <>
             <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem',marginBottom:'0.5rem'}}>
               {DAYS_HE.map(d=><div key={d} style={{textAlign:'center',fontSize:'0.75rem',color:'var(--text-muted)',fontWeight:600,padding:'0.25rem'}}>{d}</div>)}
@@ -262,7 +249,6 @@ export default function CalendarPage() {
             </div>
           </>}
 
-          {/* WEEK VIEW */}
           {view==='week' && <>
             <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem',marginBottom:'0.5rem'}}>
               {weekDays.map((_,i)=><div key={i} style={{textAlign:'center',fontSize:'0.7rem',color:'var(--text-muted)',fontWeight:600}}>{DAYS_HE[i]}</div>)}
@@ -278,24 +264,22 @@ export default function CalendarPage() {
                 return (
                   <div key={ds}>
                     <div style={{fontSize:'0.8rem',fontWeight:600,color:'#a78bfa',marginBottom:'0.5rem'}}>{DAYS_FULL[d.getDay()]} {d.getDate()}/{d.getMonth()+1}</div>
-                    {renderEvents(ds)}
+                    {renderDayEvents(ds)}
                   </div>
                 )
               })}
             </div>
           </>}
 
-          {/* DAY VIEW */}
           {view==='day' && (
             <div>
               <div style={{fontSize:'0.85rem',color:'var(--text-sub)',marginBottom:'1rem',textAlign:'center'}}>
                 {current.getDate()} {MONTHS_HE[current.getMonth()]} {current.getFullYear()}
               </div>
-              {renderEvents(dateStr(current))}
+              {renderDayEvents(dateStr(current))}
             </div>
           )}
 
-          {/* Legend */}
           <div style={{marginTop:'1rem',display:'flex',gap:'1rem',justifyContent:'center',flexWrap:'wrap'}}>
             {[['#22d3ee','אירועים'],['#fbbf24','תזכורות'],['#6c63ff','טרנזקציות']].map(([c,l])=>(
               <div key={l} style={{display:'flex',alignItems:'center',gap:'0.375rem',fontSize:'0.75rem',color:'var(--text-muted)'}}>
@@ -306,38 +290,72 @@ export default function CalendarPage() {
         </div>
 
         {/* Side panel */}
-        <div className="page-card">
+        <div className="page-card" style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
           {selDs ? (
             <>
-              <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text)'}}>
-                {(()=>{const d=new Date(selDs+'T00:00:00');return `${d.getDate()} ${MONTHS_HE[d.getMonth()]}`})()}
-              </h3>
-              {renderEvents(selDs)}
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <h3 style={{margin:0,fontSize:'0.9rem',fontWeight:600,color:'var(--text)'}}>
+                  {(()=>{const d=new Date(selDs+'T00:00:00');return `${d.getDate()} ${MONTHS_HE[d.getMonth()]}`})()}
+                </h3>
+                <button onClick={()=>setSelected(null)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',display:'flex'}}><X size={16}/></button>
+              </div>
+              {renderDayEvents(selDs)}
             </>
           ) : (
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',color:'var(--text-dim)',textAlign:'center',gap:'0.5rem'}}>
-              <span style={{fontSize:'2rem'}}>📅</span>
-              <p style={{margin:0,fontSize:'0.85rem'}}>לחץ על תאריך לצפייה באירועים</p>
-            </div>
+            <>
+              {/* Filter tabs */}
+              <div style={{display:'flex',gap:'0.25rem',borderBottom:'1px solid rgba(255,255,255,0.06)',paddingBottom:'0.75rem'}}>
+                {[['future','עתידיים'],['past','שעברו'],['all','הכל']].map(([f,label])=>(
+                  <button key={f} onClick={()=>setEvFilter(f)} style={{
+                    flex:1,padding:'0.375rem 0',borderRadius:'0.5rem',fontSize:'0.75rem',cursor:'pointer',
+                    border:`1px solid ${evFilter===f?'rgba(34,211,238,0.5)':'rgba(255,255,255,0.06)'}`,
+                    background:evFilter===f?'rgba(34,211,238,0.12)':'transparent',
+                    color:evFilter===f?'#22d3ee':'var(--text-muted)',fontWeight:evFilter===f?600:400,
+                  }}>{label}</button>
+                ))}
+              </div>
+              {/* Events list */}
+              <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+                {filteredEvents.length === 0 ? (
+                  <div style={{textAlign:'center',color:'var(--text-dim)',padding:'2rem 0',fontSize:'0.85rem'}}>
+                    {evFilter==='future' ? 'אין אירועים קרובים' : evFilter==='past' ? 'אין אירועים שעברו' : 'אין אירועים'}
+                  </div>
+                ) : filteredEvents.map(e => (
+                  <div key={e.id} style={{display:'flex',alignItems:'flex-start',gap:'0.625rem',padding:'0.625rem 0.75rem',borderRadius:'0.75rem',background:'rgba(34,211,238,0.07)',border:'1px solid rgba(34,211,238,0.12)'}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:'0.825rem',fontWeight:600,color:'var(--text)'}}>{e.title}</div>
+                      <div style={{fontSize:'0.7rem',color:'#22d3ee',marginTop:'0.1rem'}}>
+                        {new Date(e.event_date+'T00:00:00').toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'short'})}
+                        {e.event_time ? ` • ${e.event_time.slice(0,5)}` : ''}
+                      </div>
+                      {e.description && <div style={{fontSize:'0.7rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{e.description}</div>}
+                    </div>
+                    <button onClick={()=>deleteEvent(e.id)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',display:'flex',padding:'0.125rem',flexShrink:0}}>
+                      <X size={14}/>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
 
-      {/* FAB */}
+      {/* FAB — bottom right */}
       <button onClick={openAdd} style={{
-        position:'fixed',bottom:'5rem',left:'1.25rem',zIndex:50,
-        width:52,height:52,borderRadius:'50%',
+        position:'fixed',bottom:'5rem',right:'1.25rem',zIndex:50,
+        width:56,height:56,borderRadius:'50%',
         background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',
         border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',
-        boxShadow:'0 4px 20px rgba(108,99,255,0.5)',transition:'transform 0.15s',
+        boxShadow:'0 4px 24px rgba(108,99,255,0.55)',transition:'transform 0.15s',
       }}
         onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
         onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}
       >
-        <Plus size={24} color="#fff"/>
+        <Plus size={26} color="#fff"/>
       </button>
 
-      {/* Add event modal */}
+      {/* Add event sheet */}
       {showAdd && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:100,display:'flex',alignItems:'flex-end',justifyContent:'center'}}
           onClick={e=>{if(e.target===e.currentTarget)setShowAdd(false)}}>
@@ -365,40 +383,6 @@ export default function CalendarPage() {
             <button className="btn-primary" onClick={saveEvent} disabled={saving} style={{justifyContent:'center'}}>
               {saving ? 'שומר...' : 'שמור אירוע'}
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* All events modal */}
-      {showAll && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:100,display:'flex',alignItems:'flex-end',justifyContent:'center'}}
-          onClick={e=>{if(e.target===e.currentTarget)setShowAll(false)}}>
-          <div style={{width:'100%',maxWidth:480,background:'var(--bg2)',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.5rem',maxHeight:'75vh',display:'flex',flexDirection:'column',gap:'1rem'}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
-              <h3 style={{margin:0,fontSize:'1rem',fontWeight:700,color:'var(--text)'}}>📅 כל האירועים</h3>
-              <button onClick={()=>setShowAll(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',display:'flex'}}><X size={20}/></button>
-            </div>
-            <div style={{overflowY:'auto',flex:1,display:'flex',flexDirection:'column',gap:'0.5rem'}}>
-              {loadingAll ? (
-                <div style={{textAlign:'center',color:'var(--text-muted)',padding:'2rem'}}>טוען...</div>
-              ) : allEvents.length === 0 ? (
-                <div style={{textAlign:'center',color:'var(--text-dim)',padding:'2rem'}}>אין אירועים עדיין</div>
-              ) : allEvents.map(e => (
-                <div key={e.id} style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.75rem',borderRadius:'0.75rem',background:'rgba(34,211,238,0.08)',border:'1px solid rgba(34,211,238,0.15)'}}>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:'0.875rem',fontWeight:600,color:'var(--text)'}}>{e.title}</div>
-                    <div style={{fontSize:'0.75rem',color:'#22d3ee',marginTop:'0.1rem'}}>
-                      {new Date(e.event_date+'T00:00:00').toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'long'})}
-                      {e.event_time ? ` • ${e.event_time.slice(0,5)}` : ''}
-                    </div>
-                    {e.description && <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{e.description}</div>}
-                  </div>
-                  <button onClick={()=>deleteEvent(e.id)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',display:'flex',padding:'0.25rem',flexShrink:0}}>
-                    <X size={16}/>
-                  </button>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       )}
