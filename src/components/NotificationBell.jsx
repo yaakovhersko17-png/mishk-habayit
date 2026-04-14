@@ -35,9 +35,24 @@ function formatDueTime(dueDateStr) {
   return d.toLocaleString('he-IL', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
+function isDinnerTime() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('dinner_default_time') || '"19:00"')
+    const m = String(raw).match(/^(\d{1,2}):(\d{2})$/)
+    if (!m) return false
+    const dinnerMins = parseInt(m[1], 10) * 60 + parseInt(m[2], 10)
+    if (dinnerMins === 0) return false
+    const { hour, minute } = getIsraeliTime()
+    return (hour * 60 + minute) >= dinnerMins
+  } catch (_) { return false }
+}
+
 function computeMissingDays(meals) {
   const today = israeliToday()
-  if (!meals.length) return isWeekend(today) ? [] : [today]
+  if (!meals.length) {
+    if (isWeekend(today)) return []
+    return isDinnerTime() ? [today] : []
+  }
   const covered  = new Set(meals.map(m => m.meal_date))
   const sorted   = [...meals].sort((a, b) => a.meal_date.localeCompare(b.meal_date))
   const earliest = sorted[0].meal_date
@@ -46,7 +61,11 @@ function computeMissingDays(meals) {
   const end      = new Date(today + 'T12:00:00')
   while (cursor <= end) {
     const d = new Intl.DateTimeFormat('en-CA').format(cursor)
-    if (!isWeekend(d) && !covered.has(d)) result.push(d)
+    // Today: only include after dinner time. Past days: always include.
+    if (!isWeekend(d) && !covered.has(d)) {
+      if (d === today && !isDinnerTime()) continue
+      result.push(d)
+    }
     cursor.setDate(cursor.getDate() + 1)
   }
   return result
