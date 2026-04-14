@@ -84,11 +84,13 @@ export default function NotificationBell() {
   const [open, setOpen]             = useState(false)
   const [missingDinners, setMissingDinners] = useState([])
   const [overdueReminders, setOverdueReminders] = useState([])
+  const [overdueEvents, setOverdueEvents] = useState([])
   const [skipping, setSkipping]     = useState(null)
   const [completing, setCompleting] = useState(null)
   const navigate  = useNavigate()
   const ref       = useRef(null)
-  const timersRef = useRef([])   // reminder setTimeout IDs
+  const timersRef   = useRef([])   // reminder setTimeout IDs
+  const evTimersRef = useRef([])   // calendar event setTimeout IDs
 
   useEffect(() => {
     requestNotifPermission()
@@ -102,6 +104,7 @@ export default function NotificationBell() {
     return () => {
       document.removeEventListener('mousedown', clickOutside)
       timersRef.current.forEach(clearTimeout)
+      evTimersRef.current.forEach(clearTimeout)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -136,7 +139,7 @@ export default function NotificationBell() {
   // ── Load all data ──────────────────────────────────────────────────────────
 
   async function loadAll() {
-    await Promise.all([loadDinners(), loadReminders()])
+    await Promise.all([loadDinners(), loadReminders(), loadEvents()])
   }
 
   async function loadDinners() {
@@ -182,6 +185,39 @@ export default function NotificationBell() {
     setOverdueReminders(overdue)
   }
 
+  async function loadEvents() {
+    evTimersRef.current.forEach(clearTimeout)
+    evTimersRef.current = []
+
+    const today = israeliToday()
+    const { data } = await supabase
+      .from('calendar_events')
+      .select('id, title, description, event_date, event_time')
+      .gte('event_date', today)
+      .order('event_date', { ascending: true })
+
+    const now = Date.now()
+    const due = []
+
+    ;(data || []).forEach(ev => {
+      const timeStr = ev.event_time ? ev.event_time.slice(0, 5) : '00:00'
+      const evMs = new Date(`${ev.event_date}T${timeStr}:00`).getTime()
+      const diff = evMs - now
+      if (diff <= 0) {
+        due.push(ev)
+      } else if (diff <= 7 * 24 * 60 * 60 * 1000) {
+        // cap 7 days — same overflow protection as reminders
+        const id = setTimeout(() => {
+          setOverdueEvents(prev => [...prev, ev])
+        }, diff)
+        evTimersRef.current.push(id)
+      }
+      // far-future (>7 days): skip, picked up on next app load
+    })
+
+    setOverdueEvents(due)
+  }
+
   // ── Actions ────────────────────────────────────────────────────────────────
 
   async function skipDay(date) {
@@ -209,7 +245,7 @@ export default function NotificationBell() {
 
   // ── Badge count ────────────────────────────────────────────────────────────
 
-  const count = missingDinners.length + overdueReminders.length
+  const count = missingDinners.length + overdueReminders.length + overdueEvents.length
 
   // Sync count to PWA app icon badge (iOS 16.4+ / Android Chrome)
   useEffect(() => {
@@ -358,6 +394,57 @@ export default function NotificationBell() {
                               color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', padding: 2,
                             }}
                           >›</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Calendar Events section ──────────────────────── */}
+                {overdueEvents.length > 0 && (
+                  <div>
+                    <div style={{
+                      fontSize: '0.7rem', fontWeight: 700, color: '#22d3ee',
+                      padding: '0.25rem 0.25rem 0.375rem',
+                      letterSpacing: '0.04em', textTransform: 'uppercase',
+                    }}>
+                      📅 אירועים ({overdueEvents.length})
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                      {overdueEvents.map(ev => (
+                        <div key={ev.id} style={{
+                          background: 'rgba(34,211,238,0.06)',
+                          border: '1px solid rgba(34,211,238,0.18)',
+                          borderRadius: '0.625rem',
+                          padding: '0.625rem 0.75rem',
+                          display: 'flex', alignItems: 'flex-start', gap: '0.625rem',
+                          cursor: 'pointer',
+                        }}
+                          onClick={() => { navigate('/calendar'); setOpen(false) }}
+                        >
+                          <div style={{
+                            flexShrink: 0, width: 32, height: 32, borderRadius: '0.5rem',
+                            background: 'rgba(34,211,238,0.15)', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center', fontSize: '1rem',
+                          }}>📅</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)',
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}>
+                              {ev.title}
+                            </div>
+                            {ev.description && (
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)', marginTop: 2 }}>
+                                {ev.description}
+                              </div>
+                            )}
+                            <div style={{ fontSize: '0.72rem', color: '#22d3ee', marginTop: 3 }}>
+                              📅 {new Date(ev.event_date + 'T12:00:00').toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'short' })}
+                              {ev.event_time && ` ב-${ev.event_time.slice(0, 5)}`}
+                            </div>
+                          </div>
+                          <div style={{ flexShrink: 0, color: 'var(--text-muted)', fontSize: '0.8rem', padding: 2 }}>›</div>
                         </div>
                       ))}
                     </div>
