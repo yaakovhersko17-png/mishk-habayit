@@ -61,12 +61,11 @@ function computeMissingDays(meals) {
   const end      = new Date(today + 'T12:00:00')
   while (cursor <= end) {
     const d = new Intl.DateTimeFormat('en-CA').format(cursor)
-    // Today: only include after dinner time. Past days: always include.
-    if (!isWeekend(d) && !covered.has(d)) {
-      if (d === today && !isDinnerTime()) continue
+    cursor.setDate(cursor.getDate() + 1) // advance FIRST — never skip this
+    // Today: only show after dinner time. Past days: always show.
+    if (!isWeekend(d) && !covered.has(d) && !(d === today && !isDinnerTime())) {
       result.push(d)
     }
-    cursor.setDate(cursor.getDate() + 1)
   }
   return result
 }
