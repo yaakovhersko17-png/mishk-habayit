@@ -69,18 +69,25 @@ export default function Dashboard() {
     // Dinner reminder — show only after configured time AND only if not yet logged/skipped today
     try {
       const dinnerDays = JSON.parse(localStorage.getItem('dinner_active_days') || '[0,1,2,3,4,5]')
-      const dinnerTime = JSON.parse(localStorage.getItem('dinner_default_time') || '"19:00"')
+      const rawTime    = JSON.parse(localStorage.getItem('dinner_default_time') || '"19:00"')
+      // Strict parse: must match HH:MM format
+      const m = String(rawTime).match(/^(\d{1,2}):(\d{2})$/)
+      if (!m) throw new Error('invalid time')
+      const dh = parseInt(m[1], 10)
+      const dm = parseInt(m[2], 10)
+      const dinnerMins = dh * 60 + dm
+      const nowH = now.getHours()
+      const nowM = now.getMinutes()
+      const nowMins = nowH * 60 + nowM
       const todayDow = now.getDay()
-      const [dh, dm] = String(dinnerTime).split(':').map(Number)
-      const dinnerMins = (dh || 0) * 60 + (dm || 0)
-      const nowMins = now.getHours() * 60 + now.getMinutes()
-      // Use LOCAL date — not toISOString() which is UTC and drifts at night
       const localToday = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
-      if (dinnerDays.includes(todayDow) && dinnerMins > 0 && nowMins >= dinnerMins) {
-        const { data: dinnerData } = await supabase.from('dinner_meals').select('id').eq('meal_date', localToday).limit(1)
-        if (!dinnerData || dinnerData.length === 0) {
-          events.push({ type: 'dinner', icon: '🍽️', label: 'ארוחת ערב', sub: `הוגדרה ל-${dinnerTime}`, route: '/dinners', color: '#f97316' })
-        }
+      // Guard: valid day + time not midnight + current time has passed dinner time
+      if (!Array.isArray(dinnerDays) || !dinnerDays.includes(todayDow)) throw new Error('not dinner day')
+      if (dinnerMins === 0) throw new Error('midnight not valid dinner time')
+      if (nowMins < dinnerMins) throw new Error('too early')
+      const { data: dinnerData } = await supabase.from('dinner_meals').select('id').eq('meal_date', localToday).limit(1)
+      if (!dinnerData || dinnerData.length === 0) {
+        events.push({ type: 'dinner', icon: '🍽️', label: 'ארוחת ערב', sub: `הוגדרה ל-${rawTime}`, route: '/dinners', color: '#f97316' })
       }
     } catch (_) {}
     const { data: invData } = await supabase.from('invoices').select('business_name,total,currency').eq('date', todayStr)
