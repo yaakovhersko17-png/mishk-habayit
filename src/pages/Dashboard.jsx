@@ -1,11 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2, Lightbulb, ScanLine, Archive, ChevronDown } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2, Lightbulb, ScanLine, Archive, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import toast from 'react-hot-toast'
+
+const DAYS_HE   = ['א','ב','ג','ד','ה','ו','ש']
+const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
+function ds(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
+function getWeekStart(d) { const s=new Date(d); s.setDate(s.getDate()-s.getDay()); return s }
 
 const COLORS = ['#6c63ff','#f87171','#fbbf24','#4ade80','#60a5fa','#f472b6','#a78bfa','#34d399']
 
@@ -29,10 +34,16 @@ export default function Dashboard() {
   const [wallets, setWallets]           = useState([])
   const [monthlyData, setMonthlyData]   = useState({ income: 0, expense: 0, loans: [] })
   const [showAddTx, setShowAddTx]       = useState(false)
-  const [todayEvents, setTodayEvents]   = useState([])
+
+  // Calendar widget state
   const today = new Date()
+  const [calView, setCalView]     = useState('day')   // 'day' | 'week' | 'month'
+  const [calDate, setCalDate]     = useState(new Date())
+  const [calEvents, setCalEvents] = useState([])       // raw events for current period
+  const [calLoading, setCalLoading] = useState(false)
 
   useEffect(() => { loadData() }, [])
+  useEffect(() => { loadCalendar(calView, calDate) }, [calView, calDate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadData() {
     setLoading(true)
@@ -41,7 +52,6 @@ export default function Dashboard() {
       withRetry(() => supabase.from('transactions').select('*,categories(name,color),profiles(name)').order('date', { ascending: false })),
     ])
     setWallets(walletsData || [])
-
     const now = new Date()
     const monthTxs = (txData || []).filter(t => {
       const d = new Date(t.date)
@@ -49,66 +59,105 @@ export default function Dashboard() {
     })
     const income  = monthTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
     const expense = monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
-    const loans   = (txData || []).filter(t => t.type.startsWith('loan'))
+    const loans   = (txData || []).filter(t => t.type.startsWith('loan') || t.type === 'debt_unpaid')
     setMonthlyData({ income, expense, loans })
-
-    // Today's events for daily widget
-    const todayStr = now.toISOString().split('T')[0]
-    const tomorrowStr = new Date(now.getTime() + 86400000).toISOString().split('T')[0]
-    const events = []
-    ;(txData || []).filter(t => t.date === todayStr).forEach(t => {
-      events.push({ type: 'transaction', icon: t.type === 'income' ? '💰' : t.type === 'transfer' ? '↔️' : t.type.startsWith('loan') ? '🏦' : '💸', label: t.description, sub: `${t.type === 'income' ? '+' : t.type === 'transfer' ? '↔' : '-'}₪${Number(t.amount).toLocaleString()}`, route: '/transactions', color: t.type === 'income' ? '#4ade80' : t.type === 'transfer' ? '#22d3ee' : t.type.startsWith('loan') ? '#fbbf24' : '#f87171' })
-    })
-
-    // Calendar events today
-    const { data: calEvData } = await supabase.from('calendar_events').select('title,description,event_time').eq('event_date', todayStr)
-    ;(calEvData || []).forEach(e => {
-      const timeSub = e.event_time ? `🕐 ${e.event_time.slice(0,5)}` : 'אירוע'
-      events.push({ type: 'calendar_event', icon: '📅', label: e.title, sub: timeSub, route: '/calendar', color: '#22d3ee' })
-    })
-
-    // Reminders due today (fix: use date range to handle datetime values, fix field name is_completed)
-    const { data: remData } = await supabase.from('reminders').select('*').gte('due_date', todayStr).lt('due_date', tomorrowStr)
-    ;(remData || []).forEach(r => {
-      events.push({ type: 'reminder', icon: r.is_completed ? '✅' : new Date(r.due_date) < now ? '⚠️' : '🔔', label: r.title, sub: r.is_completed ? 'הושלם' : 'תזכורת', route: '/reminders', color: r.is_completed ? '#4ade80' : '#fbbf24' })
-    })
-
-    // Dinner reminder — show only after configured time AND only if not yet logged/skipped today
-    try {
-      const dinnerDays = JSON.parse(localStorage.getItem('dinner_active_days') || '[0,1,2,3,4,5]')
-      const rawTime    = JSON.parse(localStorage.getItem('dinner_default_time') || '"19:00"')
-      // Strict parse: must match HH:MM format
-      const m = String(rawTime).match(/^(\d{1,2}):(\d{2})$/)
-      if (!m) throw new Error('invalid time')
-      const dh = parseInt(m[1], 10)
-      const dm = parseInt(m[2], 10)
-      const dinnerMins = dh * 60 + dm
-      const nowH = now.getHours()
-      const nowM = now.getMinutes()
-      const nowMins = nowH * 60 + nowM
-      const todayDow = now.getDay()
-      const localToday = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
-      // Guard: valid day + time not midnight + current time has passed dinner time
-      if (!Array.isArray(dinnerDays) || !dinnerDays.includes(todayDow)) throw new Error('not dinner day')
-      if (dinnerMins === 0) throw new Error('midnight not valid dinner time')
-      if (nowMins < dinnerMins) throw new Error('too early')
-      const { data: dinnerData } = await supabase.from('dinner_meals').select('id').eq('meal_date', localToday).limit(1)
-      if (!dinnerData || dinnerData.length === 0) {
-        events.push({ type: 'dinner', icon: '🍽️', label: 'ארוחת ערב', sub: `הוגדרה ל-${rawTime}`, route: '/dinners', color: '#f97316' })
-      }
-    } catch (_) {}
-    const { data: invData } = await supabase.from('invoices').select('business_name,total,currency').eq('date', todayStr)
-    ;(invData || []).forEach(inv => {
-      events.push({ type: 'invoice', icon: '🧾', label: inv.business_name, sub: `${inv.currency}${Number(inv.total).toLocaleString()}`, route: '/invoices', color: '#a78bfa' })
-    })
-    setTodayEvents(events)
     setLoading(false)
+  }
+
+  async function loadCalendar(view, date) {
+    setCalLoading(true)
+    let from, to
+    if (view === 'day') {
+      from = ds(date); to = ds(date)
+    } else if (view === 'week') {
+      const s = getWeekStart(date); from = ds(s)
+      const e = new Date(s); e.setDate(e.getDate()+6); to = ds(e)
+    } else {
+      const y=date.getFullYear(), m=date.getMonth()
+      from=`${y}-${String(m+1).padStart(2,'0')}-01`
+      to=`${y}-${String(m+1).padStart(2,'0')}-${new Date(y,m+1,0).getDate()}`
+    }
+    const tom = new Date(new Date(from).getTime()+86400000).toISOString().split('T')[0]
+    const [{ data: txData }, { data: calEvData }, { data: remData }] = await Promise.all([
+      supabase.from('transactions').select('date,type,amount,description,currency').gte('date',from).lte('date',to),
+      supabase.from('calendar_events').select('title,event_date,event_time,description').gte('event_date',from).lte('event_date',to),
+      view === 'day'
+        ? supabase.from('reminders').select('title,due_date,is_completed').gte('due_date',from+'T00:00:00').lt('due_date',tom+'T00:00:00')
+        : supabase.from('reminders').select('title,due_date,is_completed').gte('due_date',from+'T00:00:00').lte('due_date',to+'T23:59:59'),
+    ])
+    // Also load dinner for day view
+    let dinnerEv = null
+    if (view === 'day') {
+      try {
+        const dinnerDays = JSON.parse(localStorage.getItem('dinner_active_days') || '[0,1,2,3,4,5]')
+        const rawTime    = JSON.parse(localStorage.getItem('dinner_default_time') || '"19:00"')
+        const mT = String(rawTime).match(/^(\d{1,2}):(\d{2})$/)
+        if (mT && dinnerDays.includes(date.getDay())) {
+          const dMins = parseInt(mT[1])*60+parseInt(mT[2])
+          const nowMins = date.getDate()===today.getDate() ? today.getHours()*60+today.getMinutes() : 1440
+          if (dMins > 0 && nowMins >= dMins) {
+            const { data: dd } = await supabase.from('dinner_meals').select('id').eq('meal_date',from).limit(1)
+            if (!dd || dd.length===0) dinnerEv = { type:'dinner', icon:'🍽️', label:'ארוחת ערב', sub:`ל-${rawTime}`, route:'/dinners', color:'#f97316', date:from }
+          }
+        }
+      } catch(_) {}
+    }
+    // Build per-date buckets
+    const byDate = {}
+    const addEv = (dateKey, ev) => { if(!byDate[dateKey]) byDate[dateKey]=[]; byDate[dateKey].push(ev) }
+    ;(txData||[]).forEach(t => addEv(t.date, { type:'tx', icon:t.type==='income'?'💰':t.type==='transfer'?'↔️':t.type.startsWith('loan')||t.type==='debt_unpaid'?'🏦':'💸', label:t.description, sub:`${t.type==='income'?'+':'-'}${t.currency||'₪'}${Number(t.amount).toLocaleString()}`, route:'/transactions', color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')||t.type==='debt_unpaid'?'#fbbf24':'#f87171', date:t.date }))
+    ;(calEvData||[]).forEach(e => addEv(e.event_date, { type:'event', icon:'📅', label:e.title, sub:e.event_time?`🕐 ${e.event_time.slice(0,5)}`:'אירוע', route:'/calendar', color:'#22d3ee', date:e.event_date }))
+    ;(remData||[]).forEach(r => { const d=r.due_date?.split('T')[0]; if(d) addEv(d, { type:'reminder', icon:r.is_completed?'✅':new Date(r.due_date)<today?'⚠️':'🔔', label:r.title, sub:r.is_completed?'הושלם':'תזכורת', route:'/reminders', color:r.is_completed?'#4ade80':'#fbbf24', date:d }) })
+    if (dinnerEv) addEv(from, dinnerEv)
+    setCalEvents(byDate)
+    setCalLoading(false)
+  }
+
+  function calPrev() {
+    setCalDate(d => {
+      const n = new Date(d)
+      if (calView==='day')   n.setDate(n.getDate()-1)
+      else if (calView==='week') n.setDate(n.getDate()-7)
+      else n.setMonth(n.getMonth()-1)
+      return n
+    })
+  }
+  function calNext() {
+    setCalDate(d => {
+      const n = new Date(d)
+      if (calView==='day')   n.setDate(n.getDate()+1)
+      else if (calView==='week') n.setDate(n.getDate()+7)
+      else n.setMonth(n.getMonth()+1)
+      return n
+    })
+  }
+  function calTitle() {
+    if (calView==='day') {
+      const isToday = ds(calDate)===ds(today)
+      return isToday ? `היום — ${calDate.toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}` : calDate.toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
+    }
+    if (calView==='week') {
+      const s=getWeekStart(calDate), e=new Date(s); e.setDate(e.getDate()+6)
+      return `${s.getDate()}–${e.getDate()} ${MONTHS_HE[s.getMonth()]}`
+    }
+    return `${MONTHS_HE[calDate.getMonth()]} ${calDate.getFullYear()}`
   }
 
   const totalBalance = wallets.reduce((s, w) => s + Number(w.balance), 0)
   const openLoans = monthlyData.loans.filter(l => Number(l.loan_returned || 0) < Number(l.amount))
 
   if (loading) return <LoadingSpinner text="טוען נתונים..." />
+
+  // Calendar render helpers
+  const todayStr = ds(today)
+  const dayEvents = calEvents[ds(calDate)] || []
+  const weekDays  = Array.from({length:7},(_,i)=>{ const d=new Date(getWeekStart(calDate)); d.setDate(d.getDate()+i); return d })
+  const monthYear = calDate.getFullYear(), monthM = calDate.getMonth()
+  const firstDay  = new Date(monthYear,monthM,1).getDay()
+  const daysInMonth = new Date(monthYear,monthM+1,0).getDate()
+  const monthCells = []
+  for(let i=0;i<firstDay;i++) monthCells.push(null)
+  for(let d=1;d<=daysInMonth;d++) monthCells.push(d)
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
@@ -127,29 +176,122 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Daily widget */}
-      <div className="page-card">
-        <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text-sub)'}}>
-          📅 אירועי היום — {today.toLocaleDateString('he-IL', { weekday:'long', day:'numeric', month:'long' })}
-        </h3>
-        {todayEvents.length === 0
-          ? <div style={{padding:'1rem 0',textAlign:'center',color:'var(--text-dim)',fontSize:'0.875rem'}}>אין אירועים להיום 🎉</div>
-          : <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
-              {todayEvents.map((ev, i) => (
-                <div key={i} onClick={() => navigate(ev.route)}
-                  style={{display:'flex',alignItems:'center',gap:'0.875rem',padding:'0.75rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',cursor:'pointer',transition:'all 0.15s'}}
-                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.07)'}
-                  onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
-                  <div style={{width:36,height:36,borderRadius:'0.75rem',background:`${ev.color}20`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.1rem',flexShrink:0}}>{ev.icon}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:500,color:'var(--text)',fontSize:'0.875rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ev.label}</div>
-                    <div style={{fontSize:'0.75rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{ev.sub}</div>
-                  </div>
-                  <div style={{fontSize:'0.7rem',color:ev.color,fontWeight:600,flexShrink:0,paddingRight:'0.25rem'}}>›</div>
+      {/* ── Calendar widget ───────────────────────────────── */}
+      <div className="page-card slide-in-top" style={{padding:0,overflow:'hidden'}}>
+        {/* Widget header */}
+        <div style={{padding:'0.875rem 1rem',display:'flex',flexDirection:'column',gap:'0.625rem',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+          {/* Nav row */}
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <button onClick={calPrev} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'var(--text)',padding:'0.3rem',display:'flex'}}><ChevronRight size={16}/></button>
+            <button onClick={()=>{ setCalView('day'); setCalDate(new Date()) }} style={{fontWeight:600,fontSize:'0.875rem',color:'var(--text)',background:'none',border:'none',cursor:'pointer',flex:1,textAlign:'center'}}>
+              {calTitle()}
+            </button>
+            <button onClick={calNext} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'var(--text)',padding:'0.3rem',display:'flex'}}><ChevronLeft size={16}/></button>
+          </div>
+          {/* View tabs */}
+          <div style={{display:'flex',gap:'0.375rem'}}>
+            {[['day','יומי'],['week','שבועי'],['month','חודשי']].map(([v,l])=>(
+              <button key={v} onClick={()=>setCalView(v)} style={{flex:1,padding:'0.3rem',borderRadius:'0.5rem',fontSize:'0.75rem',cursor:'pointer',
+                border:`1px solid ${calView===v?'rgba(108,99,255,0.5)':'rgba(255,255,255,0.07)'}`,
+                background:calView===v?'rgba(108,99,255,0.18)':'transparent',
+                color:calView===v?'#a78bfa':'var(--text-muted)',fontWeight:calView===v?600:400,transition:'all 0.15s'}}>{l}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Widget body */}
+        <div style={{padding:'0.875rem 1rem',minHeight:120}}>
+          {calLoading ? (
+            <div style={{textAlign:'center',padding:'1.5rem 0',color:'var(--text-dim)',fontSize:'0.8rem'}}>טוען...</div>
+          ) : calView==='day' ? (
+            /* ── Day view ── */
+            dayEvents.length === 0
+              ? <div style={{textAlign:'center',padding:'1.25rem 0',color:'var(--text-dim)',fontSize:'0.85rem'}}>אין אירועים להיום 🎉</div>
+              : <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+                  {dayEvents.map((ev,i)=>(
+                    <div key={i} onClick={()=>navigate(ev.route)}
+                      style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0.6rem 0.75rem',borderRadius:'0.75rem',background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',cursor:'pointer',transition:'background 0.15s'}}
+                      onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.07)'}
+                      onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}>
+                      <div style={{width:32,height:32,borderRadius:'0.625rem',background:`${ev.color}20`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1rem',flexShrink:0}}>{ev.icon}</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:500,color:'var(--text)',fontSize:'0.825rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ev.label}</div>
+                        <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginTop:'0.075rem'}}>{ev.sub}</div>
+                      </div>
+                      <div style={{fontSize:'0.7rem',color:ev.color,fontWeight:600,flexShrink:0}}>›</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+
+          ) : calView==='week' ? (
+            /* ── Week view ── */
+            <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.25rem'}}>
+              {weekDays.map((d,i)=>{
+                const dKey=ds(d)
+                const evs=calEvents[dKey]||[]
+                const isToday=dKey===todayStr
+                return (
+                  <div key={i} onClick={()=>{setCalDate(d);setCalView('day')}} style={{
+                    display:'flex',flexDirection:'column',alignItems:'center',gap:'0.25rem',
+                    padding:'0.5rem 0.25rem',borderRadius:'0.625rem',cursor:'pointer',transition:'background 0.15s',
+                    background:isToday?'rgba(108,99,255,0.15)':'transparent',
+                    border:`1px solid ${isToday?'rgba(108,99,255,0.3)':'transparent'}`,
+                  }}
+                    onMouseEnter={e=>!isToday&&(e.currentTarget.style.background='rgba(255,255,255,0.04)')}
+                    onMouseLeave={e=>!isToday&&(e.currentTarget.style.background='transparent')}>
+                    <div style={{fontSize:'0.65rem',color:'var(--text-muted)',fontWeight:600}}>{DAYS_HE[i]}</div>
+                    <div style={{fontSize:'0.875rem',fontWeight:isToday?700:400,color:isToday?'#a78bfa':'var(--text)'}}>{d.getDate()}</div>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:'2px',justifyContent:'center',minHeight:14}}>
+                      {evs.slice(0,3).map((ev,j)=>(
+                        <div key={j} style={{width:5,height:5,borderRadius:'50%',background:ev.color}}/>
+                      ))}
+                    </div>
+                    {evs.length>0 && <div style={{fontSize:'0.6rem',color:'var(--text-dim)'}}>{evs.length}</div>}
+                  </div>
+                )
+              })}
             </div>
-        }
+
+          ) : (
+            /* ── Month view ── */
+            <>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.125rem',marginBottom:'0.25rem'}}>
+                {DAYS_HE.map(d=><div key={d} style={{textAlign:'center',fontSize:'0.6rem',color:'var(--text-muted)',fontWeight:600,padding:'0.125rem'}}>{d}</div>)}
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'0.125rem'}}>
+                {monthCells.map((day,i)=>{
+                  if(!day) return <div key={`e${i}`}/>
+                  const dKey=`${monthYear}-${String(monthM+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+                  const evs=calEvents[dKey]||[]
+                  const isToday=dKey===todayStr
+                  return (
+                    <div key={dKey} onClick={()=>{setCalDate(new Date(monthYear,monthM,day));setCalView('day')}} style={{
+                      display:'flex',flexDirection:'column',alignItems:'center',padding:'0.25rem 0.125rem',
+                      borderRadius:'0.4rem',cursor:'pointer',position:'relative',
+                      background:isToday?'rgba(108,99,255,0.2)':'transparent',
+                      border:`1px solid ${isToday?'rgba(108,99,255,0.4)':'transparent'}`,
+                      transition:'background 0.1s',
+                    }}
+                      onMouseEnter={e=>!isToday&&(e.currentTarget.style.background='rgba(255,255,255,0.05)')}
+                      onMouseLeave={e=>!isToday&&(e.currentTarget.style.background='transparent')}>
+                      <span style={{fontSize:'0.72rem',fontWeight:isToday?700:400,color:isToday?'#a78bfa':'var(--text)'}}>{day}</span>
+                      {evs.length>0 && <div style={{display:'flex',gap:'1px',marginTop:'2px'}}>
+                        {evs.slice(0,3).map((ev,j)=><div key={j} style={{width:4,height:4,borderRadius:'50%',background:ev.color}}/>)}
+                      </div>}
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer — navigate to full calendar */}
+        <div style={{padding:'0.5rem 1rem',borderTop:'1px solid rgba(255,255,255,0.04)',display:'flex',justifyContent:'center'}}>
+          <button onClick={()=>navigate('/calendar')} style={{background:'none',border:'none',cursor:'pointer',fontSize:'0.75rem',color:'var(--text-dim)',padding:'0.25rem 0.5rem'}}>
+            לוח שנה מלא →
+          </button>
+        </div>
       </div>
 
       {/* Finance button */}
