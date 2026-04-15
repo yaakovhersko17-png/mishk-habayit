@@ -290,7 +290,52 @@ CREATE TABLE IF NOT EXISTS calendar_events (
 );
 CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON calendar_events (event_date);
 ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
+-- Drop any existing policies first (prevents "already exists" error on re-run)
+DROP POLICY IF EXISTS "auth_all" ON calendar_events;
+DROP POLICY IF EXISTS "Enable all access for authenticated users" ON calendar_events;
 CREATE POLICY "auth_all" ON calendar_events FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- =====================
+-- GOALS (יעדי חיסכון)
+-- =====================
+CREATE TABLE IF NOT EXISTS goals (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  icon TEXT DEFAULT '🎯',
+  color TEXT DEFAULT '#6c63ff',
+  target_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  current_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  target_date DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_goals_user ON goals (user_id);
+ALTER TABLE goals ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "goals_owner" ON goals;
+CREATE POLICY "goals_owner" ON goals FOR ALL TO authenticated
+  USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+-- =====================
+-- RECURRING RULES (עסקאות חוזרות)
+-- =====================
+CREATE TABLE IF NOT EXISTS recurring_rules (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  description TEXT NOT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('expense','income')),
+  category_id UUID REFERENCES categories(id),
+  wallet_id UUID REFERENCES wallets(id),
+  day_of_month INTEGER NOT NULL DEFAULT 1 CHECK (day_of_month BETWEEN 1 AND 28),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  last_run_month TEXT,  -- YYYY-MM format, guards against double-run
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_recurring_user ON recurring_rules (user_id);
+ALTER TABLE recurring_rules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "recurring_owner" ON recurring_rules;
+CREATE POLICY "recurring_owner" ON recurring_rules FOR ALL TO authenticated
+  USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
 -- =====================
 -- DONE!
