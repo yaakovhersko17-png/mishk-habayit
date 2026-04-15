@@ -31,10 +31,12 @@ export default function Layout() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Header onMenuClick={() => setSidebarOpen(v => !v)} />
         <main style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }} className="main-content">
+          <div key={location.pathname} className="page-enter">
           <Outlet />
           <footer style={{ textAlign: 'center', color: '#334155', fontSize: '0.75rem', marginTop: '3rem', paddingBottom: '1rem' }}>
             ⚡ נבנה ע"י י.הרשקו ⚡
           </footer>
+          </div>
         </main>
       </div>
     </div>

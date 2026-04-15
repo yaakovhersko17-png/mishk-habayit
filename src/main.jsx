@@ -33,6 +33,13 @@ class ErrorBoundary extends Component {
   }
 }
 
+// Global haptic feedback on primary buttons (Android + iOS PWA)
+document.addEventListener('click', e => {
+  if (e.target.closest('.btn-primary, .btn-danger, [data-haptic]')) {
+    try { navigator.vibrate?.(8) } catch (_) {}
+  }
+}, { passive: true })
+
 // Register Service Worker for push notifications
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

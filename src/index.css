@@ -8,6 +8,25 @@
   --surface:        rgba(255,255,255,0.04);
   --surface-h:      rgba(255,255,255,0.08);
   --border:         rgba(255,255,255,0.08);
+  /* ── Semantic colors ── */
+  --c-income:       #4ade80;
+  --c-income-bg:    rgba(74,222,128,0.12);
+  --c-income-bdr:   rgba(74,222,128,0.25);
+  --c-expense:      #f87171;
+  --c-expense-bg:   rgba(248,113,113,0.12);
+  --c-expense-bdr:  rgba(248,113,113,0.25);
+  --c-loan:         #fbbf24;
+  --c-loan-bg:      rgba(251,191,36,0.12);
+  --c-loan-bdr:     rgba(251,191,36,0.25);
+  --c-transfer:     #22d3ee;
+  --c-transfer-bg:  rgba(34,211,238,0.12);
+  --c-transfer-bdr: rgba(34,211,238,0.25);
+  --c-primary:      #6c63ff;
+  --c-primary-bg:   rgba(108,99,255,0.12);
+  --c-primary-bdr:  rgba(108,99,255,0.25);
+  /* ── Skeleton shimmer ── */
+  --skeleton-base:  rgba(255,255,255,0.06);
+  --skeleton-shine: rgba(255,255,255,0.12);
   --border-subtle:  rgba(255,255,255,0.06);
   --text:           #e2e8f0;
   --text-sub:       #94a3b8;
@@ -34,6 +53,8 @@
   --surface-h:      rgba(255,255,255,0.95);
   --border:         rgba(0,0,0,0.09);
   --border-subtle:  rgba(0,0,0,0.06);
+  --skeleton-base:  rgba(0,0,0,0.06);
+  --skeleton-shine: rgba(0,0,0,0.11);
   --text:           #0f172a;
   --text-sub:       #334155;
   --text-muted:     #64748b;
@@ -627,4 +648,62 @@
 .slide-in-top {
   -webkit-animation: slide-in-top 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
           animation: slide-in-top 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* ── Page enter ─────────────────────────────────── */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: page-enter 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* ── Skeleton shimmer ───────────────────────────── */
+@keyframes skeleton-wave {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-shine) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-wave 1.4s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+.skeleton-text  { height: 0.875rem; width: 100%; }
+.skeleton-text.w-3\/4 { width: 75%; }
+.skeleton-text.w-1\/2 { width: 50%; }
+.skeleton-title { height: 1.25rem; width: 60%; }
+.skeleton-card  { height: 80px; width: 100%; border-radius: 1rem; }
+.skeleton-avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Stagger list ───────────────────────────────── */
+.stagger-list > * { animation: cardEnter 0.3s ease both; }
+.stagger-list > *:nth-child(1)  { animation-delay:  0ms; }
+.stagger-list > *:nth-child(2)  { animation-delay: 40ms; }
+.stagger-list > *:nth-child(3)  { animation-delay: 80ms; }
+.stagger-list > *:nth-child(4)  { animation-delay:120ms; }
+.stagger-list > *:nth-child(5)  { animation-delay:160ms; }
+.stagger-list > *:nth-child(6)  { animation-delay:200ms; }
+.stagger-list > *:nth-child(7)  { animation-delay:240ms; }
+.stagger-list > *:nth-child(8)  { animation-delay:280ms; }
+.stagger-list > *:nth-child(9)  { animation-delay:320ms; }
+.stagger-list > *:nth-child(10) { animation-delay:360ms; }
+
+/* ── Progress bar ───────────────────────────────── */
+.progress-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--skeleton-base);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }

@@ -22,6 +22,8 @@ const AdminPanel     = lazy(() => import('./pages/AdminPanel'))
 const Trips          = lazy(() => import('./pages/Trips'))
 const DinnerMeals    = lazy(() => import('./pages/DinnerMeals'))
 const FinancePage    = lazy(() => import('./pages/FinancePage'))
+const Goals          = lazy(() => import('./pages/Goals'))
+const RecurringTransactions = lazy(() => import('./pages/RecurringTransactions'))
 
 function Spinner() {
   return (
@@ -67,6 +69,8 @@ export default function App() {
             <Route path="settings"     element={<Settings />} />
             <Route path="dinners"      element={<DinnerMeals />} />
             <Route path="finance"      element={<FinancePage />} />
+            <Route path="goals"        element={<Goals />} />
+            <Route path="recurring"    element={<RecurringTransactions />} />
             <Route path="admin"        element={<AdminRoute><AdminPanel /></AdminRoute>} />
           </Route>
         </Routes>
