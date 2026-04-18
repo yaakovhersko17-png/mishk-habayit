@@ -38,7 +38,7 @@ export default function RecurringTransactions() {
 
   async function loadAll() {
     const [{ data: rData }, { data: cData }, { data: wData }] = await Promise.all([
-      supabase.from('recurring_rules').select('*').eq('user_id', user.id).order('day_of_month'),
+      supabase.from('recurring_rules').select('*').order('day_of_month'),
       supabase.from('categories').select('id,name,icon,color,type'),
       supabase.from('wallets').select('id,name,balance'),
     ])
@@ -58,7 +58,7 @@ export default function RecurringTransactions() {
       .from('recurring_rules')
       .select('*')
       .eq('user_id', user.id)
-      .eq('active', true)
+      .eq('is_active', true)
 
     if (!allRules?.length) return
 
@@ -85,12 +85,11 @@ export default function RecurringTransactions() {
       if (!error) {
         await supabase.from('recurring_rules').update({ last_run_month: thisMonth }).eq('id', rule.id)
         created++
-        // Update wallet balance
         if (rule.wallet_id) {
-          const w = wallets.find(w => w.id === rule.wallet_id)
-          if (w) {
+          const { data: wRow } = await supabase.from('wallets').select('balance').eq('id', rule.wallet_id).single()
+          if (wRow) {
             const sign = rule.type === 'income' ? 1 : -1
-            await supabase.from('wallets').update({ balance: w.balance + sign * Number(rule.amount) }).eq('id', rule.wallet_id)
+            await supabase.from('wallets').update({ balance: Number(wRow.balance) + sign * Number(rule.amount) }).eq('id', rule.wallet_id)
           }
         }
       }
@@ -123,7 +122,7 @@ export default function RecurringTransactions() {
       category_id: form.category_id || null,
       wallet_id: form.wallet_id || null,
       user_id: user.id,
-      active: true,
+      is_active: true,
     }
     if (editing) {
       await supabase.from('recurring_rules').update(payload).eq('id', editing.id)
@@ -136,7 +135,7 @@ export default function RecurringTransactions() {
   }
 
   async function toggleActive(r) {
-    await supabase.from('recurring_rules').update({ active: !r.active }).eq('id', r.id)
+    await supabase.from('recurring_rules').update({ is_active: !r.is_active }).eq('id', r.id)
     setRules(prev => prev.map(x => x.id === r.id ? { ...x, active: !x.active } : x))
   }
 
@@ -149,7 +148,7 @@ export default function RecurringTransactions() {
   if (loading) return <LoadingSpinner />
 
   const thisMonth = currentMonth()
-  const activeCount = rules.filter(r => r.active).length
+  const activeCount = rules.filter(r => r.is_active).length
   const doneThisMonth = rules.filter(r => r.last_run_month === thisMonth).length
 
   return (
@@ -207,7 +206,7 @@ export default function RecurringTransactions() {
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
                 padding: '0.875rem 1rem',
                 borderTop: i > 0 ? '1px solid var(--border-subtle)' : 'none',
-                opacity: r.active ? 1 : 0.5,
+                opacity: r.is_active ? 1 : 0.5,
               }}>
                 {/* Icon */}
                 <div style={{ width: 38, height: 38, borderRadius: '0.75rem', background: r.type === 'income' ? 'var(--c-income-bg)' : 'var(--c-expense-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', flexShrink: 0 }}>
@@ -232,8 +231,8 @@ export default function RecurringTransactions() {
                 </div>
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: '0.125rem', flexShrink: 0, alignItems: 'center' }}>
-                  <button onClick={() => toggleActive(r)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', color: r.active ? 'var(--c-income)' : 'var(--text-dim)' }}>
-                    {r.active ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                  <button onClick={() => toggleActive(r)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', color: r.is_active ? 'var(--c-income)' : 'var(--text-dim)' }}>
+                    {r.is_active ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
                   </button>
                   <button onClick={() => openEdit(r)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.25rem' }}><Edit2 size={13} /></button>
                   <button onClick={() => handleDelete(r)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--c-expense)', padding: '0.25rem' }}><Trash2 size={13} /></button>

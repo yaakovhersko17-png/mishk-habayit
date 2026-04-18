@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { ChevronRight, ChevronLeft, Plus, X, List } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Plus, X } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
 
@@ -26,12 +26,7 @@ export default function CalendarPage() {
   const [selected, setSelected]   = useState(null)
   const [loading, setLoading]     = useState(true)
   const [view, setView]           = useState('month')
-
-  // All events (for FAB overlay)
-  const [allEvents, setAllEvents] = useState([])
-
-  // FAB overlay — "כל האירועים"
-  const [showAllEvents, setShowAllEvents] = useState(false)
+  const [activeTab, setActiveTab] = useState(null) // 'reminders'|'events'|'transactions'
 
   // Add event modal
   const [showAdd, setShowAdd] = useState(false)
@@ -39,7 +34,6 @@ export default function CalendarPage() {
   const [addForm, setAddForm] = useState({ title:'', date:'', time:'09:00', description:'' })
 
   useEffect(() => { load() }, [current, view]) // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { loadAllEvents() }, [])
 
   async function load() {
     setLoading(true)
@@ -66,20 +60,11 @@ export default function CalendarPage() {
     setTxByDate(tbd); setRemByDate(rbd); setEvByDate(ebd); setLoading(false)
   }
 
-  async function loadAllEvents() {
-    const { data } = await supabase.from('calendar_events')
-      .select('id,title,description,event_date,event_time,color')
-      .order('event_date', { ascending: true })
-      .order('event_time', { ascending: true, nullsFirst: false })
-    setAllEvents(data || [])
-  }
-
   async function deleteEvent(id) {
     const { error } = await supabase.from('calendar_events').delete().eq('id', id)
     if (error) { toast.error('שגיאה במחיקה'); return }
     toast.success('אירוע נמחק')
-    setAllEvents(prev => prev.filter(e => e.id !== id))
-    await Promise.all([load(), loadAllEvents()])
+    await load()
   }
 
   function getWeekStart(d) { const s=new Date(d); s.setDate(s.getDate()-s.getDay()); return s }
@@ -103,17 +88,6 @@ export default function CalendarPage() {
   const todayStr = dateStr(today)
   const selDs = selected || (view==='day' ? dateStr(current) : null)
 
-  // View-period calendar events sorted: future asc, then past desc (oldest at bottom)
-  const viewEventsSorted = (() => {
-    const flat = Object.values(evByDate).flat()
-    const future = flat.filter(e => e.event_date >= todayStr)
-      .sort((a,b) => a.event_date.localeCompare(b.event_date) || (a.event_time||'').localeCompare(b.event_time||''))
-    const past = flat.filter(e => e.event_date < todayStr)
-      .sort((a,b) => b.event_date.localeCompare(a.event_date) || (b.event_time||'').localeCompare(a.event_time||''))
-    return [...future, ...past]
-  })()
-
-  // ── FAB / Add ─────────────────────────────────────────────────────────────
   function openAdd() {
     setAddForm({ title:'', date: selected || dateStr(current), time:'09:00', description:'' })
     setShowAdd(true)
@@ -133,7 +107,7 @@ export default function CalendarPage() {
     if (error) { toast.error(`שגיאה בשמירה: ${error.message}`); return }
     toast.success('אירוע נוסף!')
     setShowAdd(false)
-    await Promise.all([load(), loadAllEvents()])
+    await load()
   }
 
   if (loading) return <LoadingSpinner />
@@ -175,77 +149,19 @@ export default function CalendarPage() {
     )
   }
 
-  function renderDayEvents(ds) {
-    const tx  = txByDate[ds]  || []
-    const rem = remByDate[ds] || []
-    const ev  = evByDate[ds]  || []
-    if (!tx.length && !rem.length && !ev.length)
-      return <p style={{color:'var(--text-dim)',fontSize:'0.85rem',textAlign:'center',marginTop:'1rem'}}>אין אירועים</p>
-    return <>
-      {ev.length > 0 && (
-        <div style={{marginBottom:'1rem'}}>
-          <div style={{fontSize:'0.75rem',color:'#22d3ee',fontWeight:600,marginBottom:'0.5rem'}}>📅 אירועים</div>
-          {ev.map((e,i)=>(
-            <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(34,211,238,0.08)',border:'1px solid rgba(34,211,238,0.15)',marginBottom:'0.375rem'}}>
-              <div style={{fontSize:'0.8rem',color:'var(--text)',fontWeight:500}}>{e.title}</div>
-              {e.event_time && <div style={{fontSize:'0.7rem',color:'#22d3ee',marginTop:'0.1rem'}}>🕐 {e.event_time.slice(0,5)}</div>}
-              {e.description && <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{e.description}</div>}
-            </div>
-          ))}
-        </div>
-      )}
-      {rem.length > 0 && (
-        <div style={{marginBottom:'1rem'}}>
-          <div style={{fontSize:'0.75rem',color:'#fbbf24',fontWeight:600,marginBottom:'0.5rem'}}>🔔 תזכורות</div>
-          {rem.map((r,i)=>(
-            <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
-              <div style={{fontSize:'0.8rem',color:'var(--text)',textDecoration:r.is_completed?'line-through':'none'}}>{r.title}</div>
-            </div>
-          ))}
-        </div>
-      )}
-      {tx.length > 0 && (
-        <div>
-          <div style={{fontSize:'0.75rem',color:'#6c63ff',fontWeight:600,marginBottom:'0.5rem'}}>💳 טרנזקציות</div>
-          {tx.map((t,i)=>(
-            <div key={i} style={{padding:'0.5rem',borderRadius:'0.5rem',background:'rgba(255,255,255,0.04)',marginBottom:'0.375rem'}}>
-              <div style={{fontSize:'0.8rem',color:'var(--text)'}}>{t.description}</div>
-              <div style={{fontSize:'0.75rem',fontWeight:600,color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>
-                {t.type==='income'?'+':t.type==='transfer'?'↔':'-'}{t.currency||'₪'}{Number(t.amount).toLocaleString()}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </>
-  }
+  // Compute lists for the current view/selection
+  const isDay   = !!selDs
+  const evList  = isDay ? (evByDate[selDs]||[])  : Object.values(evByDate).flat().sort((a,b)=>a.event_date.localeCompare(b.event_date)||(a.event_time||'').localeCompare(b.event_time||''))
+  const remList = isDay ? (remByDate[selDs]||[]) : Object.values(remByDate).flat()
+  const txList  = isDay ? (txByDate[selDs]||[])  : Object.values(txByDate).flat().sort((a,b)=>a.date?.localeCompare(b.date??'')||0)
 
-  function EventRow({ e, showDelete }) {
-    const isPast = e.event_date < todayStr
-    return (
-      <div style={{
-        display:'flex',alignItems:'flex-start',gap:'0.625rem',
-        padding:'0.625rem 0.75rem',borderRadius:'0.75rem',
-        background: isPast ? 'rgba(255,255,255,0.03)' : 'rgba(34,211,238,0.07)',
-        border: `1px solid ${isPast ? 'rgba(255,255,255,0.06)' : 'rgba(34,211,238,0.12)'}`,
-        opacity: isPast ? 0.7 : 1,
-      }}>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:'0.825rem',fontWeight:600,color:'var(--text)'}}>{e.title}</div>
-          <div style={{fontSize:'0.7rem',color: isPast ? 'var(--text-muted)' : '#22d3ee',marginTop:'0.1rem'}}>
-            {new Date(e.event_date+'T00:00:00').toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'short'})}
-            {e.event_time ? ` • ${e.event_time.slice(0,5)}` : ''}
-          </div>
-          {e.description && <div style={{fontSize:'0.7rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{e.description}</div>}
-        </div>
-        {showDelete && (
-          <button onClick={()=>deleteEvent(e.id)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',display:'flex',padding:'0.125rem',flexShrink:0}}>
-            <X size={14}/>
-          </button>
-        )}
-      </div>
-    )
-  }
+  const TABS = [
+    { key:'reminders',    label:'תזכורות', icon:'🔔', color:'#fbbf24', bg:'rgba(251,191,36,0.12)',  bdr:'rgba(251,191,36,0.3)',  list: remList },
+    { key:'events',       label:'אירועים',  icon:'📅', color:'#22d3ee', bg:'rgba(34,211,238,0.12)', bdr:'rgba(34,211,238,0.3)',  list: evList  },
+    { key:'transactions', label:'עסקאות',   icon:'💰', color:'#a78bfa', bg:'rgba(167,139,250,0.12)',bdr:'rgba(167,139,250,0.3)', list: txList  },
+  ]
+
+  const activeTabData = TABS.find(t=>t.key===activeTab)
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
@@ -256,7 +172,7 @@ export default function CalendarPage() {
         <button className="btn-primary" onClick={openAdd}><Plus size={14}/>אירוע חדש</button>
       </div>
 
-      {/* Calendar card (full width) */}
+      {/* Calendar card */}
       <div className="page-card">
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'0.875rem'}}>
           <button onClick={prev} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'var(--text)',padding:'0.375rem',display:'flex'}}><ChevronRight size={18}/></button>
@@ -304,149 +220,89 @@ export default function CalendarPage() {
           </div>
         )}
 
+        {/* Legend */}
         <div style={{marginTop:'1rem',display:'flex',gap:'1rem',justifyContent:'center',flexWrap:'wrap'}}>
-          {[['#22d3ee','אירועים'],['#fbbf24','תזכורות'],['#6c63ff','טרנזקציות']].map(([c,l])=>(
+          {[['#22d3ee','אירועים'],['#fbbf24','תזכורות'],['#6c63ff','עסקאות']].map(([c,l])=>(
             <div key={l} style={{display:'flex',alignItems:'center',gap:'0.375rem',fontSize:'0.75rem',color:'var(--text-muted)'}}>
               <div style={{width:8,height:8,borderRadius:'50%',background:c}}/>{l}
             </div>
           ))}
         </div>
+
+        {/* 3 category tab cards */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'0.625rem',marginTop:'1.25rem'}}>
+          {TABS.map(tab=>(
+            <button key={tab.key} onClick={()=>setActiveTab(activeTab===tab.key?null:tab.key)} style={{
+              padding:'0.75rem 0.25rem',borderRadius:'0.875rem',cursor:'pointer',textAlign:'center',
+              border:`1px solid ${activeTab===tab.key?tab.bdr:'rgba(255,255,255,0.08)'}`,
+              background:activeTab===tab.key?tab.bg:'rgba(255,255,255,0.03)',
+              transition:'all 0.15s',
+            }}>
+              <div style={{fontSize:'1.25rem'}}>{tab.icon}</div>
+              <div style={{fontSize:'0.72rem',fontWeight:600,color:activeTab===tab.key?tab.color:'var(--text-sub)',marginTop:'0.25rem'}}>{tab.label}</div>
+              <div style={{fontSize:'0.7rem',color:'var(--text-dim)',marginTop:'0.1rem'}}>{tab.list.length}</div>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* ── Unified data card (always visible) ─────────────────────── */}
-      {(() => {
-        // Determine data source: selected day OR full view period
-        const isDay = !!selDs
-        const evList  = isDay ? (evByDate[selDs]  || []) : viewEventsSorted
-        const remList = isDay ? (remByDate[selDs] || []) : Object.values(remByDate).flat()
-        const txList  = isDay ? (txByDate[selDs]  || []) : Object.values(txByDate).flat().sort((a,b)=>a.date?.localeCompare(b.date??'')||0)
-        const empty   = !evList.length && !remList.length && !txList.length
-
-        const cardTitle = isDay
-          ? (()=>{const d=new Date(selDs+'T00:00:00');return `${DAYS_FULL[d.getDay()]}, ${d.getDate()} ${MONTHS_HE[d.getMonth()]}`})()
-          : view==='month' ? `${MONTHS_HE[current.getMonth()]} ${current.getFullYear()}`
-          : view==='week'  ? 'השבוע'
-          : `${current.getDate()} ${MONTHS_HE[current.getMonth()]}`
-
-        return (
-          <div className="page-card">
-            {/* Header */}
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1rem'}}>
-              <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
-                <span style={{fontSize:'0.9rem',fontWeight:700,color:'var(--text)'}}>{cardTitle}</span>
-                {!isDay && <span style={{fontSize:'0.72rem',color:'var(--text-dim)',background:'rgba(255,255,255,0.05)',padding:'0.1rem 0.45rem',borderRadius:'0.375rem'}}>תקופה</span>}
-              </div>
-              {isDay && (
-                <button onClick={()=>setSelected(null)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',display:'flex',padding:2}}>
-                  <X size={15}/>
-                </button>
-              )}
+      {/* Filtered list */}
+      {activeTab && activeTabData && (
+        <div className="page-card">
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'0.875rem'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
+              <span style={{fontSize:'1rem'}}>{activeTabData.icon}</span>
+              <span style={{fontSize:'0.9rem',fontWeight:700,color:activeTabData.color}}>{activeTabData.label}</span>
+              {selDs && <span style={{fontSize:'0.72rem',color:'var(--text-dim)',background:'rgba(255,255,255,0.05)',padding:'0.1rem 0.45rem',borderRadius:'0.375rem'}}>
+                {(()=>{const d=new Date(selDs+'T00:00:00');return `${d.getDate()} ${MONTHS_HE[d.getMonth()]}`})()}
+              </span>}
             </div>
-
-            {empty ? (
-              <div style={{textAlign:'center',color:'var(--text-dim)',padding:'1.5rem 0',fontSize:'0.85rem'}}>אין נתונים לתקופה זו</div>
-            ) : (
-              <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
-
-                {/* ── Events ─────────────────────────────────── */}
-                {evList.length > 0 && (
-                  <div>
-                    <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.5rem'}}>
-                      <div style={{height:2,width:16,background:'#22d3ee',borderRadius:2}}/>
-                      <span style={{fontSize:'0.72rem',fontWeight:700,color:'#22d3ee',letterSpacing:'0.04em'}}>📅 אירועים ({evList.length})</span>
-                    </div>
-                    <div style={{display:'flex',flexDirection:'column',gap:'0.375rem'}}>
-                      {evList.map((e,i)=>(
-                        <div key={e.id??i} style={{display:'flex',alignItems:'flex-start',gap:'0.5rem',padding:'0.55rem 0.75rem',borderRadius:'0.625rem',background:'rgba(34,211,238,0.07)',border:'1px solid rgba(34,211,238,0.12)'}}>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:'0.825rem',fontWeight:600,color:'var(--text)'}}>{e.title}</div>
-                            <div style={{fontSize:'0.7rem',color:'#22d3ee',marginTop:'0.1rem'}}>
-                              {!isDay && new Date(e.event_date+'T00:00:00').toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'short'})}
-                              {e.event_time ? (isDay ? `🕐 ${e.event_time.slice(0,5)}` : ` • ${e.event_time.slice(0,5)}`) : ''}
-                            </div>
-                            {e.description && <div style={{fontSize:'0.7rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{e.description}</div>}
-                          </div>
-                          <button onClick={()=>deleteEvent(e.id)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',display:'flex',padding:'0.125rem',flexShrink:0}}><X size={13}/></button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* ── Reminders ──────────────────────────────── */}
-                {remList.length > 0 && (
-                  <div>
-                    <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.5rem'}}>
-                      <div style={{height:2,width:16,background:'#fbbf24',borderRadius:2}}/>
-                      <span style={{fontSize:'0.72rem',fontWeight:700,color:'#fbbf24',letterSpacing:'0.04em'}}>🔔 תזכורות ({remList.length})</span>
-                    </div>
-                    <div style={{display:'flex',flexDirection:'column',gap:'0.375rem'}}>
-                      {remList.map((r,i)=>(
-                        <div key={i} style={{padding:'0.55rem 0.75rem',borderRadius:'0.625rem',background:'rgba(251,191,36,0.07)',border:'1px solid rgba(251,191,36,0.12)'}}>
-                          <div style={{fontSize:'0.825rem',fontWeight:600,color:'var(--text)',textDecoration:r.is_completed?'line-through':'none'}}>{r.title}</div>
-                          {r.due_date && <div style={{fontSize:'0.7rem',color:'#fbbf24',marginTop:'0.1rem'}}>🕐 {r.due_date.slice(11,16)||r.due_date.slice(0,10)}</div>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* ── Transactions ────────────────────────────── */}
-                {txList.length > 0 && (
-                  <div>
-                    <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.5rem'}}>
-                      <div style={{height:2,width:16,background:'#6c63ff',borderRadius:2}}/>
-                      <span style={{fontSize:'0.72rem',fontWeight:700,color:'#a78bfa',letterSpacing:'0.04em'}}>💳 טרנזקציות ({txList.length})</span>
-                    </div>
-                    <div style={{display:'flex',flexDirection:'column',gap:'0.375rem'}}>
-                      {txList.map((t,i)=>(
-                        <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0.55rem 0.75rem',borderRadius:'0.625rem',background:'rgba(108,99,255,0.06)',border:'1px solid rgba(108,99,255,0.12)'}}>
-                          <div style={{fontSize:'0.825rem',color:'var(--text)',flex:1,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.description}</div>
-                          <div style={{fontSize:'0.8rem',fontWeight:700,flexShrink:0,marginRight:'0.5rem',color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type?.startsWith('loan')?'#fbbf24':'#f87171'}}>
-                            {t.type==='income'?'+':t.type==='transfer'?'↔':'-'}{t.currency||'₪'}{Number(t.amount).toLocaleString()}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-              </div>
-            )}
+            <button onClick={()=>setActiveTab(null)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',display:'flex',padding:2}}><X size={15}/></button>
           </div>
-        )
-      })()}
 
-      {/* FAB — "כל האירועים", bottom right */}
-      <button onClick={()=>setShowAllEvents(true)} style={{
-        position:'fixed',bottom:'5rem',right:'1.25rem',zIndex:50,
-        height:42,borderRadius:'1.25rem',
-        background:'linear-gradient(135deg,rgba(34,211,238,0.25),rgba(34,211,238,0.12))',
-        border:'1px solid rgba(34,211,238,0.4)',
-        cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'0.375rem',
-        padding:'0 1rem',
-        boxShadow:'0 4px 16px rgba(34,211,238,0.2)',transition:'all 0.15s',
-        color:'#22d3ee',fontSize:'0.8rem',fontWeight:600,
-      }}>
-        <List size={16}/>כל האירועים
-      </button>
+          {activeTabData.list.length===0 ? (
+            <div style={{textAlign:'center',color:'var(--text-dim)',padding:'1.5rem 0',fontSize:'0.875rem'}}>אין נתונים לתקופה זו</div>
+          ) : (
+            <div style={{display:'flex',flexDirection:'column',gap:'0.375rem'}}>
+              {activeTab==='reminders' && remList.map((r,i)=>(
+                <div key={i} style={{padding:'0.55rem 0.75rem',borderRadius:'0.625rem',background:'rgba(251,191,36,0.07)',border:'1px solid rgba(251,191,36,0.12)'}}>
+                  <div style={{fontSize:'0.825rem',fontWeight:600,color:'var(--text)',textDecoration:r.is_completed?'line-through':'none'}}>{r.title}</div>
+                  {r.due_date && (
+                    <div style={{fontSize:'0.7rem',color:'#fbbf24',marginTop:'0.15rem',display:'flex',gap:'0.5rem'}}>
+                      <span>{r.due_date.slice(0,10)}</span>
+                      {r.due_date.length>10 && <span>🕐 {r.due_date.slice(11,16)}</span>}
+                    </div>
+                  )}
+                </div>
+              ))}
 
-      {/* All-events overlay (bottom sheet) */}
-      {showAllEvents && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.65)',zIndex:100,display:'flex',alignItems:'flex-end',justifyContent:'center'}}
-          onClick={e=>{if(e.target===e.currentTarget)setShowAllEvents(false)}}>
-          <div style={{width:'100%',maxWidth:520,background:'var(--bg2)',borderRadius:'1.25rem 1.25rem 0 0',padding:'1.25rem',display:'flex',flexDirection:'column',gap:'0.75rem',maxHeight:'75vh'}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <h3 style={{margin:0,fontSize:'1rem',fontWeight:700,color:'var(--text)'}}>📅 כל האירועים ({allEvents.length})</h3>
-              <button onClick={()=>setShowAllEvents(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',display:'flex'}}><X size={20}/></button>
+              {activeTab==='events' && evList.map((e,i)=>(
+                <div key={e.id??i} style={{display:'flex',alignItems:'flex-start',gap:'0.5rem',padding:'0.55rem 0.75rem',borderRadius:'0.625rem',background:'rgba(34,211,238,0.07)',border:'1px solid rgba(34,211,238,0.12)'}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:'0.825rem',fontWeight:600,color:'var(--text)'}}>{e.title}</div>
+                    <div style={{fontSize:'0.7rem',color:'#22d3ee',marginTop:'0.15rem',display:'flex',gap:'0.5rem'}}>
+                      <span>{e.event_date}</span>
+                      {e.event_time && <span>🕐 {e.event_time.slice(0,5)}</span>}
+                    </div>
+                    {e.description && <div style={{fontSize:'0.7rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{e.description}</div>}
+                  </div>
+                  <button onClick={()=>deleteEvent(e.id)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-dim)',display:'flex',padding:'0.125rem',flexShrink:0}}><X size={13}/></button>
+                </div>
+              ))}
+
+              {activeTab==='transactions' && txList.map((t,i)=>(
+                <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0.55rem 0.75rem',borderRadius:'0.625rem',background:'rgba(108,99,255,0.06)',border:'1px solid rgba(108,99,255,0.12)'}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:'0.825rem',color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.description}</div>
+                    <div style={{fontSize:'0.7rem',color:'var(--text-muted)',marginTop:'0.15rem'}}>{t.date}</div>
+                  </div>
+                  <div style={{fontSize:'0.8rem',fontWeight:700,flexShrink:0,marginRight:'0.5rem',color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type?.startsWith('loan')?'#fbbf24':'#f87171'}}>
+                    {t.type==='income'?'+':t.type==='transfer'?'↔':'-'}{t.currency||'₪'}{Number(t.amount).toLocaleString()}
+                  </div>
+                </div>
+              ))}
             </div>
-            <div style={{overflowY:'auto',display:'flex',flexDirection:'column',gap:'0.5rem',flex:1}}>
-              {allEvents.length === 0
-                ? <div style={{textAlign:'center',color:'var(--text-dim)',padding:'2rem 0',fontSize:'0.875rem'}}>אין אירועים</div>
-                : allEvents.map(e => <EventRow key={e.id} e={e} showDelete={true}/>)
-              }
-            </div>
-          </div>
+          )}
         </div>
       )}
 
