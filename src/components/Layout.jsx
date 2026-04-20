@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import Breadcrumbs from './Breadcrumbs'
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -32,6 +33,7 @@ export default function Layout() {
         <Header onMenuClick={() => setSidebarOpen(v => !v)} />
         <main style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }} className="main-content">
           <div key={location.pathname} className="page-enter">
+          <Breadcrumbs />
           <Outlet />
           <footer style={{ textAlign: 'center', color: '#334155', fontSize: '0.75rem', marginTop: '3rem', paddingBottom: '1rem' }}>
             ⚡ נבנה ע"י י.הרשקו ⚡
