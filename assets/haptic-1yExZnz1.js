@@ -1,1 +1,0 @@
-function e(e=8){try{navigator.vibrate?.(e)}catch{}}function t(){e([10,30,10])}export{t};
