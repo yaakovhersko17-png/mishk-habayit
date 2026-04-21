@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Edit2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Edit2, Trash2, ChevronLeft, ChevronRight, Pencil } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
@@ -11,38 +11,44 @@ import toast from 'react-hot-toast'
 const COLORS = ['#4CAF50','#2196F3','#FF9800','#E91E63','#00BCD4','#9C27B0','#FF5722','#607D8B','#8BC34A','#6c63ff','#f87171','#fbbf24','#60a5fa','#f472b6','#34d399']
 const emptyForm = { name: '', icon: '', color: '#6c63ff', type: 'expense', parent_id: '' }
 
-function CatRow({ c, txCounts, onClick, onEdit, onDelete }) {
+function CatRow({ c, txCounts, onClick, onEdit, onDelete, editMode }) {
   const total = txCounts[c.id]?.total || 0
   const count = txCounts[c.id]?.count || 0
   return (
     <div
       onClick={onClick}
       style={{
-        display: 'flex', alignItems: 'center', gap: '0.75rem',
-        padding: '0.875rem 1rem',
+        display: 'flex', alignItems: 'center', gap: '0.625rem',
+        padding: '0.75rem 1rem',
         cursor: onClick ? 'pointer' : 'default',
         transition: 'background 0.15s',
       }}
       onMouseEnter={e => { if (onClick) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
       onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
     >
-      <div style={{ width: 42, height: 42, borderRadius: '0.875rem', background: `${c.color}22`, border: `1px solid ${c.color}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.375rem', flexShrink: 0 }}>
+      {/* Icon — right side (flex-start in RTL) */}
+      <div style={{ width: 44, height: 44, borderRadius: '0.875rem', background: `${c.color}22`, border: `1px solid ${c.color}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
         {c.icon}
       </div>
+      {/* Name + amount — center (flex:1) */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)' }}>{c.name}</div>
-        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
-          {count > 0
-            ? <span style={{ color: c.type === 'income' ? 'var(--c-income)' : 'var(--c-expense)' }}>₪{total.toLocaleString()}</span>
-            : <span>אין עסקאות</span>}
-          {count > 0 && <span style={{ marginRight: '0.375rem', color: 'var(--text-dim)' }}>• {count} טרנ׳</span>}
+        <div style={{ fontSize: '0.72rem', marginTop: '0.1rem' }}>
+          <span style={{ color: count > 0 ? (c.type === 'income' ? 'var(--c-income)' : 'var(--c-expense)') : 'var(--text-dim)' }}>
+            {count > 0 ? `₪${total.toLocaleString()}` : '₪0'}
+          </span>
+          {count > 0 && <span style={{ color: 'var(--text-dim)', marginRight: '0.3rem' }}>• {count} טרנ׳</span>}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: '0.125rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-        <button onClick={() => onEdit(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.3rem', borderRadius: '0.375rem' }}><Edit2 size={13} /></button>
-        <button onClick={() => onDelete(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', padding: '0.3rem', borderRadius: '0.375rem' }}><Trash2 size={13} /></button>
-      </div>
-      {onClick && <ChevronLeft size={16} color="var(--text-dim)" style={{ flexShrink: 0 }} />}
+      {/* Edit/delete — only in editMode */}
+      {editMode && (
+        <div style={{ display: 'flex', gap: '0.125rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+          <button onClick={() => onEdit(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.3rem', borderRadius: '0.375rem' }}><Edit2 size={13} /></button>
+          <button onClick={() => onDelete(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', padding: '0.3rem', borderRadius: '0.375rem' }}><Trash2 size={13} /></button>
+        </div>
+      )}
+      {/* Chevron — left side (flex-end in RTL), visible when navigable */}
+      {onClick && !editMode && <ChevronLeft size={16} color="var(--text-dim)" style={{ flexShrink: 0 }} />}
     </div>
   )
 }
@@ -57,6 +63,7 @@ export default function Categories() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [selectedParent, setSelectedParent] = useState(null)
+  const [editMode, setEditMode]             = useState(false)
 
   useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
   useRealtime('categories', load)
@@ -138,12 +145,16 @@ export default function Categories() {
               <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text)' }}>{selectedParent.name}</h1>
             </div>
           </div>
-          <button className="btn-primary" onClick={() => openAdd(selectedParent.id)}><Plus size={15} />תת-קטגוריה</button>
+          <button className={editMode ? 'btn-primary' : 'btn-ghost'} onClick={() => setEditMode(v => !v)} style={{ padding: '0.4rem 0.75rem' }}>
+            {editMode ? 'סיום' : 'עריכה'}
+          </button>
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--text)' }}>קטגוריות</h1>
-          <button className="btn-primary" onClick={() => openAdd()}><Plus size={15} />קטגוריה חדשה</button>
+          <button className={editMode ? 'btn-primary' : 'btn-ghost'} onClick={() => setEditMode(v => !v)} style={{ padding: '0.4rem 0.75rem' }}>
+            {editMode ? 'סיום' : 'עריכה'}
+          </button>
         </div>
       )}
 
@@ -161,7 +172,7 @@ export default function Categories() {
             )
             return children.map((c, i) => (
               <div key={c.id} style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                <CatRow c={c} txCounts={txCounts} onEdit={openEdit} onDelete={handleDelete} />
+                <CatRow c={c} txCounts={txCounts} onEdit={openEdit} onDelete={handleDelete} editMode={editMode} />
               </div>
             ))
           })()
@@ -180,9 +191,10 @@ export default function Categories() {
                   <CatRow
                     c={c}
                     txCounts={txCounts}
-                    onClick={kids.length > 0 ? () => setSelectedParent(c) : undefined}
+                    onClick={!editMode && kids.length > 0 ? () => setSelectedParent(c) : undefined}
                     onEdit={openEdit}
                     onDelete={handleDelete}
+                    editMode={editMode}
                   />
                   {/* Sub-count badge */}
                   {kids.length > 0 && (
@@ -198,6 +210,14 @@ export default function Categories() {
           )
         )}
       </div>
+
+      {/* Floating add button */}
+      <button onClick={() => openAdd(selectedParent?.id || '')}
+        style={{position:'fixed',bottom:'calc(62px + max(12px, env(safe-area-inset-bottom, 12px)) + 14px)',left:'1.25rem',width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(108,99,255,0.4)',zIndex:55,transition:'transform 0.2s'}}
+        onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
+        onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+        <Plus size={24} color="#fff"/>
+      </button>
 
       {/* Modal */}
       <Modal open={modal} onClose={() => setModal(false)} title={editing ? 'ערוך קטגוריה' : 'קטגוריה חדשה'}>
