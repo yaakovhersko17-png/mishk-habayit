@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import {
-  Wallet, Tag, ArrowLeftRight, ChevronLeft, ChevronDown, ChevronUp,
+  ChevronLeft, ChevronDown, ChevronUp,
   ScanLine, Archive, Lightbulb, BarChart2, Plus, Edit2, Trash2,
   RefreshCw, ToggleLeft, ToggleRight,
 } from 'lucide-react'
@@ -77,7 +77,6 @@ export default function FinancePage() {
   const [wallets, setWallets] = useState([])
   const [monthly, setMonthly] = useState({ income: 0, expense: 0 })
   const [loans, setLoans] = useState([])
-  const [catCount, setCatCount] = useState(0)
 
   const [openSection, setOpenSection] = useState(null)
   const [addTxOpen, setAddTxOpen] = useState(false)
@@ -95,17 +94,16 @@ export default function FinancePage() {
 
   async function load() {
     const [
-      { data: wData }, { data: cData }, { data: txData },
+      { data: wData }, { data: txData },
       { data: rData }, { data: catData },
     ] = await Promise.all([
       supabase.from('wallets').select('*'),
-      supabase.from('categories').select('id'),
       supabase.from('transactions').select('type,amount,date,loan_returned'),
       supabase.from('recurring_rules').select('*').order('day_of_month'),
       supabase.from('categories').select('id,name,icon,color,type'),
     ])
     const w = wData || []
-    setWallets(w); setCatCount((cData || []).length); setCats(catData || []); setRules(rData || [])
+    setWallets(w); setCats(catData || []); setRules(rData || [])
     const now = new Date()
     const monthTxs = (txData || []).filter(t => {
       const d = new Date(t.date)
@@ -206,9 +204,6 @@ export default function FinancePage() {
 
       {/* Nav + Recurring accordion */}
       <div className="page-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <NavRow icon={<ArrowLeftRight size={18} />} label="עסקאות"          sub="כל הפעולות הכספיות"              color="#22d3ee" onClick={() => navigate('/transactions')} />
-        <NavRow icon={<Wallet size={18} />}         label="ארנקים"           sub={`${wallets.length} ארנקים`}       color="#6c63ff" onClick={() => navigate('/wallets')} />
-        <NavRow icon={<Tag size={18} />}            label="קטגוריות"         sub={`${catCount} קטגוריות`}           color="#a78bfa" onClick={() => navigate('/categories')} />
         <NavRow icon={<ScanLine size={18} />}       label="סריקת חשבונית"    sub="סרוק חשבונית עם AI"               color="#6c63ff" onClick={() => navigate('/scanner')} />
         <NavRow icon={<Archive size={18} />}        label="ארכיון חשבוניות"  sub="כל החשבוניות השמורות"             color="#a78bfa" onClick={() => navigate('/invoices')} />
         <NavRow icon={<Lightbulb size={18} />}      label="דף חכם"           sub="השוואת מחירים וניתוח הוצאות"     color="#fbbf24" onClick={() => navigate('/insights')} />

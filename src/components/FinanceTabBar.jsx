@@ -2,11 +2,11 @@ import { NavLink } from 'react-router-dom'
 import { BarChart2, ArrowLeftRight, Wallet, Tag, Target } from 'lucide-react'
 
 const TABS = [
-  { to: '/goals',        icon: Target,         label: 'יעדים'    },
-  { to: '/categories',   icon: Tag,            label: 'קטגוריות' },
-  { to: '/wallets',      icon: Wallet,         label: 'ארנקים'   },
-  { to: '/transactions', icon: ArrowLeftRight, label: 'עסקאות'   },
   { to: '/finance',      icon: BarChart2,      label: 'סקירה'    },
+  { to: '/transactions', icon: ArrowLeftRight, label: 'עסקאות'   },
+  { to: '/wallets',      icon: Wallet,         label: 'ארנקים'   },
+  { to: '/categories',   icon: Tag,            label: 'קטגוריות' },
+  { to: '/goals',        icon: Target,         label: 'יעדים'    },
 ]
 
 export default function FinanceTabBar() {
@@ -19,8 +19,9 @@ export default function FinanceTabBar() {
           end
           className={({ isActive }) => `ftab${isActive ? ' ftab--active' : ''}`}
         >
-          <Icon size={22} />
-          <span>{label}</span>
+          <span className="ftab-bubble" aria-hidden="true" />
+          <Icon size={20} />
+          <span className="ftab-label">{label}</span>
         </NavLink>
       ))}
     </nav>
