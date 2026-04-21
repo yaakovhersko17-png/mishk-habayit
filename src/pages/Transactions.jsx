@@ -293,9 +293,9 @@ export default function Transactions() {
         )
       }
 
-      {/* Floating filter button */}
+      {/* Floating filter button — sits above the finance tab bar */}
       <button onClick={() => setFilterOpen(true)}
-        style={{position:'fixed',bottom:'2rem',left:'2rem',width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(108,99,255,0.4)',zIndex:50,transition:'transform 0.2s'}}
+        style={{position:'fixed',bottom:'calc(62px + max(12px, env(safe-area-inset-bottom, 12px)) + 14px)',left:'1.25rem',width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(108,99,255,0.4)',zIndex:55,transition:'transform 0.2s'}}
         onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
         onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
         <SlidersHorizontal size={22} color="#fff"/>
