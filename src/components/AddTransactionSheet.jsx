@@ -57,7 +57,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
       const t = editingTx.type
       if (t === 'loan_given' || t === 'loan_received' || t === 'debt_unpaid') {
         setType('loan')
-        setLoanSubType(t === 'loan_given' ? 'given' : t === 'loan_received' ? 'received' : 'unpaid')
+        setLoanSubType(t === 'loan_given' ? 'given' : 'received')
       } else {
         setType(t || 'expense')
         setLoanSubType('given')
@@ -77,7 +77,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
       const t = initialData.type || 'expense'
       if (t === 'loan_given' || t === 'loan_received' || t === 'debt_unpaid') {
         setType('loan')
-        setLoanSubType(t === 'loan_given' ? 'given' : t === 'loan_received' ? 'received' : 'unpaid')
+        setLoanSubType(t === 'loan_given' ? 'given' : 'received')
       } else {
         setType(t)
         setLoanSubType('given')
@@ -116,15 +116,14 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
     if (type === 'transfer' && form.wallet_id === form.to_wallet_id) { toast.error('ארנקים חייבים להיות שונים'); return }
     setSaving(true)
 
-    const isUnpaid = type === 'loan' && loanSubType === 'unpaid'
     const dbType = type === 'loan'
-      ? (loanSubType === 'given' ? 'loan_given' : loanSubType === 'received' ? 'loan_received' : 'debt_unpaid')
+      ? (loanSubType === 'given' ? 'loan_given' : 'loan_received')
       : type
 
     const payload = {
       type: dbType, description: form.description,
       amount: Number(form.amount), currency: form.currency || '₪',
-      wallet_id: isUnpaid ? null : (form.wallet_id || null),
+      wallet_id: form.wallet_id || null,
       to_wallet_id: type === 'transfer' ? (form.to_wallet_id || null) : null,
       category_id: form.category_id || null,
       date: form.date, user_id: user.id,
@@ -189,7 +188,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
   }
 
   const selW = wallets.find(w => w.id === form.wallet_id)
-  const showWallet = !(type === 'loan' && loanSubType === 'unpaid')
+  const showWallet = !(type === 'loan' && loanSubType === 'received')
   const activeColor = type === 'income' ? '#4ade80' : type === 'transfer' ? '#22d3ee' : type === 'loan' ? '#fbbf24' : '#f87171'
   const sep = () => <div style={{height:1,background:'rgba(255,255,255,0.06)',margin:'0 1rem'}}/>
 
@@ -224,7 +223,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
       {/* ── Loan sub-type selector ── */}
       {type === 'loan' && (
         <div style={{display:'flex',gap:'0.5rem',padding:'0.5rem 1rem',background:'rgba(251,191,36,0.04)',borderBottom:'1px solid rgba(255,255,255,0.06)',flexShrink:0}}>
-          {[['given','הלוואה שנתתי'],['received','הלוואה שלקחתי'],['unpaid','חוב שלא שולם']].map(([sub,lbl]) => (
+          {[['given','הלוואה שנתתי'],['received','הלוואה שלקחתי']].map(([sub,lbl]) => (
             <button key={sub} onClick={() => setLoanSubType(sub)} style={{
               flex:1,padding:'0.4rem 0.25rem',borderRadius:'0.625rem',fontSize:'0.75rem',cursor:'pointer',
               border:`1px solid ${loanSubType===sub?'rgba(251,191,36,0.5)':'rgba(255,255,255,0.07)'}`,
