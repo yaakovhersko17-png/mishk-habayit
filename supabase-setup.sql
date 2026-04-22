@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS categories (
 -- =====================
 CREATE TABLE IF NOT EXISTS transactions (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  type TEXT NOT NULL CHECK (type IN ('income', 'expense', 'loan_given', 'loan_received')),
+  type TEXT NOT NULL CHECK (type IN ('income', 'expense', 'loan_given', 'loan_received', 'debt_unpaid', 'transfer')),
   amount DECIMAL(12,2) NOT NULL,
   currency TEXT DEFAULT '₪' CHECK (currency IN ('₪', '$', '€', '£')),
   description TEXT NOT NULL,

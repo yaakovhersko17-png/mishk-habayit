@@ -24,6 +24,7 @@ export default function Wallets() {
   const [saving, setSaving]   = useState(false)
   const [historyWallet, setHistoryWallet] = useState(null)
   const [walletTxs, setWalletTxs] = useState([])
+  const [editMode, setEditMode]    = useState(false)
 
   useEffect(() => { load() }, [])
   useRealtime('wallets', load)
@@ -84,7 +85,9 @@ export default function Wallets() {
           <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>ארנקים</h1>
           <p style={{margin:'0.25rem 0 0',color:'var(--text-muted)',fontSize:'0.875rem'}}>{wallets.length} ארנקים</p>
         </div>
-        <button className="btn-primary" onClick={openAdd}><Plus size={15}/>ארנק חדש</button>
+        <button className={editMode?'btn-primary':'btn-ghost'} onClick={()=>setEditMode(v=>!v)} style={{padding:'0.4rem 0.75rem'}}>
+          {editMode?'סיום':'עריכה'}
+        </button>
       </div>
 
       {wallets.length === 0
@@ -96,10 +99,12 @@ export default function Wallets() {
                 <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:w.color}}/>
                 <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:'0.625rem',paddingTop:'0.25rem'}}>
                   <div style={{fontSize:'1.5rem'}}>{w.icon}</div>
-                  <div style={{display:'flex',gap:'0.25rem'}}>
-                    <button onClick={e => { e.stopPropagation(); openEdit(w) }} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',padding:'0.2rem',borderRadius:'0.375rem'}}><Edit2 size={13}/></button>
-                    <button onClick={e => { e.stopPropagation(); handleDelete(w) }} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.2rem',borderRadius:'0.375rem'}}><Trash2 size={13}/></button>
-                  </div>
+                  {editMode && (
+                    <div style={{display:'flex',gap:'0.25rem'}}>
+                      <button onClick={e => { e.stopPropagation(); openEdit(w) }} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',padding:'0.2rem',borderRadius:'0.375rem'}}><Edit2 size={13}/></button>
+                      <button onClick={e => { e.stopPropagation(); handleDelete(w) }} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.2rem',borderRadius:'0.375rem'}}><Trash2 size={13}/></button>
+                    </div>
+                  )}
                 </div>
                 <div style={{fontSize:'0.78rem',color:'var(--text-sub)',marginBottom:'0.25rem'}}>{w.name}</div>
                 <div style={{fontSize:'1.35rem',fontWeight:700,color:'var(--text)'}}>{w.currency}{Number(w.balance).toLocaleString()}</div>
@@ -145,6 +150,14 @@ export default function Wallets() {
           </div>
         </div>
       </Modal>
+
+      {/* Floating add button */}
+      <button onClick={openAdd}
+        style={{position:'fixed',bottom:'calc(62px + max(12px, env(safe-area-inset-bottom, 12px)) + 14px)',left:'1.25rem',width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(108,99,255,0.4)',zIndex:55,transition:'transform 0.2s'}}
+        onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
+        onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+        <Plus size={24} color="#fff"/>
+      </button>
 
       {/* Transaction History Modal */}
       <Modal open={!!historyWallet} onClose={()=>setHistoryWallet(null)} title={historyWallet ? `היסטוריה – ${historyWallet.icon} ${historyWallet.name}` : ''} size="lg">

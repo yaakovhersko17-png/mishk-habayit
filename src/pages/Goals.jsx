@@ -26,7 +26,7 @@ export default function Goals() {
   useEffect(() => { load() }, [])
 
   async function load() {
-    const { data } = await supabase.from('goals').select('*').eq('user_id', user.id).order('created_at')
+    const { data } = await supabase.from('goals').select('*').order('created_at')
     setGoals(data || [])
     setLoading(false)
   }

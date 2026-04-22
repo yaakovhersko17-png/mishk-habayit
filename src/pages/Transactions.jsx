@@ -45,6 +45,7 @@ export default function Transactions() {
   const [filter, setFilter]     = useState({ type:'', category:'', wallet:'', user:'', dateFrom:'', dateTo:'' })
   const [listening, setListening] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
+  const [editMode, setEditMode]     = useState(false)
   const recognitionRef = useRef(null)
 
   useEffect(() => { loadAll() }, [])
@@ -223,11 +224,13 @@ export default function Transactions() {
           <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>עסקאות</h1>
           <p style={{margin:'0.25rem 0 0',color:'var(--text-muted)',fontSize:'0.875rem'}}>{filtered.length} רשומות</p>
         </div>
-        <div style={{display:'flex',gap:'0.75rem'}}>
+        <div style={{display:'flex',gap:'0.5rem'}}>
           <button className={`btn-ghost${listening?' active':''}`} onClick={startVoice} style={listening?{background:'rgba(239,68,68,0.15)',borderColor:'rgba(239,68,68,0.3)',color:'#f87171'}:{}}>
             {listening ? <><MicOff size={15}/>מקשיב...</> : <><Mic size={15}/>קולי</>}
           </button>
-          <button className="btn-primary" onClick={openAdd}><Plus size={15}/>חדשה</button>
+          <button className={editMode?'btn-primary':'btn-ghost'} onClick={()=>setEditMode(v=>!v)} style={{padding:'0.4rem 0.75rem'}}>
+            {editMode?'סיום':'עריכה'}
+          </button>
         </div>
       </div>
 
@@ -246,7 +249,7 @@ export default function Transactions() {
               <table style={{width:'100%',borderCollapse:'collapse'}}>
                 <thead>
                   <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-                    {['תאריך','תיאור','סכום','קטגוריה','ארנק','משתמש','סוג',''].map(h=>(
+                    {['תאריך','תיאור','סכום','קטגוריה','ארנק','משתמש','סוג',...(editMode?['']:[])] .map(h=>(
                       <th key={h} style={{padding:'0.875rem 1rem',textAlign:'right',fontSize:'0.75rem',color:'var(--text-muted)',fontWeight:500,whiteSpace:'nowrap'}}>{h}</th>
                     ))}
                   </tr>
@@ -278,12 +281,14 @@ export default function Transactions() {
                         </span>
                         {t.type.startsWith('loan') && t.loan_returned && <span style={{marginRight:'0.375rem',fontSize:'0.7rem',color:'#4ade80'}}>✓ הוחזר</span>}
                       </td>
-                      <td style={{padding:'0.875rem 1rem'}}>
-                        <div style={{display:'flex',gap:'0.25rem'}}>
-                          <button onClick={()=>openEdit(t)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',padding:'0.25rem',borderRadius:'0.375rem'}}><Edit2 size={13}/></button>
-                          <button onClick={()=>handleDelete(t)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.25rem',borderRadius:'0.375rem'}}><Trash2 size={13}/></button>
-                        </div>
-                      </td>
+                      {editMode && (
+                        <td style={{padding:'0.875rem 1rem'}}>
+                          <div style={{display:'flex',gap:'0.25rem'}}>
+                            <button onClick={()=>openEdit(t)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',padding:'0.25rem',borderRadius:'0.375rem'}}><Edit2 size={13}/></button>
+                            <button onClick={()=>handleDelete(t)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.25rem',borderRadius:'0.375rem'}}><Trash2 size={13}/></button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -293,12 +298,19 @@ export default function Transactions() {
         )
       }
 
-      {/* Floating filter button */}
-      <button onClick={() => setFilterOpen(true)}
-        style={{position:'fixed',bottom:'2rem',left:'2rem',width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(108,99,255,0.4)',zIndex:50,transition:'transform 0.2s'}}
+      {/* Floating add button */}
+      <button onClick={openAdd}
+        style={{position:'fixed',bottom:'calc(62px + max(12px, env(safe-area-inset-bottom, 12px)) + 14px)',left:'1.25rem',width:52,height:52,borderRadius:'50%',background:'linear-gradient(135deg,#6c63ff,#8b5cf6)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 20px rgba(108,99,255,0.4)',zIndex:55,transition:'transform 0.2s'}}
         onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
         onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
-        <SlidersHorizontal size={22} color="#fff"/>
+        <Plus size={24} color="#fff"/>
+      </button>
+      {/* Floating filter button */}
+      <button onClick={() => setFilterOpen(true)}
+        style={{position:'fixed',bottom:'calc(62px + max(12px, env(safe-area-inset-bottom, 12px)) + 14px)',left:'calc(1.25rem + 64px)',width:52,height:52,borderRadius:'50%',background:'rgba(255,255,255,0.08)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.12)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:55,transition:'transform 0.2s'}}
+        onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
+        onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+        <SlidersHorizontal size={20} color="var(--text-sub)"/>
       </button>
 
       {/* Filter panel */}

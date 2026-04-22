@@ -3,13 +3,11 @@ import { useAuth } from '../context/AuthContext'
 import {
   Home, BarChart2,
   Bell, Calendar, StickyNote, Map, Utensils,
-  Shield, LogOut, X, Target, RefreshCw
+  Shield, LogOut, X
 } from 'lucide-react'
 
 const navItems = [
   { to: '/finance',      icon: BarChart2,       label: 'סקירה פיננסית' },
-  { to: '/goals',        icon: Target,          label: 'יעדי חיסכון' },
-  { to: '/recurring',    icon: RefreshCw,       label: 'עסקאות חוזרות' },
   { to: '/dinners',      icon: Utensils,        label: 'ארוחות ערב' },
   { to: '/reminders',    icon: Bell,            label: 'תזכורות' },
   { to: '/calendar',     icon: Calendar,        label: 'לוח שנה' },

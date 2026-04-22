@@ -600,18 +600,18 @@ export default function DinnerMeals() {
 
   useEffect(() => { load() }, [])
 
-  async function load() {
-    setLoading(true)
+  async function load(silent = false) {
+    if (!silent) setLoading(true)
     const { data, error } = await supabase
       .from('dinner_meals')
       .select('*')
       .order('meal_date', { ascending: false })
     if (error) {
       console.error('DinnerMeals load error:', error)
-      toast.error('שגיאה בטעינת ארוחות')
+      if (!silent) toast.error('שגיאה בטעינת ארוחות')
     }
     setMeals(data || [])
-    setLoading(false)
+    if (!silent) setLoading(false)
   }
 
   const missingDays = useMemo(() => {
@@ -660,9 +660,16 @@ export default function DinnerMeals() {
     }
     toast.success(editMeal ? 'ארוחה עודכנה' : 'ארוחה נוספה')
     setShowAdd(false)
+    // Optimistic update — card re-renders immediately without spinner
+    if (editMeal) {
+      setMeals(prev => prev.map(m => m.id === editMeal.id ? { ...m, ...data } : m))
+    } else {
+      setMeals(prev => [{ ...data, id: `opt-${Date.now()}`, user_id: user.id, created_at: new Date().toISOString() }, ...prev])
+    }
     setEditMeal(null)
     setAddForDate(null)
-    load()
+    // Silent background refresh to get server-assigned id + accurate data
+    load(true)
   }
 
   async function deleteMeal(id) {
@@ -699,12 +706,15 @@ export default function DinnerMeals() {
     if (error) { toast.error('שגיאה בדילוג'); return }
     toast.success(`${date} — סומן כדולג`)
     setShowMissing(false)
-    load()
+    // Optimistic
+    setMeals(prev => [{ meal_date: date, meal_text: '__skip__', id: `opt-skip-${Date.now()}` }, ...prev])
+    load(true)
   }
 
   async function undoSkip(date) {
     await supabase.from('dinner_meals').delete().eq('meal_date', date).eq('meal_text', '__skip__')
-    load()
+    setMeals(prev => prev.filter(m => !(m.meal_date === date && m.meal_text === '__skip__')))
+    load(true)
   }
 
   function openAdd() {
@@ -726,39 +736,35 @@ export default function DinnerMeals() {
   }
 
   function handleWhatToEat() {
-    let pool = eatPool
-    let idx  = eatIdx
-    // Build pool on first call (or if meals changed)
-    if (pool.length === 0) {
-      const todayDate = new Date()
-      const from = new Date(todayDate); from.setDate(from.getDate() - 37)
-      const to   = new Date(todayDate); to.setDate(to.getDate() - 23)
-      const fromStr = from.toISOString().split('T')[0]
-      const toStr   = to.toISOString().split('T')[0]
-      // Recent frequency (last 14 days)
-      const recentFrom = new Date(todayDate); recentFrom.setDate(recentFrom.getDate() - 14)
-      const recentFromStr = recentFrom.toISOString().split('T')[0]
-      const recentCounts = {}
-      meals.filter(m => m.meal_text !== '__skip__' && m.meal_date >= recentFromStr).forEach(m => {
-        const k = m.meal_text.trim().toLowerCase()
-        recentCounts[k] = (recentCounts[k] || 0) + 1
-      })
-      // Candidates from ~1 month ago window
-      const seen = new Set()
-      pool = meals
-        .filter(m => m.meal_text !== '__skip__' && m.meal_date >= fromStr && m.meal_date <= toStr)
-        .filter(m => { const k = m.meal_text.trim().toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true })
-        .sort((a, b) =>
-          (recentCounts[a.meal_text.trim().toLowerCase()] || 0) -
-          (recentCounts[b.meal_text.trim().toLowerCase()] || 0)
-        )
-        .map(m => m.meal_text)
-      if (pool.length === 0) { toast('אין נתונים מלפני חודש — נסה להוסיף ארוחות'); return }
-      setEatPool(pool)
-      idx = 0
-    }
-    setEatSuggestion(pool[idx % pool.length])
-    setEatIdx(idx + 1)
+    const allReal = meals.filter(m => m.meal_text !== '__skip__')
+    if (allReal.length === 0) { toast('אין ארוחות בהיסטוריה — הוסף ארוחות תחילה'); return }
+
+    // Count all-time frequency per meal text (case-insensitive key)
+    const counts = {}
+    allReal.forEach(m => {
+      const k = m.meal_text.trim().toLowerCase()
+      counts[k] = (counts[k] || 0) + 1
+    })
+
+    // Unique meal texts (preserve original casing of last occurrence)
+    const uniqueMap = {}
+    allReal.forEach(m => { uniqueMap[m.meal_text.trim().toLowerCase()] = m.meal_text.trim() })
+    const unique = Object.values(uniqueMap)
+
+    // Pool = meals with minimum count (least used)
+    const minCount = Math.min(...unique.map(t => counts[t.trim().toLowerCase()] || 0))
+    const pool = unique.filter(t => (counts[t.trim().toLowerCase()] || 0) === minCount)
+
+    // Pick randomly — avoid repeating current suggestion if more options exist
+    let pick
+    const alternatives = pool.filter(t => t !== eatSuggestion)
+    const pickFrom = alternatives.length > 0 ? alternatives : pool
+    pick = pickFrom[Math.floor(Math.random() * pickFrom.length)]
+
+    setEatSuggestion(pick)
+    // Reset pool state (no longer needed but keep for compat)
+    setEatPool([])
+    setEatIdx(0)
   }
 
   // ── Styles ──────────────────────────────────────────────────────────────────
