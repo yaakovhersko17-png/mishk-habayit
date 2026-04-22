@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Edit2, Trash2, ChevronLeft, ChevronRight, Pencil } from 'lucide-react'
+import { Plus, Edit2, Trash2, ChevronRight } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
@@ -18,37 +18,34 @@ function CatRow({ c, txCounts, onClick, onEdit, onDelete, editMode }) {
     <div
       onClick={onClick}
       style={{
-        display: 'flex', alignItems: 'center', gap: '0.625rem',
-        padding: '0.75rem 1rem',
+        display: 'flex', alignItems: 'center',
+        padding: '0.5rem 0.875rem',
         cursor: onClick ? 'pointer' : 'default',
         transition: 'background 0.15s',
       }}
       onMouseEnter={e => { if (onClick) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
       onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
     >
-      {/* Icon — right side (flex-start in RTL) */}
-      <div style={{ width: 44, height: 44, borderRadius: '0.875rem', background: `${c.color}22`, border: `1px solid ${c.color}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
-        {c.icon}
+      {/* RIGHT: icon + chevron grouped */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0, marginLeft: '0.75rem' }}>
+        <div style={{ width: 38, height: 38, borderRadius: '0.75rem', background: `${c.color}22`, border: `1px solid ${c.color}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>
+          {c.icon}
+        </div>
+        {onClick && !editMode && <ChevronRight size={14} color="var(--text-dim)" />}
       </div>
-      {/* Name + amount — center (flex:1) */}
+      {/* LEFT: name + amount */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)' }}>{c.name}</div>
-        <div style={{ fontSize: '0.72rem', marginTop: '0.1rem' }}>
-          <span style={{ color: count > 0 ? (c.type === 'income' ? 'var(--c-income)' : 'var(--c-expense)') : 'var(--text-dim)' }}>
-            {count > 0 ? `₪${total.toLocaleString()}` : '₪0'}
-          </span>
-          {count > 0 && <span style={{ color: 'var(--text-dim)', marginRight: '0.3rem' }}>• {count} טרנ׳</span>}
+        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)' }}>{c.name}</div>
+        <div style={{ fontSize: '0.7rem', marginTop: '0.05rem', color: count > 0 ? (c.type === 'income' ? 'var(--c-income)' : 'var(--c-expense)') : 'var(--text-dim)' }}>
+          {count > 0 ? `₪${total.toLocaleString()} • ${count} טרנ׳` : '₪0'}
         </div>
       </div>
-      {/* Edit/delete — only in editMode */}
       {editMode && (
         <div style={{ display: 'flex', gap: '0.125rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
           <button onClick={() => onEdit(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.3rem', borderRadius: '0.375rem' }}><Edit2 size={13} /></button>
           <button onClick={() => onDelete(c)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', padding: '0.3rem', borderRadius: '0.375rem' }}><Trash2 size={13} /></button>
         </div>
       )}
-      {/* Chevron — left side (flex-end in RTL), visible when navigable */}
-      {onClick && !editMode && <ChevronLeft size={16} color="var(--text-dim)" style={{ flexShrink: 0 }} />}
     </div>
   )
 }
