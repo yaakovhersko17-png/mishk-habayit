@@ -6,8 +6,7 @@ export default function Header({ onMenuClick }) {
     <header style={{
       padding: '0.875rem 1.5rem',
       borderBottom: '1px solid rgba(255,255,255,0.06)',
-      background: 'rgba(15,15,26,0.8)',
-      backdropFilter: 'blur(12px)',
+      background: 'rgba(15,15,26,0.97)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',

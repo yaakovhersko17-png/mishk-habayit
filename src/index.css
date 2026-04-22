@@ -408,7 +408,7 @@
     top: 0;
     overflow-y: auto;
     transition: transform 0.28s ease;
-    z-index: 50;
+    z-index: 45;
   }
 
   /* Hamburger button — hidden on desktop */

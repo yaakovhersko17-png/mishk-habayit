@@ -17,7 +17,7 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
       onClick={onClose}
       style={{
         position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',display:'flex',
-        alignItems:'flex-end',justifyContent:'center',zIndex:50,padding:'0',
+        alignItems:'flex-end',justifyContent:'center',zIndex:100,padding:'0',
         backdropFilter:'blur(4px)',
       }}
       className="modal-backdrop"
@@ -35,7 +35,7 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
           <h3 style={{margin:0,fontSize:'1rem',fontWeight:600,color:'var(--text)'}}>{title}</h3>
           <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',padding:'0.5rem',borderRadius:'0.5rem',display:'flex',minWidth:36,minHeight:36,alignItems:'center',justifyContent:'center'}}><X size={18}/></button>
         </div>
-        <div style={{padding:'1.25rem 1.5rem'}}>{children}</div>
+        <div style={{padding:'1.25rem 1.5rem',paddingBottom:'calc(1.5rem + env(safe-area-inset-bottom, 0px))'}}>{children}</div>
       </div>
     </div>
   )
