@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function Modal({ open, onClose, title, children, size = 'md' }) {
   useEffect(() => {
@@ -12,7 +13,7 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
 
   const sizes = { sm: '400px', md: '560px', lg: '720px', xl: '900px' }
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{
@@ -37,6 +38,7 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
         </div>
         <div style={{padding:'1.25rem 1.5rem',paddingBottom:'calc(1.5rem + env(safe-area-inset-bottom, 0px))'}}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

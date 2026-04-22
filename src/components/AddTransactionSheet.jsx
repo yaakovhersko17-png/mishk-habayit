@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase, cached, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Check, X, Star } from 'lucide-react'
@@ -194,7 +195,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div style={{position:'fixed',inset:0,zIndex:200,background:'#0d0d1f',display:'flex',flexDirection:'column',direction:'rtl'}}>
 
       {/* ── Header ── */}
@@ -335,6 +336,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
             style={{width:'100%',background:'none',border:'none',outline:'none',color:notes?'var(--text)':'var(--text-dim)',fontSize:'0.875rem',fontFamily:'inherit',padding:'0.875rem 1rem',resize:'none',direction:'rtl',textAlign:'right',boxSizing:'border-box'}}/>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
