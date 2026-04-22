@@ -19,19 +19,19 @@ function CatRow({ c, txCounts, onClick, onEdit, onDelete, editMode }) {
       onClick={onClick}
       style={{
         display: 'flex', alignItems: 'center',
-        padding: '0.5rem 0.875rem',
+        padding: '0.75rem 1rem',
         cursor: onClick ? 'pointer' : 'default',
         transition: 'background 0.15s',
       }}
       onMouseEnter={e => { if (onClick) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
       onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
     >
-      {/* RIGHT: icon + chevron grouped */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0, marginLeft: '0.75rem' }}>
-        <div style={{ width: 38, height: 38, borderRadius: '0.75rem', background: `${c.color}22`, border: `1px solid ${c.color}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>
+      {/* RIGHT: chevron (far-right) then icon — RTL: first child = rightmost */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', flexShrink: 0, marginLeft: '0.875rem' }}>
+        {onClick && !editMode && <ChevronRight size={13} color="var(--text-dim)" style={{ opacity: 0.6 }} />}
+        <div style={{ width: 42, height: 42, borderRadius: '0.875rem', background: `${c.color}22`, border: `1px solid ${c.color}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.35rem' }}>
           {c.icon}
         </div>
-        {onClick && !editMode && <ChevronRight size={14} color="var(--text-dim)" />}
       </div>
       {/* LEFT: name + amount */}
       <div style={{ flex: 1, minWidth: 0 }}>
