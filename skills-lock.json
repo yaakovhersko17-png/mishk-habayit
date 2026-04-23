@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "israeli-receipt-scanner": {
+      "source": "skills-il/accounting",
+      "sourceType": "github",
+      "computedHash": "3483d1a6fcd24db6775dff19ddea026e6039d5074017dc807cab43cb4e9ce064"
+    }
+  }
+}
