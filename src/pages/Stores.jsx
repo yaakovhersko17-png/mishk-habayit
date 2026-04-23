@@ -22,7 +22,7 @@ export default function Stores() {
   async function load() {
     const [{ data: sData, error: sErr }, { data: txData }] = await Promise.all([
       supabase.from('stores').select('*').order('name'),
-      supabase.from('transactions').select('description,amount,type'),
+      supabase.from('transactions').select('description,amount,type,store_id'),
     ])
     if (sErr) {
       toast.error('שגיאה בטעינת חנויות — יש להריץ את migration בסופהבייס')
@@ -35,7 +35,10 @@ export default function Stores() {
     list.forEach(s => {
       const lc = s.name.toLowerCase()
       ;(txData || [])
-        .filter(t => t.type === 'expense' && t.description?.toLowerCase().includes(lc))
+        .filter(t => t.type === 'expense' && (
+          t.store_id === s.id ||
+          (!t.store_id && t.description?.toLowerCase().includes(lc))
+        ))
         .forEach(t => {
           if (!counts[s.id]) counts[s.id] = { count: 0, total: 0 }
           counts[s.id].count++

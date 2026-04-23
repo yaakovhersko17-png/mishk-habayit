@@ -190,7 +190,10 @@ export default function SmartInsights() {
     })
     return storesList.map(s => {
       const lc = s.name.toLowerCase()
-      const matched = filtered.filter(t => t.description?.toLowerCase().includes(lc))
+      const matched = filtered.filter(t =>
+        t.store_id === s.id ||
+        (!t.store_id && t.description?.toLowerCase().includes(lc))
+      )
       return { id: s.id, name: s.name, total: matched.reduce((sum, t) => sum + Number(t.amount), 0), count: matched.length }
     }).filter(s => s.count > 0).sort((a, b) => b.total - a.total)
   }, [expenses, storesList, storesPeriod])

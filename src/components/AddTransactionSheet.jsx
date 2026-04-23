@@ -27,7 +27,7 @@ function buildCatOptions(cats) {
 
 const mkForm = () => ({
   description: '', amount: '', currency: '₪',
-  wallet_id: '', to_wallet_id: '', category_id: '',
+  wallet_id: '', to_wallet_id: '', category_id: '', store_id: '',
   date: new Date().toISOString().split('T')[0],
   time: new Date().toTimeString().slice(0, 5),
 })
@@ -71,6 +71,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
         wallet_id:    editingTx.wallet_id || '',
         to_wallet_id: editingTx.to_wallet_id || '',
         category_id:  editingTx.category_id || '',
+        store_id:     editingTx.store_id || '',
         date:         editingTx.date || new Date().toISOString().split('T')[0],
         time:         new Date().toTimeString().slice(0, 5),
       })
@@ -135,6 +136,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
       wallet_id: form.wallet_id || null,
       to_wallet_id: type === 'transfer' ? (form.to_wallet_id || null) : null,
       category_id: form.category_id || null,
+      store_id: form.store_id || null,
       date: form.date, user_id: user.id,
     }
 
@@ -246,20 +248,26 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
       {/* ── Scrollable body ── */}
       <div style={{flex:1,overflowY:'auto',padding:'0.875rem',display:'flex',flexDirection:'column',gap:'0.75rem'}}>
 
-        {/* Description */}
+        {/* Description + Store */}
         <div style={{background:'rgba(255,255,255,0.04)',borderRadius:'1rem',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden'}}>
           <div style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0 1rem',minHeight:58}}>
             <Star size={17} color="#334155" style={{flexShrink:0}}/>
-            <input value={form.description} onChange={e=>{const v=e.target.value;setForm(f=>({...f,description:v}));setDetectedStore(detectStore(v))}} placeholder="תיאור"
+            <input value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="תיאור"
               style={{flex:1,background:'none',border:'none',outline:'none',color:'var(--text)',fontSize:'0.95rem',fontFamily:'inherit',textAlign:'right',direction:'rtl'}}/>
             {form.description && <Check size={16} color="#4ade80" style={{flexShrink:0}}/>}
           </div>
-          {detectedStore && (
-            <div style={{display:'flex',alignItems:'center',gap:'0.375rem',padding:'0.375rem 1rem 0.5rem',borderTop:'1px solid rgba(108,99,255,0.12)',background:'rgba(108,99,255,0.06)'}}>
-              <Store size={12} color="#a78bfa"/>
-              <span style={{fontSize:'0.72rem',color:'#a78bfa'}}>זוהתה חנות: {detectedStore.name}</span>
+          <div style={{height:1,background:'rgba(255,255,255,0.06)',margin:'0 1rem'}}/>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:48}}>
+            <div style={{display:'flex',alignItems:'center',gap:'0.4rem',flexShrink:0}}>
+              <Store size={14} color="var(--text-dim)"/>
+              <span style={{color:'var(--text-sub)',fontSize:'0.875rem'}}>שם חנות</span>
             </div>
-          )}
+            <select value={form.store_id} onChange={e=>setForm(f=>({...f,store_id:e.target.value}))}
+              style={{background:'none',border:'none',outline:'none',color:form.store_id?'var(--text)':'var(--text-dim)',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:200}}>
+              <option value="">ללא חנות</option>
+              {stores.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
         </div>
 
         {/* Primary details card */}
