@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase, cached, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Check, X, Star } from 'lucide-react'
+import { Check, X, Star, Store } from 'lucide-react'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import toast from 'react-hot-toast'
 
@@ -49,6 +49,8 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
   const [categories, setCats]             = useState([])
   const [profiles, setProfiles]           = useState([])
   const [saving, setSaving]               = useState(false)
+  const [stores, setStores]               = useState([])
+  const [detectedStore, setDetectedStore] = useState(null)
 
   useEffect(() => {
     if (!open) return
@@ -91,14 +93,21 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
   }, [open])
 
   async function loadData() {
-    const [{ data: w }, { data: c }, { data: p }] = await Promise.all([
+    const [{ data: w }, { data: c }, { data: p }, { data: s }] = await Promise.all([
       supabase.from('wallets').select('*').order('created_at'),
       cached('categories', () => supabase.from('categories').select('*'), 120_000),
       cached('profiles', () => supabase.from('profiles').select('*'), 120_000),
+      cached('stores', () => supabase.from('stores').select('id,name'), 120_000),
     ])
     setWallets(w || [])
     setCats(c || [])
     setProfiles(p || [])
+    setStores(s || [])
+  }
+
+  function detectStore(desc) {
+    const lc = desc.toLowerCase()
+    return stores.find(s => lc.includes(s.name.toLowerCase())) || null
   }
 
   async function applyTransfer(srcId, dstId, amount, reverse = false) {
@@ -238,11 +247,19 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
       <div style={{flex:1,overflowY:'auto',padding:'0.875rem',display:'flex',flexDirection:'column',gap:'0.75rem'}}>
 
         {/* Description */}
-        <div style={{background:'rgba(255,255,255,0.04)',borderRadius:'1rem',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',gap:'0.75rem',padding:'0 1rem',minHeight:58}}>
-          <Star size={17} color="#334155" style={{flexShrink:0}}/>
-          <input value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="תיאור"
-            style={{flex:1,background:'none',border:'none',outline:'none',color:'var(--text)',fontSize:'0.95rem',fontFamily:'inherit',textAlign:'right',direction:'rtl'}}/>
-          {form.description && <Check size={16} color="#4ade80" style={{flexShrink:0}}/>}
+        <div style={{background:'rgba(255,255,255,0.04)',borderRadius:'1rem',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'0.75rem',padding:'0 1rem',minHeight:58}}>
+            <Star size={17} color="#334155" style={{flexShrink:0}}/>
+            <input value={form.description} onChange={e=>{const v=e.target.value;setForm(f=>({...f,description:v}));setDetectedStore(detectStore(v))}} placeholder="תיאור"
+              style={{flex:1,background:'none',border:'none',outline:'none',color:'var(--text)',fontSize:'0.95rem',fontFamily:'inherit',textAlign:'right',direction:'rtl'}}/>
+            {form.description && <Check size={16} color="#4ade80" style={{flexShrink:0}}/>}
+          </div>
+          {detectedStore && (
+            <div style={{display:'flex',alignItems:'center',gap:'0.375rem',padding:'0.375rem 1rem 0.5rem',borderTop:'1px solid rgba(108,99,255,0.12)',background:'rgba(108,99,255,0.06)'}}>
+              <Store size={12} color="#a78bfa"/>
+              <span style={{fontSize:'0.72rem',color:'#a78bfa'}}>זוהתה חנות: {detectedStore.name}</span>
+            </div>
+          )}
         </div>
 
         {/* Primary details card */}

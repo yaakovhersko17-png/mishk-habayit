@@ -37,16 +37,20 @@ export default function SmartInsights() {
   const [activeTab, setActiveTab] = useState('compare')
   const [manual, setManual]     = useState(loadManual)
   const [showAdd, setShowAdd]   = useState(false)
-  const [editIdx, setEditIdx]   = useState(null) // index in manual[] being edited
+  const [editIdx, setEditIdx]   = useState(null)
   const [form, setForm]         = useState({ product:'', store:'', price:'' })
+  const [storesList, setStoresList] = useState([])
+  const [storesPeriod, setStoresPeriod] = useState('month') // 'week'|'month'|'all'
 
   useEffect(() => { load() }, [])
 
   async function load() {
-    const { data } = await withRetry(() =>
-      supabase.from('transactions').select('*,categories(name,icon)').order('date', { ascending: false })
-    )
-    setTxs(data || [])
+    const [{ data: txData }, { data: sData }] = await Promise.all([
+      withRetry(() => supabase.from('transactions').select('*,categories(name,icon)').order('date', { ascending: false })),
+      supabase.from('stores').select('id,name'),
+    ])
+    setTxs(txData || [])
+    setStoresList(sData || [])
     setLoading(false)
   }
 
@@ -166,9 +170,30 @@ export default function SmartInsights() {
 
   const TABS = [
     { id:'compare', label:'🏪 השוואה' },
+    { id:'stores',  label:'🏬 חנויות' },
     { id:'trends',  label:'📈 מגמות' },
     { id:'top',     label:'🛒 נרכש הכי הרבה' },
   ]
+
+  // ── stores tab data ──────────────────────────────────────────
+  const storesTabData = useMemo(() => {
+    const now = new Date()
+    let fromDate = null
+    if (storesPeriod === 'week') {
+      fromDate = new Date(now); fromDate.setDate(fromDate.getDate() - 7)
+    } else if (storesPeriod === 'month') {
+      fromDate = new Date(now.getFullYear(), now.getMonth(), 1)
+    }
+    const filtered = expenses.filter(t => {
+      if (!fromDate) return true
+      return new Date(t.date) >= fromDate
+    })
+    return storesList.map(s => {
+      const lc = s.name.toLowerCase()
+      const matched = filtered.filter(t => t.description?.toLowerCase().includes(lc))
+      return { id: s.id, name: s.name, total: matched.reduce((sum, t) => sum + Number(t.amount), 0), count: matched.length }
+    }).filter(s => s.count > 0).sort((a, b) => b.total - a.total)
+  }, [expenses, storesList, storesPeriod])
 
   if (loading) return <LoadingSpinner />
 
@@ -212,6 +237,53 @@ export default function SmartInsights() {
           </button>
         ))}
       </div>
+
+      {/* ── stores tab ── */}
+      {activeTab === 'stores' && (
+        <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
+          {/* Period filter */}
+          <div style={{display:'flex',gap:'0.375rem',background:'rgba(255,255,255,0.04)',borderRadius:'0.875rem',padding:'0.25rem'}}>
+            {[['week','שבוע אחרון'],['month','החודש'],['all','הכל']].map(([k,v]) => (
+              <button key={k} onClick={()=>setStoresPeriod(k)}
+                style={{flex:1,padding:'0.45rem 0.25rem',borderRadius:'0.625rem',border:'none',cursor:'pointer',fontSize:'0.78rem',fontWeight:500,transition:'all 0.2s',background:storesPeriod===k?'rgba(108,99,255,0.3)':'transparent',color:storesPeriod===k?'#a78bfa':'var(--text-muted)'}}>
+                {v}
+              </button>
+            ))}
+          </div>
+
+          {storesTabData.length === 0 ? (
+            <div className="page-card" style={{textAlign:'center',padding:'3rem'}}>
+              <div style={{fontSize:'3rem',marginBottom:'1rem'}}>🏬</div>
+              <h3 style={{color:'var(--text-sub)',margin:'0 0 0.5rem'}}>אין נתונים לתקופה זו</h3>
+              <p style={{color:'var(--text-dim)',fontSize:'0.85rem',margin:0}}>
+                {storesList.length === 0 ? 'הוסף חנויות בסגירה פיננסית ← חנויות' : 'לא נמצאו עסקאות עם שמות חנויות מהרשימה'}
+              </p>
+            </div>
+          ) : (
+            <div className="page-card" style={{padding:'0.75rem'}}>
+              {storesTabData.map((s, i) => {
+                const maxTotal = storesTabData[0].total
+                const barW = Math.round((s.total / maxTotal) * 100)
+                return (
+                  <div key={s.id} style={{display:'flex',alignItems:'center',gap:'0.875rem',padding:'0.625rem 0.25rem',borderBottom:i<storesTabData.length-1?'1px solid rgba(255,255,255,0.04)':'none'}}>
+                    <div style={{width:28,height:28,borderRadius:'50%',background:i===0?'linear-gradient(135deg,#6c63ff,#8b5cf6)':'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.8rem',fontWeight:700,color:'#fff',flexShrink:0}}>{i+1}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'0.2rem'}}>
+                        <span style={{fontWeight:600,fontSize:'0.875rem',color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.name}</span>
+                        <span style={{fontWeight:700,color:'#f87171',fontSize:'0.9rem',flexShrink:0,marginRight:'0.5rem'}}>₪{s.total.toLocaleString(undefined,{maximumFractionDigits:0})}</span>
+                      </div>
+                      <div style={{height:4,borderRadius:'9999px',background:'rgba(255,255,255,0.06)',overflow:'hidden'}}>
+                        <div style={{height:'100%',width:`${barW}%`,background:i===0?'linear-gradient(90deg,#6c63ff,#8b5cf6)':'rgba(108,99,255,0.5)',borderRadius:'9999px',transition:'width 0.4s'}}/>
+                      </div>
+                      <div style={{fontSize:'0.68rem',color:'var(--text-muted)',marginTop:'0.2rem'}}>{s.count} עסקאות</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── compare ── */}
       {activeTab === 'compare' && (

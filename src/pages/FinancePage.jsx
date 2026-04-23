@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import {
   ChevronLeft, ChevronDown, ChevronUp,
   ScanLine, Archive, Lightbulb, BarChart2, Plus, Edit2, Trash2,
-  RefreshCw, ToggleLeft, ToggleRight,
+  RefreshCw, ToggleLeft, ToggleRight, Store,
 } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
@@ -204,6 +204,7 @@ export default function FinancePage() {
 
       {/* Nav + Recurring accordion */}
       <div className="page-card" style={{ padding: 0, overflow: 'hidden' }}>
+        <NavRow icon={<Store size={18} />}          label="חנויות"           sub="ניהול חנויות וסיכום הוצאות"       color="#a78bfa" onClick={() => navigate('/stores')} />
         <NavRow icon={<ScanLine size={18} />}       label="סריקת חשבונית"    sub="סרוק חשבונית עם AI"               color="#6c63ff" onClick={() => navigate('/scanner')} />
         <NavRow icon={<Archive size={18} />}        label="ארכיון חשבוניות"  sub="כל החשבוניות השמורות"             color="#a78bfa" onClick={() => navigate('/invoices')} />
         <NavRow icon={<Lightbulb size={18} />}      label="דף חכם"           sub="השוואת מחירים וניתוח הוצאות"     color="#fbbf24" onClick={() => navigate('/insights')} />
