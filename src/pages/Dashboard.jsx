@@ -316,7 +316,7 @@ export default function Dashboard() {
       <AddTransactionSheet
         open={showAddTx}
         onClose={() => setShowAddTx(false)}
-        onSaved={loadData}
+        onSaved={() => { loadData(); loadCalendar(calView, calDate) }}
       />
     </div>
   )
