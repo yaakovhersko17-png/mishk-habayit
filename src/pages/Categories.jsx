@@ -79,6 +79,14 @@ export default function Categories() {
         counts[t.category_id].total += Number(t.amount)
       }
     })
+    // Bubble child totals up to parent category
+    ;(cData || []).filter(c => c.parent_id).forEach(c => {
+      if (counts[c.id]) {
+        if (!counts[c.parent_id]) counts[c.parent_id] = { count: 0, total: 0 }
+        counts[c.parent_id].count += counts[c.id].count
+        counts[c.parent_id].total += counts[c.id].total
+      }
+    })
     setCounts(counts)
     setLoading(false)
   }
@@ -193,14 +201,6 @@ export default function Categories() {
                     onDelete={handleDelete}
                     editMode={editMode}
                   />
-                  {/* Sub-count badge */}
-                  {kids.length > 0 && (
-                    <div style={{ paddingRight: '4.5rem', paddingBottom: '0.375rem', marginTop: '-0.25rem' }}>
-                      <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '999px', padding: '0.1rem 0.5rem' }}>
-                        {kids.length} תת-קטגוריות
-                      </span>
-                    </div>
-                  )}
                 </div>
               )
             })

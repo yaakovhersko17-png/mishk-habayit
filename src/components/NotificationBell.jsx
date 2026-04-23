@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, X, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useRealtime } from '../hooks/useRealtime'
 import toast from 'react-hot-toast'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -91,6 +92,8 @@ export default function NotificationBell() {
   const ref       = useRef(null)
   const timersRef   = useRef([])   // reminder setTimeout IDs
   const evTimersRef = useRef([])   // calendar event setTimeout IDs
+
+  useRealtime('dinner_meals', loadDinners)
 
   useEffect(() => {
     requestNotifPermission()
