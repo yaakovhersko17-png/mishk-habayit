@@ -20,10 +20,15 @@ export default function Stores() {
   useRealtime('stores', load)
 
   async function load() {
-    const [{ data: sData }, { data: txData }] = await Promise.all([
+    const [{ data: sData, error: sErr }, { data: txData }] = await Promise.all([
       supabase.from('stores').select('*').order('name'),
       supabase.from('transactions').select('description,amount,type'),
     ])
+    if (sErr) {
+      toast.error('שגיאה בטעינת חנויות — יש להריץ את migration בסופהבייס')
+      setLoading(false)
+      return
+    }
     const list = sData || []
     setStores(list)
     const counts = {}
@@ -47,20 +52,26 @@ export default function Stores() {
   async function handleSave() {
     if (!name.trim()) { toast.error('שם חנות נדרש'); return }
     setSaving(true)
-    if (editing) {
-      await supabase.from('stores').update({ name: name.trim() }).eq('id', editing.id)
-      toast.success('עודכן!')
-    } else {
-      await supabase.from('stores').insert({ name: name.trim() })
-      toast.success('נוסף!')
+    const { error } = editing
+      ? await supabase.from('stores').update({ name: name.trim() }).eq('id', editing.id)
+      : await supabase.from('stores').insert({ name: name.trim() })
+    if (error) {
+      toast.error('שגיאת שמירה: ' + (error.message || 'נסה שוב'))
+      setSaving(false)
+      return
     }
-    setModal(false); setSaving(false); load()
+    toast.success(editing ? 'עודכן!' : 'נוסף!')
+    setModal(false)
+    setSaving(false)
+    await load()
   }
 
   async function handleDelete(s) {
     if (!confirm(`למחוק את "${s.name}"?`)) return
-    await supabase.from('stores').delete().eq('id', s.id)
-    toast.success('נמחק'); load()
+    const { error } = await supabase.from('stores').delete().eq('id', s.id)
+    if (error) { toast.error('שגיאת מחיקה'); return }
+    toast.success('נמחק')
+    await load()
   }
 
   if (loading) return <LoadingSpinner />
