@@ -85,30 +85,12 @@ export default function Dashboard() {
         ? supabase.from('reminders').select('title,due_date,is_completed').gte('due_date',from+'T00:00:00').lt('due_date',tom+'T00:00:00')
         : supabase.from('reminders').select('title,due_date,is_completed').gte('due_date',from+'T00:00:00').lte('due_date',to+'T23:59:59'),
     ])
-    // Also load dinner for day view
-    let dinnerEv = null
-    if (view === 'day') {
-      try {
-        const dinnerDays = JSON.parse(localStorage.getItem('dinner_active_days') || '[0,1,2,3,4,5]')
-        const rawTime    = JSON.parse(localStorage.getItem('dinner_default_time') || '"19:00"')
-        const mT = String(rawTime).match(/^(\d{1,2}):(\d{2})$/)
-        if (mT && dinnerDays.includes(date.getDay())) {
-          const dMins = parseInt(mT[1])*60+parseInt(mT[2])
-          const nowMins = date.getDate()===today.getDate() ? today.getHours()*60+today.getMinutes() : 1440
-          if (dMins > 0 && nowMins >= dMins) {
-            const { data: dd } = await supabase.from('dinner_meals').select('id').eq('meal_date',from).limit(1)
-            if (!dd || dd.length===0) dinnerEv = { type:'dinner', icon:'🍽️', label:'ארוחת ערב', sub:`ל-${rawTime}`, route:'/dinners', color:'#f97316', date:from }
-          }
-        }
-      } catch(_) {}
-    }
     // Build per-date buckets
     const byDate = {}
     const addEv = (dateKey, ev) => { if(!byDate[dateKey]) byDate[dateKey]=[]; byDate[dateKey].push(ev) }
     ;(txData||[]).forEach(t => addEv(t.date, { type:'tx', icon:t.type==='income'?'💰':t.type==='transfer'?'↔️':t.type.startsWith('loan')||t.type==='debt_unpaid'?'🏦':'💸', label:t.description, sub:`${t.type==='income'?'+':'-'}${t.currency||'₪'}${Number(t.amount).toLocaleString()}`, route:'/transactions', color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')||t.type==='debt_unpaid'?'#fbbf24':'#f87171', date:t.date }))
     ;(calEvData||[]).forEach(e => addEv(e.event_date, { type:'event', icon:'📅', label:e.title, sub:e.event_time?`🕐 ${e.event_time.slice(0,5)}`:'אירוע', route:'/calendar', color:'#22d3ee', date:e.event_date }))
     ;(remData||[]).forEach(r => { const d=r.due_date?.split('T')[0]; if(d) addEv(d, { type:'reminder', icon:r.is_completed?'✅':new Date(r.due_date)<today?'⚠️':'🔔', label:r.title, sub:r.is_completed?'הושלם':'תזכורת', route:'/reminders', color:r.is_completed?'#4ade80':'#fbbf24', date:d }) })
-    if (dinnerEv) addEv(from, dinnerEv)
     setCalEvents(byDate)
     setCalLoading(false)
   }
