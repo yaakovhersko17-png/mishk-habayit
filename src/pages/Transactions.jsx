@@ -53,7 +53,7 @@ export default function Transactions() {
 
   async function loadAll() {
     const [{ data: txData }, { data: wData }, { data: cData }, { data: pData }] = await Promise.all([
-      withRetry(() => supabase.from('transactions').select('*,categories(name,color,icon),wallets!wallet_id(name,icon),profiles!user_id(name)').order('date', { ascending: false }).order('created_at', { ascending: false })),
+      withRetry(() => supabase.from('transactions').select('*,categories(name,color,icon),wallets!wallet_id(name,icon),profiles!user_id(name),stores!store_id(name)').order('date', { ascending: false }).order('created_at', { ascending: false })),
       withRetry(() => supabase.from('wallets').select('*')),
       cached('categories', () => supabase.from('categories').select('*'), 120_000),
       cached('profiles', () => supabase.from('profiles').select('*'), 120_000),
@@ -260,7 +260,10 @@ export default function Transactions() {
                         onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}
                         onMouseLeave={e=>e.currentTarget.style.background=''}>
                       <td style={{padding:'0.875rem 1rem',color:'var(--text-muted)',fontSize:'0.8rem',whiteSpace:'nowrap'}}>{new Date(t.date).toLocaleDateString('he-IL')}</td>
-                      <td style={{padding:'0.875rem 1rem',color:'var(--text)',fontSize:'0.875rem',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.description}</td>
+                      <td style={{padding:'0.875rem 1rem',maxWidth:200,overflow:'hidden'}}>
+                        <div style={{color:'var(--text)',fontSize:'0.875rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.description}</div>
+                        {t.stores?.name && <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{t.stores.name}</div>}
+                      </td>
                       <td style={{padding:'0.875rem 1rem',fontWeight:600,whiteSpace:'nowrap',color: t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>
                         {t.type==='income'?'+':t.type==='transfer'?'↔':'-'}{t.currency}{Number(t.amount).toLocaleString()}
                       </td>

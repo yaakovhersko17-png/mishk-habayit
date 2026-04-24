@@ -11,7 +11,6 @@ const Transactions   = lazy(() => import('./pages/Transactions'))
 const InvoiceScanner = lazy(() => import('./pages/InvoiceScanner'))
 const InvoiceArchive = lazy(() => import('./pages/InvoiceArchive'))
 const Categories     = lazy(() => import('./pages/Categories'))
-const SmartInsights  = lazy(() => import('./pages/SmartInsights'))
 const Reminders      = lazy(() => import('./pages/Reminders'))
 const CalendarPage   = lazy(() => import('./pages/CalendarPage'))
 const Notes          = lazy(() => import('./pages/Notes'))
@@ -60,7 +59,6 @@ export default function App() {
             <Route path="scanner"      element={<InvoiceScanner />} />
             <Route path="invoices"     element={<InvoiceArchive />} />
             <Route path="categories"   element={<Categories />} />
-            <Route path="insights"     element={<SmartInsights />} />
             <Route path="reminders"    element={<Reminders />} />
             <Route path="calendar"     element={<CalendarPage />} />
             <Route path="notes"        element={<Notes />} />

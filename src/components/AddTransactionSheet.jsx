@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { supabase, cached, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Check, X, Star, Store } from 'lucide-react'
@@ -41,6 +42,7 @@ const balanceSign = (t) => {
 
 export default function AddTransactionSheet({ open, onClose, onSaved, editingTx, initialData }) {
   const { user, profile } = useAuth()
+  const navigate = useNavigate()
   const [type, setType]                   = useState('expense')
   const [loanSubType, setLoanSubType]     = useState('given') // 'given' | 'received' | 'unpaid'
   const [form, setForm]                   = useState(mkForm)
@@ -262,10 +264,11 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
               <Store size={14} color="var(--text-dim)"/>
               <span style={{color:'var(--text-sub)',fontSize:'0.875rem'}}>שם חנות</span>
             </div>
-            <select value={form.store_id} onChange={e=>setForm(f=>({...f,store_id:e.target.value}))}
+            <select value={form.store_id} onChange={e=>{const v=e.target.value;if(v==='__other__'){navigate('/stores')}else{setForm(f=>({...f,store_id:v}))}}}
               style={{background:'none',border:'none',outline:'none',color:form.store_id?'var(--text)':'var(--text-dim)',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:200}}>
               <option value="">ללא חנות</option>
               {stores.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+              <option value="__other__">📋 אחר — הוסף חנות חדשה</option>
             </select>
           </div>
         </div>

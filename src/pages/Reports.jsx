@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { supabase, cached, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { FileText, Download, SlidersHorizontal, X } from 'lucide-react'
@@ -17,14 +17,16 @@ const TABS = [
   { id: 'trend',     label: '📈 מגמה' },
   { id: 'cashflow',  label: '💰 תזרים מזומנים' },
   { id: 'pnl',       label: '📉 רווח והפסד' },
+  { id: 'stores',    label: '🏬 חנויות' },
 ]
 
 export default function Reports() {
   const { user, profile } = useAuth()
-  const [txs, setTxs]         = useState([])
-  const [wallets, setWallets] = useState([])
-  const [cats, setCats]       = useState([])
-  const [loading, setLoading] = useState(true)
+  const [txs, setTxs]           = useState([])
+  const [wallets, setWallets]   = useState([])
+  const [cats, setCats]         = useState([])
+  const [storesList, setStores] = useState([])
+  const [loading, setLoading]   = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
   const [dateFrom, setDateFrom] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
   const [dateTo, setDateTo]   = useState(new Date().toISOString().split('T')[0])
@@ -36,14 +38,16 @@ export default function Reports() {
   useEffect(() => { loadBase() }, [])
 
   async function loadBase() {
-    const [{ data: tData }, { data: wData }, { data: cData }] = await Promise.all([
-      withRetry(() => supabase.from('transactions').select('*,categories(name,color),wallets!wallet_id(name),profiles!user_id(name)').order('date', { ascending: false })),
+    const [{ data: tData }, { data: wData }, { data: cData }, { data: sData }] = await Promise.all([
+      withRetry(() => supabase.from('transactions').select('*,categories(name,color),wallets!wallet_id(name),profiles!user_id(name),stores!store_id(name)').order('date', { ascending: false })),
       withRetry(() => supabase.from('wallets').select('*')),
       cached('categories', () => supabase.from('categories').select('*'), 120_000),
+      supabase.from('stores').select('id,name'),
     ])
     setTxs(tData || [])
     setWallets(wData || [])
     setCats(cData || [])
+    setStores(sData || [])
     setLoading(false)
   }
 
@@ -80,6 +84,23 @@ export default function Reports() {
       הוצאות: mTxs.filter(t => t.type === 'expense').reduce((s,t) => s + Number(t.amount), 0),
     })
   }
+
+  // Stores: spending per store
+  const storesTabData = useMemo(() => {
+    const map = {}
+    storesList.forEach(s => { map[s.id] = { name: s.name, total: 0, count: 0 } })
+    filtered.filter(t => t.type === 'expense').forEach(t => {
+      if (t.store_id && map[t.store_id]) {
+        map[t.store_id].total += Number(t.amount)
+        map[t.store_id].count++
+      } else if (!t.store_id && t.description) {
+        const lc = t.description.toLowerCase()
+        const match = storesList.find(s => lc.includes(s.name.toLowerCase()))
+        if (match) { map[match.id].total += Number(t.amount); map[match.id].count++ }
+      }
+    })
+    return Object.values(map).filter(s => s.total > 0).sort((a, b) => b.total - a.total)
+  }, [filtered, storesList])
 
   // P&L: net per month
   const pnlData = trendData.map(m => ({
@@ -292,6 +313,40 @@ export default function Reports() {
             <span><span style={{color:'#f87171'}}>■</span> הפסד</span>
           </div>
         </div>
+      )}
+
+      {/* Tab: חנויות */}
+      {activeTab === 'stores' && (
+        storesTabData.length === 0 ? (
+          <div className="page-card" style={{textAlign:'center',color:'var(--text-dim)',padding:'2rem'}}>
+            <div style={{fontSize:'2rem',marginBottom:'0.5rem'}}>🏪</div>
+            אין הוצאות לחנויות בטווח הזמן הנבחר
+          </div>
+        ) : (
+          <div className="page-card">
+            <h3 style={{margin:'0 0 1rem',fontSize:'0.9rem',fontWeight:600,color:'var(--text-sub)'}}>הוצאות לפי חנות</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={storesTabData} layout="vertical" margin={{left:8,right:8}}>
+                <XAxis type="number" tick={{fill:'var(--text-muted)',fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>`₪${v.toLocaleString()}`}/>
+                <YAxis type="category" dataKey="name" tick={{fill:'var(--text-sub)',fontSize:11}} axisLine={false} tickLine={false} width={70}/>
+                <Tooltip contentStyle={{background:'#1e1e3a',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.75rem',color:'var(--text)'}} formatter={v=>`₪${v.toLocaleString()}`}/>
+                <Bar dataKey="total" radius={[0,4,4,0]}>
+                  {storesTabData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]}/>)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <div style={{marginTop:'1rem',display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+              {storesTabData.map((s, i) => (
+                <div key={s.name} style={{display:'flex',alignItems:'center',gap:'0.625rem',padding:'0.5rem 0.75rem',borderRadius:'0.625rem',background:'rgba(255,255,255,0.03)'}}>
+                  <div style={{width:10,height:10,borderRadius:'50%',background:COLORS[i%COLORS.length],flexShrink:0}}/>
+                  <span style={{color:'var(--text-sub)',flex:1,fontSize:'0.82rem'}}>{s.name}</span>
+                  <span style={{color:'var(--text-muted)',fontSize:'0.75rem'}}>{s.count} עסקאות</span>
+                  <span style={{color:'var(--text)',fontWeight:600,fontSize:'0.85rem'}}>₪{s.total.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
       )}
 
       {/* Export */}

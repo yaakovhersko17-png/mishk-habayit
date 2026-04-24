@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import {
   ChevronLeft, ChevronDown, ChevronUp,
-  ScanLine, Archive, Lightbulb, BarChart2, Plus, Edit2, Trash2,
+  ScanLine, Archive, BarChart2, Plus, Edit2, Trash2,
   RefreshCw, ToggleLeft, ToggleRight, Store,
 } from 'lucide-react'
 import Modal from '../components/ui/Modal'
@@ -207,8 +207,7 @@ export default function FinancePage() {
         <NavRow icon={<Store size={18} />}          label="חנויות"           sub="ניהול חנויות וסיכום הוצאות"       color="#a78bfa" onClick={() => navigate('/stores')} />
         <NavRow icon={<ScanLine size={18} />}       label="סריקת חשבונית"    sub="סרוק חשבונית עם AI"               color="#6c63ff" onClick={() => navigate('/scanner')} />
         <NavRow icon={<Archive size={18} />}        label="ארכיון חשבוניות"  sub="כל החשבוניות השמורות"             color="#a78bfa" onClick={() => navigate('/invoices')} />
-        <NavRow icon={<Lightbulb size={18} />}      label="דף חכם"           sub="השוואת מחירים וניתוח הוצאות"     color="#fbbf24" onClick={() => navigate('/insights')} />
-        <NavRow icon={<BarChart2 size={18} />}      label="דוחות וייצוא"     sub="גרפים, תרשימים וייצוא נתונים"   color="#34d399" onClick={() => navigate('/reports')} />
+        <NavRow icon={<BarChart2 size={18} />}      label="דוחות"            sub="גרפים, תרשימים וייצוא נתונים"   color="#34d399" onClick={() => navigate('/reports')} />
 
         {/* Recurring accordion */}
         <AccordionRow
