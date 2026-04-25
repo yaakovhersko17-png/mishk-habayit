@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import {
   Home, BarChart2,
   Bell, Calendar, StickyNote, Map, Utensils,
-  Shield, LogOut, X
+  Shield, LogOut, X, Lock
 } from 'lucide-react'
 
 const navItems = [
@@ -61,6 +61,13 @@ export default function Sidebar({ isOpen, onClose }) {
             <span>{label}</span>
           </NavLink>
         ))}
+
+        <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '0.375rem 0' }} />
+
+        <NavLink to="/private" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+          <Lock size={16} />
+          <span>מסך פרטי</span>
+        </NavLink>
 
         {profile?.role === 'admin' && (
           <NavLink to="/admin" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
