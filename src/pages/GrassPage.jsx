@@ -8,7 +8,9 @@ import LoadingSpinner from '../components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
 
 const SIZES = ['גדול', 'בינוני', 'קטן', 'קטן מאוד']
-const EMPTY = { name: '', effect: 0, flower_size: '', dealer: '' }
+const today = () => new Date().toISOString().split('T')[0]
+const EMPTY = { name: '', purchase_date: today(), effect: 0, flower_size: '', dealer: '' }
+const fmtDate = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 const isYaakov = (name) => name?.includes('יעקב') || name?.toLowerCase().includes('yaakov')
 
 function Stars({ value, onChange }) {
@@ -48,8 +50,8 @@ export default function GrassPage() {
     setLoading(false)
   }
 
-  function openAdd()    { setEditing(null); setForm(EMPTY); setModal(true) }
-  function openEdit(it) { setEditing(it); setForm({ name: it.name, effect: it.effect || 0, flower_size: it.flower_size || '', dealer: it.dealer || '' }); setModal(true) }
+  function openAdd()    { setEditing(null); setForm({ ...EMPTY, purchase_date: today() }); setModal(true) }
+  function openEdit(it) { setEditing(it); setForm({ name: it.name, purchase_date: it.purchase_date || today(), effect: it.effect || 0, flower_size: it.flower_size || '', dealer: it.dealer || '' }); setModal(true) }
 
   async function handleSave() {
     if (!form.name.trim()) { toast.error('שם חובה'); return }
@@ -57,6 +59,7 @@ export default function GrassPage() {
     const payload = {
       user_id: user.id,
       name: form.name.trim(),
+      purchase_date: form.purchase_date || today(),
       effect: form.effect || null,
       flower_size: form.flower_size || null,
       dealer: form.dealer.trim() || null,
@@ -115,7 +118,10 @@ export default function GrassPage() {
                 borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none',
               }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.25rem' }}>{it.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text)' }}>{it.name}</div>
+                    {it.purchase_date && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{fmtDate(it.purchase_date)}</div>}
+                  </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
                     {it.effect > 0 && (
                       <span style={{ fontSize: '0.82rem', color: '#facc15', letterSpacing: '0.05rem' }}>
@@ -147,6 +153,10 @@ export default function GrassPage() {
           <div>
             <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.375rem' }}>שם</label>
             <input className="input-field" placeholder="שם הזן" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} autoFocus />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.375rem' }}>תאריך</label>
+            <input className="input-field" type="date" value={form.purchase_date} onChange={e => setForm(f => ({ ...f, purchase_date: e.target.value }))} dir="ltr" />
           </div>
           <div>
             <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.375rem' }}>אפקט</label>
