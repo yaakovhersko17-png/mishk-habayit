@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 215">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#16a34a"/>
+      <stop offset="45%"  stop-color="#facc15"/>
+      <stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+  </defs>
+  <!-- 7 leaflets fanning from base point (100,156) -->
+  <!-- Center leaflet -->
+  <ellipse cx="100" cy="93"  rx="12" ry="63" fill="url(#g)"/>
+  <!-- Inner pair -->
+  <ellipse cx="100" cy="105" rx="10" ry="51" fill="url(#g)" transform="rotate(-30 100 156)"/>
+  <ellipse cx="100" cy="105" rx="10" ry="51" fill="url(#g)" transform="rotate(30 100 156)"/>
+  <!-- Mid pair -->
+  <ellipse cx="100" cy="116" rx="8"  ry="38" fill="url(#g)" transform="rotate(-58 100 156)"/>
+  <ellipse cx="100" cy="116" rx="8"  ry="38" fill="url(#g)" transform="rotate(58 100 156)"/>
+  <!-- Outer pair -->
+  <ellipse cx="100" cy="130" rx="6"  ry="25" fill="url(#g)" transform="rotate(-80 100 156)"/>
+  <ellipse cx="100" cy="130" rx="6"  ry="25" fill="url(#g)" transform="rotate(80 100 156)"/>
+  <!-- Stem -->
+  <rect x="97" y="156" width="6" height="50" rx="3" fill="url(#g)"/>
+</svg>

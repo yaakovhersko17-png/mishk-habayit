@@ -25,6 +25,7 @@ const Goals          = lazy(() => import('./pages/Goals'))
 const RecurringTransactions = lazy(() => import('./pages/RecurringTransactions'))
 const Stores                = lazy(() => import('./pages/Stores'))
 const PrivateScreen         = lazy(() => import('./pages/PrivateScreen'))
+const GrassPage             = lazy(() => import('./pages/GrassPage'))
 
 function Spinner() {
   return (
@@ -73,6 +74,7 @@ export default function App() {
             <Route path="recurring"    element={<RecurringTransactions />} />
             <Route path="stores"       element={<Stores />} />
             <Route path="private"      element={<PrivateScreen />} />
+            <Route path="grass"        element={<GrassPage />} />
             <Route path="admin"        element={<AdminRoute><AdminPanel /></AdminRoute>} />
           </Route>
         </Routes>
