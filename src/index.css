@@ -780,3 +780,4 @@
 .main-content--finance {
   padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
 }
+@keyframes grass-blink { 0%,100%{opacity:1} 50%{opacity:0.3} }

@@ -72,6 +72,7 @@ export default function GrassPage() {
   const [rollSaving, setRollSaving]           = useState(false)
   const [tobaccoModal, setTobaccoModal]       = useState(false)
   const [tobaccoAdd, setTobaccoAdd]           = useState('')
+  const [archiveOpen, setArchiveOpen]         = useState(false)
 
   if (!isYaakov(profile?.name)) return <Navigate to="/" replace />
 
@@ -96,6 +97,10 @@ export default function GrassPage() {
     setConsumptionLogs(logData || [])
     setLoading(false)
   }
+
+  // Active vs archived bags
+  const activeItems   = items.filter(it => (Number(it.current_weight) || 0) > 0)
+  const archivedItems = items.filter(it => (Number(it.current_weight) || 0) <= 0)
 
   // Dashboard calculations
   const totalGrass = items.reduce((s, it) => s + Math.max(0, Number(it.current_weight) || 0), 0)
@@ -294,14 +299,14 @@ export default function GrassPage() {
         </button>
 
         {/* List */}
-        {items.length === 0 ? (
+        {activeItems.length === 0 ? (
           <div className="page-card" style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-dim)', fontSize: '0.875rem' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🌿</div>
-            אין שקיות עדיין
+            {archivedItems.length > 0 ? 'כל השקיות נגמרו — בדוק ארכיון' : 'אין שקיות עדיין'}
           </div>
         ) : (
           <div className="page-card" style={{ padding: 0, overflow: 'hidden' }}>
-            {items.map((it, i) => {
+            {activeItems.map((it, i) => {
               const initW = Number(it.initial_weight) || 10
               const currW = Math.max(0, Number(it.current_weight) || 0)
               const pct = initW > 0 ? (currW / initW) * 100 : 0
@@ -340,6 +345,15 @@ export default function GrassPage() {
               )
             })}
           </div>
+        )}
+        {/* Archive button */}
+        {archivedItems.length > 0 && (
+          <button onClick={() => setArchiveOpen(true)}
+            style={{ padding: '0.75rem', borderRadius: '1rem', background: 'transparent', border: '1px dashed rgba(255,255,255,0.12)', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', transition: 'opacity 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+            📦 ארכיון שקיות ({archivedItems.length})
+          </button>
         )}
       </div>
 
@@ -455,6 +469,35 @@ export default function GrassPage() {
               {rollSaving ? '...' : '✅ אשר גלגול'}
             </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Archive Modal */}
+      <Modal open={archiveOpen} onClose={() => setArchiveOpen(false)} title="📦 ארכיון שקיות">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+          {archivedItems.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>אין שקיות בארכיון</div>
+          ) : archivedItems.map((it, i) => (
+            <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+              {it.image_url ? (
+                <img src={it.image_url} alt={it.name} style={{ width: 44, height: 44, borderRadius: '0.5rem', objectFit: 'cover', flexShrink: 0, opacity: 0.6 }} />
+              ) : (
+                <div style={{ width: 44, height: 44, borderRadius: '0.5rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0, opacity: 0.6 }}>🌿</div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.15rem' }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>{it.name}</span>
+                  <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#f87171', background: 'rgba(248,113,113,0.12)', borderRadius: '0.375rem', padding: '0.05rem 0.35rem' }}>ריק</span>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', alignItems: 'center' }}>
+                  {it.purchase_date && <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>{fmtDate(it.purchase_date)}</span>}
+                  {it.effect > 0 && <span style={{ fontSize: '0.7rem', color: '#facc15' }}>{'★'.repeat(it.effect)}{'☆'.repeat(5 - it.effect)}</span>}
+                  {it.strain_type && <span style={{ fontSize: '0.6rem', fontWeight: 600, color: STRAIN_COLOR[it.strain_type], background: `${STRAIN_COLOR[it.strain_type]}18`, borderRadius: '0.375rem', padding: '0.05rem 0.35rem' }}>{it.strain_type}</span>}
+                  {it.dealer && <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>דרך: {it.dealer}</span>}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </Modal>
 
