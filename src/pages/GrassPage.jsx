@@ -343,18 +343,13 @@ export default function GrassPage() {
 
         {/* Dashboard */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
-          <div onClick={openLog} style={{ padding: '1rem 0.75rem', borderRadius: '1rem', background: grassBg, border: `1px solid ${grassBorder}`, textAlign: 'center', cursor: 'pointer' }}>
+          <div style={{ padding: '1rem 0.75rem', borderRadius: '1rem', background: grassBg, border: `1px solid ${grassBorder}`, textAlign: 'center' }}>
             <div style={{ fontSize: '1.1rem', marginBottom: '0.2rem' }}>🌿</div>
             <div style={{ fontSize: '1.25rem', fontWeight: 700, color: grassColor, lineHeight: 1, animation: criticalStock ? 'grass-blink 1s ease infinite' : 'none' }}>
               <AnimatedNumber value={totalGrass} />
               <span style={{ fontSize: '0.65rem', fontWeight: 400, marginRight: '0.1rem' }}>ג׳</span>
             </div>
-            <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>גראס נותר</div>
-            {avgPerDay > 0 && (
-              <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                ממוצע: {avgPerDay.toFixed(1)}ג׳/יום
-              </div>
-            )}
+            <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>יתרת פרחים במלאי</div>
             {criticalStock && (
               <div style={{ fontSize: '0.6rem', color: '#f87171', fontWeight: 700, marginTop: '0.1rem' }}>
                 חובה להתארגן!
@@ -402,13 +397,22 @@ export default function GrassPage() {
           </div>
         )}
 
-        {/* Roll button */}
-        <button onClick={openRollModal}
-          style={{ padding: '0.875rem', borderRadius: '1rem', background: 'linear-gradient(135deg, rgba(22,163,74,0.2), rgba(108,99,255,0.2))', border: '1px solid rgba(22,163,74,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.625rem', color: '#4ade80', fontWeight: 700, fontSize: '1rem', transition: 'opacity 0.15s' }}
-          onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
-          onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-          🌿 קיסוס
-        </button>
+        {/* קיסוס button — leaf-shaped circle */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+          <button onClick={openRollModal}
+            style={{ width: 110, height: 110, borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%', background: 'radial-gradient(circle at 40% 35%, rgba(74,222,128,0.28), rgba(108,99,255,0.18))', border: '2px solid rgba(74,222,128,0.4)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.2rem', boxShadow: '0 0 28px rgba(74,222,128,0.15)', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 0 40px rgba(74,222,128,0.25)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 0 28px rgba(74,222,128,0.15)' }}>
+            <span style={{ fontSize: '2.2rem', lineHeight: 1 }}>🌿</span>
+            <span style={{ color: '#4ade80', fontWeight: 800, fontSize: '0.875rem', letterSpacing: '0.02em' }}>קיסוס</span>
+          </button>
+          <button onClick={openLog}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.78rem', padding: '0.2rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem', transition: 'color 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#a78bfa'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
+            📋 יומן קיסוסים
+          </button>
+        </div>
 
         {/* List */}
         {activeItems.length === 0 ? (
