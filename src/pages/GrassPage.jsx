@@ -8,8 +8,10 @@ import LoadingSpinner from '../components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
 
 const SIZES = ['גדול', 'בינוני', 'קטן', 'קטן מאוד']
+const STRAINS = ['אינדיקה', 'סטיבה', 'היברידי']
+const STRAIN_COLOR = { 'אינדיקה': '#a78bfa', 'סטיבה': '#4ade80', 'היברידי': '#fbbf24' }
 const today = () => new Date().toISOString().split('T')[0]
-const EMPTY = { name: '', purchase_date: today(), effect: 0, flower_size: '', dealer: '' }
+const EMPTY = { name: '', purchase_date: today(), effect: 0, flower_size: '', strain_type: '', dealer: '' }
 const fmtDate = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 const isYaakov = (name) => name?.includes('יעקב') || name?.toLowerCase().includes('yaakov')
 
@@ -58,7 +60,7 @@ export default function GrassPage() {
   }
   function openEdit(it) {
     setEditing(it)
-    setForm({ name: it.name, purchase_date: it.purchase_date || today(), effect: it.effect || 0, flower_size: it.flower_size || '', dealer: it.dealer || '' })
+    setForm({ name: it.name, purchase_date: it.purchase_date || today(), effect: it.effect || 0, flower_size: it.flower_size || '', strain_type: it.strain_type || '', dealer: it.dealer || '' })
     setImageFile(null); setImagePreview(it.image_url || null); setModal(true)
   }
 
@@ -89,6 +91,7 @@ export default function GrassPage() {
       purchase_date: form.purchase_date || today(),
       effect: form.effect || null,
       flower_size: form.flower_size || null,
+      strain_type: form.strain_type || null,
       dealer: form.dealer.trim() || null,
       image_url,
     }
@@ -160,6 +163,9 @@ export default function GrassPage() {
                     {it.effect > 0 && (
                       <span style={{ fontSize: '0.8rem', color: '#facc15' }}>{'★'.repeat(it.effect)}{'☆'.repeat(5 - it.effect)}</span>
                     )}
+                    {it.strain_type && (
+                      <span style={{ fontSize: '0.68rem', fontWeight: 600, color: STRAIN_COLOR[it.strain_type], background: `${STRAIN_COLOR[it.strain_type]}18`, borderRadius: '0.375rem', padding: '0.1rem 0.45rem' }}>{it.strain_type}</span>
+                    )}
                     {it.flower_size && (
                       <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.06)', borderRadius: '0.375rem', padding: '0.1rem 0.4rem' }}>{it.flower_size}</span>
                     )}
@@ -193,6 +199,17 @@ export default function GrassPage() {
           <div>
             <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.375rem' }}>אפקט</label>
             <Stars value={form.effect} onChange={v => setForm(f => ({ ...f, effect: v }))} />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.375rem' }}>סוג</label>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {STRAINS.map(s => (
+                <button key={s} type="button" onClick={() => setForm(f => ({ ...f, strain_type: f.strain_type === s ? '' : s }))}
+                  style={{ flex: 1, padding: '0.45rem 0.25rem', borderRadius: '0.625rem', fontSize: '0.8rem', cursor: 'pointer', fontWeight: form.strain_type === s ? 700 : 400, border: `1px solid ${form.strain_type === s ? STRAIN_COLOR[s] + '80' : 'rgba(255,255,255,0.1)'}`, background: form.strain_type === s ? STRAIN_COLOR[s] + '20' : 'transparent', color: form.strain_type === s ? STRAIN_COLOR[s] : 'var(--text-muted)', transition: 'all 0.15s' }}>
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
           <div>
             <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.375rem' }}>גודל הפרחים</label>
