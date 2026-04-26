@@ -219,7 +219,7 @@ export default function GrassPage() {
     setRollModal(false); setRollSaving(false)
     toast.success('גלגול נרשם 🌿')
     await load()
-    const newTotal = totalAvail - grassAmt
+    const newTotal = totalGrass - grassAmt
     if (newTotal < LOW_STOCK && newTotal >= 0) {
       toast(`⚠️ נשאר רק ${newTotal.toFixed(1)}ג גראס!`, { duration: 6000 })
     }
