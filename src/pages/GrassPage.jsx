@@ -68,7 +68,7 @@ export default function GrassPage() {
   const [tobaccoBalance, setTobaccoBalance]   = useState(0)
   const [consumptionLogs, setConsumptionLogs] = useState([])
   const [rollModal, setRollModal]             = useState(false)
-  const [rollForm, setRollForm]               = useState({ grass: '3', tobacco: '4' })
+  const [rollForm, setRollForm]               = useState({ grass: '3', tobacco: '4', selectedBag: '' })
   const [rollSaving, setRollSaving]           = useState(false)
   const [tobaccoModal, setTobaccoModal]       = useState(false)
   const [tobaccoAdd, setTobaccoAdd]           = useState('')
@@ -164,30 +164,49 @@ export default function GrassPage() {
     toast.success('נמחק'); load()
   }
 
-  // FIFO roll
+  const sortedByDate = (arr) => [...arr].sort((a, b) => {
+    const da = a.purchase_date ? new Date(a.purchase_date) : new Date(a.created_at)
+    const db = b.purchase_date ? new Date(b.purchase_date) : new Date(b.created_at)
+    return da - db
+  })
+
+  function openRollModal() {
+    const oldest = sortedByDate(items.filter(it => (Number(it.current_weight) || 0) > 0))[0]
+    setRollForm({ grass: '3', tobacco: '4', selectedBag: oldest?.id || '' })
+    setRollModal(true)
+  }
+
+  // Roll with manual bag selection (fallback FIFO if none selected)
   async function handleRoll() {
     const grassAmt = parseFloat(rollForm.grass) || 0
     const tobaccoAmt = parseFloat(rollForm.tobacco) || 0
     if (grassAmt <= 0 && tobaccoAmt <= 0) { toast.error('הכנס כמויות'); return }
 
-    const bags = [...items]
-      .filter(it => (Number(it.current_weight) || 0) > 0)
-      .sort((a, b) => {
-        const da = a.purchase_date ? new Date(a.purchase_date) : new Date(a.created_at)
-        const db = b.purchase_date ? new Date(b.purchase_date) : new Date(b.created_at)
-        return da - db
-      })
-    const totalAvail = bags.reduce((s, b) => s + Number(b.current_weight), 0)
-    if (grassAmt > totalAvail) { toast.error(`אין מספיק! יש ${totalAvail.toFixed(1)}ג`); return }
+    let deductions = []
+    if (rollForm.selectedBag) {
+      const bag = items.find(it => it.id === rollForm.selectedBag)
+      if (!bag) { toast.error('שקית לא נמצאה'); return }
+      const avail = Number(bag.current_weight) || 0
+      if (grassAmt > avail) { toast.error(`אין מספיק! ב${bag.name} יש ${avail.toFixed(1)}ג`); return }
+      deductions = [{ bag, dec: grassAmt }]
+    } else {
+      const bags = sortedByDate(items.filter(it => (Number(it.current_weight) || 0) > 0))
+      const totalAvail = bags.reduce((s, b) => s + Number(b.current_weight), 0)
+      if (grassAmt > totalAvail) { toast.error(`אין מספיק! יש ${totalAvail.toFixed(1)}ג`); return }
+      let rem = grassAmt
+      for (const bag of bags) {
+        if (rem <= 0) break
+        const w = Number(bag.current_weight) || 0
+        const dec = Math.min(w, rem)
+        deductions.push({ bag, dec })
+        rem -= dec
+      }
+    }
 
     setRollSaving(true)
-    let rem = grassAmt
-    for (const bag of bags) {
-      if (rem <= 0) break
+    for (const { bag, dec } of deductions) {
       const w = Number(bag.current_weight) || 0
-      const dec = Math.min(w, rem)
       await supabase.from('grass_items').update({ current_weight: Math.max(0, w - dec) }).eq('id', bag.id)
-      rem -= dec
     }
 
     const newTobacco = Math.max(0, tobaccoBalance - tobaccoAmt)
@@ -277,7 +296,7 @@ export default function GrassPage() {
         </div>
 
         {/* Roll button */}
-        <button onClick={() => { setRollForm({ grass: '3', tobacco: '4' }); setRollModal(true) }}
+        <button onClick={openRollModal}
           style={{ padding: '0.875rem', borderRadius: '1rem', background: 'linear-gradient(135deg, rgba(22,163,74,0.2), rgba(108,99,255,0.2))', border: '1px solid rgba(22,163,74,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.625rem', color: '#4ade80', fontWeight: 700, fontSize: '1rem', transition: 'opacity 0.15s' }}
           onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
           onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
@@ -403,6 +422,17 @@ export default function GrassPage() {
       {/* Roll Modal */}
       <Modal open={rollModal} onClose={() => setRollModal(false)} title="🌿 גלגול">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.375rem' }}>בחר שקית</label>
+            <select className="input-field" value={rollForm.selectedBag}
+              onChange={e => setRollForm(f => ({ ...f, selectedBag: e.target.value }))}>
+              {sortedByDate(items.filter(it => (Number(it.current_weight) || 0) > 0)).map(it => (
+                <option key={it.id} value={it.id}>
+                  {it.name} — {(Number(it.current_weight) || 0).toFixed(1)}ג׳ נותרו
+                </option>
+              ))}
+            </select>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.375rem' }}>גראס 🌿 (ג׳)</label>
@@ -418,7 +448,14 @@ export default function GrassPage() {
             </div>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '0.75rem', padding: '0.75rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-            <span>גראס אחרי: <b style={{ color: '#4ade80' }}>{Math.max(0, totalGrass - (parseFloat(rollForm.grass) || 0)).toFixed(1)}ג</b></span>
+            {(() => {
+              const selBag = rollForm.selectedBag ? items.find(it => it.id === rollForm.selectedBag) : null
+              const grassAfter = selBag
+                ? Math.max(0, (Number(selBag.current_weight) || 0) - (parseFloat(rollForm.grass) || 0))
+                : Math.max(0, totalGrass - (parseFloat(rollForm.grass) || 0))
+              const label = selBag ? `${selBag.name} אחרי` : 'גראס אחרי (סה"כ)'
+              return <span>{label}: <b style={{ color: '#4ade80' }}>{grassAfter.toFixed(1)}ג</b></span>
+            })()}
             <span>טבק אחרי: <b style={{ color: '#a78bfa' }}>{Math.max(0, tobaccoBalance - (parseFloat(rollForm.tobacco) || 0)).toFixed(1)}ג</b></span>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
