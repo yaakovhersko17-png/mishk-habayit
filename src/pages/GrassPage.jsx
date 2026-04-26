@@ -73,6 +73,9 @@ export default function GrassPage() {
   const [tobaccoModal, setTobaccoModal]       = useState(false)
   const [tobaccoAdd, setTobaccoAdd]           = useState('')
   const [archiveOpen, setArchiveOpen]         = useState(false)
+  const [logOpen, setLogOpen]                 = useState(false)
+  const [allLogs, setAllLogs]                 = useState(null)
+  const [logsLoading, setLogsLoading]         = useState(false)
 
   if (!isYaakov(profile?.name)) return <Navigate to="/" replace />
 
@@ -167,6 +170,18 @@ export default function GrassPage() {
     const { error } = await supabase.from('grass_items').delete().eq('id', it.id)
     if (error) { toast.error('שגיאת מחיקה'); return }
     toast.success('נמחק'); load()
+  }
+
+  const fmtDT = (ts) => new Date(ts).toLocaleString('he-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+
+  async function openLog() {
+    setLogOpen(true)
+    if (allLogs !== null) return
+    setLogsLoading(true)
+    const { data } = await supabase.from('consumption_logs')
+      .select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+    setAllLogs(data || [])
+    setLogsLoading(false)
   }
 
   const sortedByDate = (arr) => [...arr].sort((a, b) => {
@@ -272,7 +287,7 @@ export default function GrassPage() {
 
         {/* Dashboard */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
-          <div style={{ padding: '1rem 0.75rem', borderRadius: '1rem', background: grassBg, border: `1px solid ${grassBorder}`, textAlign: 'center' }}>
+          <div onClick={openLog} style={{ padding: '1rem 0.75rem', borderRadius: '1rem', background: grassBg, border: `1px solid ${grassBorder}`, textAlign: 'center', cursor: 'pointer' }}>
             <div style={{ fontSize: '1.1rem', marginBottom: '0.2rem' }}>🌿</div>
             <div style={{ fontSize: '1.25rem', fontWeight: 700, color: grassColor, lineHeight: 1, animation: criticalStock ? 'grass-blink 1s ease infinite' : 'none' }}>
               <AnimatedNumber value={totalGrass} />
@@ -480,6 +495,25 @@ export default function GrassPage() {
               {rollSaving ? '...' : '✅ אשר גלגול'}
             </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Activity Log Modal */}
+      <Modal open={logOpen} onClose={() => setLogOpen(false)} title="📋 יומן גלגולים">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, maxHeight: '60vh', overflowY: 'auto' }}>
+          {logsLoading ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>טוען...</div>
+          ) : !allLogs || allLogs.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>אין גלגולים עדיין</div>
+          ) : allLogs.map((log, i) => (
+            <div key={log.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.7rem 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{fmtDT(log.created_at)}</div>
+              <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.82rem', fontWeight: 600 }}>
+                <span style={{ color: '#4ade80' }}>🌿 {Number(log.grass_amount).toFixed(1)}ג</span>
+                <span style={{ color: '#a78bfa' }}>🚬 {Number(log.tobacco_amount).toFixed(1)}ג</span>
+              </div>
+            </div>
+          ))}
         </div>
       </Modal>
 
