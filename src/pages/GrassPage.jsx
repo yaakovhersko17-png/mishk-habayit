@@ -176,9 +176,9 @@ export default function GrassPage() {
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: '0.125rem', flexShrink: 0 }}>
-                  <button onClick={() => openEdit(it)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.3rem', borderRadius: '0.375rem' }}><Edit2 size={13} /></button>
-                  <button onClick={() => handleDelete(it)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', padding: '0.3rem', borderRadius: '0.375rem' }}><Trash2 size={13} /></button>
+                <div style={{ display: 'flex', gap: '0.375rem', flexShrink: 0 }}>
+                  <button onClick={() => openEdit(it)} style={{ width: 36, height: 36, borderRadius: '0.625rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-sub)' }}><Edit2 size={16} /></button>
+                  <button onClick={() => handleDelete(it)} style={{ width: 36, height: 36, borderRadius: '0.625rem', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f87171' }}><Trash2 size={16} /></button>
                 </div>
               </div>
             ))}
