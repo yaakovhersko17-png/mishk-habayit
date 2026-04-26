@@ -2,17 +2,20 @@ import { useState, useEffect, useRef } from 'react'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Edit2, Trash2, FileText } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const SIZES = ['גדול', 'בינוני', 'קטן', 'קטן מאוד']
 const STRAINS = ['אינדיקה', 'סטיבה', 'היברידי']
 const STRAIN_COLOR = { 'אינדיקה': '#a78bfa', 'סטיבה': '#4ade80', 'היברידי': '#fbbf24' }
 const LOW_STOCK = 5
 const today = () => new Date().toISOString().split('T')[0]
-const EMPTY = { name: '', purchase_date: today(), effect: 0, flower_size: '', strain_type: '', dealer: '', initial_weight: '10' }
+const EMPTY = { name: '', purchase_date: today(), effect: 0, flower_size: '', strain_type: '', dealer: '', initial_weight: '10', price: '' }
 const fmtDate = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 const isYaakov = (name) => name?.includes('יעקב') || name?.toLowerCase().includes('yaakov')
 
@@ -114,6 +117,27 @@ export default function GrassPage() {
   const avgPerDay = uniqueDays > 0 ? totalConsumed / uniqueDays : 0
   const daysLeft = avgPerDay > 0 ? Math.round(totalGrass / avgPerDay) : null
 
+  // Monthly spend (bags added this calendar month)
+  const nowMonth = new Date().toISOString().slice(0, 7)
+  const monthlySpend = items
+    .filter(it => it.purchase_date && it.purchase_date.slice(0, 7) === nowMonth && it.price > 0)
+    .reduce((s, it) => s + Number(it.price), 0)
+
+  // Weekly consumption chart (last 7 days)
+  const weeklyData = (() => {
+    const days = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i)
+      const key = d.toISOString().split('T')[0]
+      const label = d.toLocaleDateString('he-IL', { weekday: 'short' })
+      const grams = consumptionLogs
+        .filter(l => l.created_at.startsWith(key))
+        .reduce((s, l) => s + Number(l.grass_amount), 0)
+      days.push({ label, grams: parseFloat(grams.toFixed(2)) })
+    }
+    return days
+  })()
+
   // Item modal
   function openAdd() {
     setEditing(null); setForm({ ...EMPTY, purchase_date: today() })
@@ -127,6 +151,7 @@ export default function GrassPage() {
       strain_type: it.strain_type || '', dealer: it.dealer || '',
       initial_weight: String(it.initial_weight ?? 10),
       current_weight: String(it.current_weight ?? it.initial_weight ?? 10),
+      price: it.price != null ? String(it.price) : '',
     })
     setImageFile(null); setImagePreview(it.image_url || null); setModal(true)
   }
@@ -158,6 +183,7 @@ export default function GrassPage() {
       effect: form.effect || null, flower_size: form.flower_size || null,
       strain_type: form.strain_type || null, dealer: form.dealer.trim() || null,
       initial_weight: initW, current_weight: currW, image_url,
+      price: form.price !== '' ? Number(form.price) : null,
     }
     const { error } = editing
       ? await supabase.from('grass_items').update(payload).eq('id', editing.id)
@@ -200,6 +226,59 @@ export default function GrassPage() {
       .select('*').eq('user_id', user.id).order('created_at', { ascending: false })
     setAllLogs(data || [])
     setLogsLoading(false)
+  }
+
+  function exportPDF() {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    doc.setFont('helvetica')
+    doc.setFontSize(18)
+    doc.text('Grass Report', 105, 18, { align: 'center' })
+    doc.setFontSize(10)
+    doc.setTextColor(120)
+    doc.text(new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' }), 105, 25, { align: 'center' })
+
+    // Summary
+    doc.setTextColor(0)
+    doc.setFontSize(13)
+    doc.text('Summary', 14, 36)
+    autoTable(doc, {
+      startY: 40,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Total grass remaining (g)', totalGrass.toFixed(1)],
+        ['Avg consumption (g/day)', avgPerDay.toFixed(2)],
+        ['Days remaining', daysLeft ?? '—'],
+        ['Monthly spend (₪)', monthlySpend.toFixed(0)],
+        ['Tobacco balance (g)', tobaccoBalance.toFixed(0)],
+        ['Active bags', activeItems.length],
+        ['Archived bags', archivedItems.length],
+      ],
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [108, 99, 255] },
+    })
+
+    // Bags list
+    doc.setFontSize(13)
+    doc.text('Bag Inventory', 14, doc.lastAutoTable.finalY + 12)
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 16,
+      head: [['Name', 'Date', 'Strain', 'Stars', 'Dealer', 'Start (g)', 'Left (g)', 'Price (₪)']],
+      body: items.map(it => [
+        it.name,
+        it.purchase_date || '',
+        it.strain_type || '',
+        it.effect ? '★'.repeat(it.effect) : '',
+        it.dealer || '',
+        Number(it.initial_weight).toFixed(1),
+        Number(it.current_weight).toFixed(1),
+        it.price != null ? `₪${it.price}` : '',
+      ]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [22, 163, 74] },
+    })
+
+    doc.save(`grass-report-${today()}.pdf`)
+    toast.success('PDF נוצר!')
   }
 
   const sortedByDate = (arr) => [...arr].sort((a, b) => {
@@ -334,6 +413,36 @@ export default function GrassPage() {
           </div>
         </div>
 
+        {/* Monthly spend */}
+        {monthlySpend > 0 && (
+          <div style={{ padding: '0.625rem 0.875rem', borderRadius: '0.875rem', background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>הוצאה חודשית</span>
+            <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fbbf24' }}>₪{monthlySpend.toLocaleString()}</span>
+          </div>
+        )}
+
+        {/* Weekly chart */}
+        {weeklyData.some(d => d.grams > 0) && (
+          <div className="page-card" style={{ padding: '0.875rem' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.625rem', fontWeight: 600 }}>צריכה שבועית (ג׳)</div>
+            <ResponsiveContainer width="100%" height={110}>
+              <BarChart data={weeklyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '0.5rem', fontSize: '0.78rem' }}
+                  formatter={(v) => [`${v}ג׳`, 'גראס']}
+                />
+                <Bar dataKey="grams" radius={[4, 4, 0, 0]}>
+                  {weeklyData.map((d, i) => (
+                    <Cell key={i} fill={d.grams === Math.max(...weeklyData.map(x => x.grams)) && d.grams > 0 ? '#a78bfa' : '#4ade80'} fillOpacity={0.85} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
         {/* Roll button */}
         <button onClick={openRollModal}
           style={{ padding: '0.875rem', borderRadius: '1rem', background: 'linear-gradient(135deg, rgba(22,163,74,0.2), rgba(108,99,255,0.2))', border: '1px solid rgba(22,163,74,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.625rem', color: '#4ade80', fontWeight: 700, fontSize: '1rem', transition: 'opacity 0.15s' }}
@@ -390,6 +499,14 @@ export default function GrassPage() {
             })}
           </div>
         )}
+        {/* Export PDF button */}
+        <button onClick={exportPDF}
+          style={{ padding: '0.75rem', borderRadius: '1rem', background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.25)', cursor: 'pointer', color: '#a78bfa', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', transition: 'opacity 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+          <FileText size={15} /> הפק דוח PDF
+        </button>
+
         {/* Archive button */}
         {archivedItems.length > 0 && (
           <button onClick={() => setArchiveOpen(true)}
@@ -446,9 +563,16 @@ export default function GrassPage() {
               {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
-          <div>
-            <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.375rem' }}>דילר</label>
-            <input className="input-field" placeholder="שם הספק" value={form.dealer} onChange={e => setForm(f => ({ ...f, dealer: e.target.value }))} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.375rem' }}>דילר</label>
+              <input className="input-field" placeholder="שם הספק" value={form.dealer} onChange={e => setForm(f => ({ ...f, dealer: e.target.value }))} />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.375rem' }}>מחיר שקית (₪)</label>
+              <input className="input-field" type="number" step="1" min="0" placeholder="0" dir="ltr"
+                value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+            </div>
           </div>
           <div>
             <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.375rem' }}>תמונה</label>
