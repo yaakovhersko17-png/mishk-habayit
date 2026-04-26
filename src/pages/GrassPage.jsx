@@ -244,11 +244,12 @@ export default function GrassPage() {
 
   if (loading) return <LoadingSpinner />
 
-  const noStock = totalGrass <= 0
-  const lowStock = !noStock && totalGrass < LOW_STOCK
-  const grassColor = noStock ? '#f87171' : lowStock ? '#fbbf24' : '#4ade80'
-  const grassBg = noStock ? 'rgba(248,113,113,0.1)' : lowStock ? 'rgba(251,191,36,0.08)' : 'rgba(22,163,74,0.1)'
-  const grassBorder = noStock ? 'rgba(248,113,113,0.3)' : lowStock ? 'rgba(251,191,36,0.3)' : 'rgba(22,163,74,0.25)'
+  const noStock       = totalGrass <= 0
+  const criticalStock = !noStock && totalGrass < 2
+  const lowStock      = !noStock && !criticalStock && totalGrass < LOW_STOCK
+  const grassColor  = criticalStock || noStock ? '#f87171' : lowStock ? '#fbbf24' : '#4ade80'
+  const grassBg     = criticalStock || noStock ? 'rgba(248,113,113,0.1)' : lowStock ? 'rgba(251,191,36,0.08)' : 'rgba(22,163,74,0.1)'
+  const grassBorder = criticalStock || noStock ? 'rgba(248,113,113,0.3)' : lowStock ? 'rgba(251,191,36,0.3)' : 'rgba(22,163,74,0.25)'
 
   return (
     <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -273,11 +274,21 @@ export default function GrassPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
           <div style={{ padding: '1rem 0.75rem', borderRadius: '1rem', background: grassBg, border: `1px solid ${grassBorder}`, textAlign: 'center' }}>
             <div style={{ fontSize: '1.1rem', marginBottom: '0.2rem' }}>🌿</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: grassColor, lineHeight: 1 }}>
+            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: grassColor, lineHeight: 1, animation: criticalStock ? 'grass-blink 1s ease infinite' : 'none' }}>
               <AnimatedNumber value={totalGrass} />
               <span style={{ fontSize: '0.65rem', fontWeight: 400, marginRight: '0.1rem' }}>ג׳</span>
             </div>
             <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>גראס נותר</div>
+            {avgPerDay > 0 && (
+              <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                ממוצע: {avgPerDay.toFixed(1)}ג׳/יום
+              </div>
+            )}
+            {criticalStock && (
+              <div style={{ fontSize: '0.6rem', color: '#f87171', fontWeight: 700, marginTop: '0.1rem' }}>
+                חובה להתארגן!
+              </div>
+            )}
           </div>
 
           <div onClick={() => setTobaccoModal(true)} style={{ padding: '1rem 0.75rem', borderRadius: '1rem', background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.25)', textAlign: 'center', cursor: 'pointer' }}>
