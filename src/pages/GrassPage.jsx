@@ -265,8 +265,8 @@ export default function GrassPage() {
         </div>
 
         {/* Dashboard */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.625rem' }}>
-          <div style={{ padding: '0.875rem 0.625rem', borderRadius: '1rem', background: grassBg, border: `1px solid ${grassBorder}`, textAlign: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem' }}>
+          <div style={{ padding: '1rem 0.75rem', borderRadius: '1rem', background: grassBg, border: `1px solid ${grassBorder}`, textAlign: 'center' }}>
             <div style={{ fontSize: '1.1rem', marginBottom: '0.2rem' }}>🌿</div>
             <div style={{ fontSize: '1.25rem', fontWeight: 700, color: grassColor, lineHeight: 1 }}>
               <AnimatedNumber value={totalGrass} />
@@ -275,23 +275,13 @@ export default function GrassPage() {
             <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>גראס נותר</div>
           </div>
 
-          <div onClick={() => setTobaccoModal(true)} style={{ padding: '0.875rem 0.625rem', borderRadius: '1rem', background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.25)', textAlign: 'center', cursor: 'pointer' }}>
+          <div onClick={() => setTobaccoModal(true)} style={{ padding: '1rem 0.75rem', borderRadius: '1rem', background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.25)', textAlign: 'center', cursor: 'pointer' }}>
             <div style={{ fontSize: '1.1rem', marginBottom: '0.2rem' }}>🚬</div>
             <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#a78bfa', lineHeight: 1 }}>
               <AnimatedNumber value={tobaccoBalance} decimals={0} />
               <span style={{ fontSize: '0.65rem', fontWeight: 400, marginRight: '0.1rem' }}>ג׳</span>
             </div>
             <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>טבק • הוסף +</div>
-          </div>
-
-          <div style={{ padding: '0.875rem 0.625rem', borderRadius: '1rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.1rem', marginBottom: '0.2rem' }}>⏳</div>
-            <div style={{ fontSize: daysLeft && daysLeft > 99 ? '0.9rem' : '1.25rem', fontWeight: 700, color: 'var(--text)', lineHeight: 1 }}>
-              {noStock ? '😵' : daysLeft ?? '—'}
-            </div>
-            <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-              {noStock ? 'ריק!' : !daysLeft ? 'גלגל לחישוב' : 'ימים נותרו'}
-            </div>
           </div>
         </div>
 
