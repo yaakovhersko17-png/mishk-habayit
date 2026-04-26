@@ -2,13 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Edit2, Trash2, FileText } from 'lucide-react'
+import { Plus, Edit2, Trash2 } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import toast from 'react-hot-toast'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
+
 
 const SIZES = ['גדול', 'בינוני', 'קטן', 'קטן מאוד']
 const STRAINS = ['אינדיקה', 'סטיבה', 'היברידי']
@@ -123,17 +122,30 @@ export default function GrassPage() {
     .filter(it => it.purchase_date && it.purchase_date.slice(0, 7) === nowMonth && it.price > 0)
     .reduce((s, it) => s + Number(it.price), 0)
 
-  // Weekly consumption chart (last 7 days)
+  // Weekly chart — smart distribution: spread each קיסוס evenly until next one
   const weeklyData = (() => {
+    const logsAsc = [...consumptionLogs].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    const dailyMap = {}
+    const msDay = 86400000
+    for (let i = 0; i < logsAsc.length; i++) {
+      const log = logsAsc[i]
+      const startKey = log.created_at.split('T')[0]
+      const startMs = new Date(startKey + 'T00:00:00').getTime()
+      const endMs = i + 1 < logsAsc.length
+        ? new Date(logsAsc[i + 1].created_at.split('T')[0] + 'T00:00:00').getTime()
+        : new Date(new Date().toISOString().split('T')[0] + 'T00:00:00').getTime() + msDay
+      const numDays = Math.max(1, Math.round((endMs - startMs) / msDay))
+      const daily = Number(log.grass_amount) / numDays
+      for (let d = 0; d < numDays; d++) {
+        const key = new Date(startMs + d * msDay).toISOString().split('T')[0]
+        dailyMap[key] = (dailyMap[key] || 0) + daily
+      }
+    }
     const days = []
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i)
-      const key = d.toISOString().split('T')[0]
-      const label = d.toLocaleDateString('he-IL', { weekday: 'short' })
-      const grams = consumptionLogs
-        .filter(l => l.created_at.startsWith(key))
-        .reduce((s, l) => s + Number(l.grass_amount), 0)
-      days.push({ label, grams: parseFloat(grams.toFixed(2)) })
+      const dt = new Date(); dt.setDate(dt.getDate() - i)
+      const key = dt.toISOString().split('T')[0]
+      days.push({ label: dt.toLocaleDateString('he-IL', { weekday: 'short' }), grams: parseFloat((dailyMap[key] || 0).toFixed(2)) })
     }
     return days
   })()
@@ -203,7 +215,7 @@ export default function GrassPage() {
   const fmtDT = (ts) => new Date(ts).toLocaleString('he-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
   async function handleDeleteLog(id) {
-    if (!confirm('למחוק גלגול זה?')) return
+    if (!confirm('למחוק קיסוס זה?')) return
     await supabase.from('consumption_logs').delete().eq('id', id)
     setAllLogs(prev => prev.filter(l => l.id !== id))
     toast.success('נמחק')
@@ -226,59 +238,6 @@ export default function GrassPage() {
       .select('*').eq('user_id', user.id).order('created_at', { ascending: false })
     setAllLogs(data || [])
     setLogsLoading(false)
-  }
-
-  function exportPDF() {
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-    doc.setFont('helvetica')
-    doc.setFontSize(18)
-    doc.text('Grass Report', 105, 18, { align: 'center' })
-    doc.setFontSize(10)
-    doc.setTextColor(120)
-    doc.text(new Date().toLocaleDateString('he-IL', { year: 'numeric', month: 'long', day: 'numeric' }), 105, 25, { align: 'center' })
-
-    // Summary
-    doc.setTextColor(0)
-    doc.setFontSize(13)
-    doc.text('Summary', 14, 36)
-    autoTable(doc, {
-      startY: 40,
-      head: [['Metric', 'Value']],
-      body: [
-        ['Total grass remaining (g)', totalGrass.toFixed(1)],
-        ['Avg consumption (g/day)', avgPerDay.toFixed(2)],
-        ['Days remaining', daysLeft ?? '—'],
-        ['Monthly spend (₪)', monthlySpend.toFixed(0)],
-        ['Tobacco balance (g)', tobaccoBalance.toFixed(0)],
-        ['Active bags', activeItems.length],
-        ['Archived bags', archivedItems.length],
-      ],
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [108, 99, 255] },
-    })
-
-    // Bags list
-    doc.setFontSize(13)
-    doc.text('Bag Inventory', 14, doc.lastAutoTable.finalY + 12)
-    autoTable(doc, {
-      startY: doc.lastAutoTable.finalY + 16,
-      head: [['Name', 'Date', 'Strain', 'Stars', 'Dealer', 'Start (g)', 'Left (g)', 'Price (₪)']],
-      body: items.map(it => [
-        it.name,
-        it.purchase_date || '',
-        it.strain_type || '',
-        it.effect ? '★'.repeat(it.effect) : '',
-        it.dealer || '',
-        Number(it.initial_weight).toFixed(1),
-        Number(it.current_weight).toFixed(1),
-        it.price != null ? `₪${it.price}` : '',
-      ]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [22, 163, 74] },
-    })
-
-    doc.save(`grass-report-${today()}.pdf`)
-    toast.success('PDF נוצר!')
   }
 
   const sortedByDate = (arr) => [...arr].sort((a, b) => {
@@ -334,7 +293,7 @@ export default function GrassPage() {
     await supabase.from('consumption_logs').insert({ user_id: user.id, grass_amount: grassAmt, tobacco_amount: tobaccoAmt })
 
     setRollModal(false); setRollSaving(false)
-    toast.success('גלגול נרשם 🌿')
+    toast.success('קיסוס נרשם 🌿')
     await load()
     const newTotal = totalGrass - grassAmt
     if (newTotal < LOW_STOCK && newTotal >= 0) {
@@ -448,7 +407,7 @@ export default function GrassPage() {
           style={{ padding: '0.875rem', borderRadius: '1rem', background: 'linear-gradient(135deg, rgba(22,163,74,0.2), rgba(108,99,255,0.2))', border: '1px solid rgba(22,163,74,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.625rem', color: '#4ade80', fontWeight: 700, fontSize: '1rem', transition: 'opacity 0.15s' }}
           onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
           onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-          🌿 גלגול
+          🌿 קיסוס
         </button>
 
         {/* List */}
@@ -499,13 +458,6 @@ export default function GrassPage() {
             })}
           </div>
         )}
-        {/* Export PDF button */}
-        <button onClick={exportPDF}
-          style={{ padding: '0.75rem', borderRadius: '1rem', background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.25)', cursor: 'pointer', color: '#a78bfa', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', transition: 'opacity 0.15s' }}
-          onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
-          onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-          <FileText size={15} /> הפק דוח PDF
-        </button>
 
         {/* Archive button */}
         {archivedItems.length > 0 && (
@@ -592,7 +544,7 @@ export default function GrassPage() {
       </Modal>
 
       {/* Roll Modal */}
-      <Modal open={rollModal} onClose={() => setRollModal(false)} title="🌿 גלגול">
+      <Modal open={rollModal} onClose={() => setRollModal(false)} title="🌿 קיסוס">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <label style={{ fontSize: '0.8rem', color: 'var(--text-sub)', display: 'block', marginBottom: '0.375rem' }}>בחר שקית</label>
@@ -634,19 +586,19 @@ export default function GrassPage() {
             <button className="btn-ghost" onClick={() => setRollModal(false)} style={{ flex: 0 }}>ביטול</button>
             <button onClick={handleRoll} disabled={rollSaving}
               style={{ flex: 1, padding: '0.8rem', borderRadius: '0.875rem', background: 'linear-gradient(135deg, #15803d, #4ade80)', border: 'none', cursor: 'pointer', color: '#fff', fontWeight: 700, fontSize: '1rem' }}>
-              {rollSaving ? '...' : '✅ אשר גלגול'}
+              {rollSaving ? '...' : '✅ אשר קיסוס'}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Activity Log Modal */}
-      <Modal open={logOpen} onClose={() => setLogOpen(false)} title="📋 יומן גלגולים">
+      <Modal open={logOpen} onClose={() => setLogOpen(false)} title="📋 יומן קיסוסים">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0, maxHeight: '60vh', overflowY: 'auto' }}>
           {logsLoading ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>טוען...</div>
           ) : !allLogs || allLogs.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>אין גלגולים עדיין</div>
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>אין קיסוסים עדיין</div>
           ) : allLogs.map((log, i) => (
             <div key={log.id} style={{ padding: '0.7rem 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
               {editingLog === log.id ? (
