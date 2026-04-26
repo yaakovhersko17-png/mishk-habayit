@@ -76,6 +76,8 @@ export default function GrassPage() {
   const [logOpen, setLogOpen]                 = useState(false)
   const [allLogs, setAllLogs]                 = useState(null)
   const [logsLoading, setLogsLoading]         = useState(false)
+  const [editingLog, setEditingLog]           = useState(null)
+  const [logEditForm, setLogEditForm]         = useState({ grass: '', tobacco: '' })
 
   if (!isYaakov(profile?.name)) return <Navigate to="/" replace />
 
@@ -173,6 +175,22 @@ export default function GrassPage() {
   }
 
   const fmtDT = (ts) => new Date(ts).toLocaleString('he-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+
+  async function handleDeleteLog(id) {
+    if (!confirm('למחוק גלגול זה?')) return
+    await supabase.from('consumption_logs').delete().eq('id', id)
+    setAllLogs(prev => prev.filter(l => l.id !== id))
+    toast.success('נמחק')
+  }
+
+  async function handleSaveLog() {
+    const g = parseFloat(logEditForm.grass) || 0
+    const t = parseFloat(logEditForm.tobacco) || 0
+    await supabase.from('consumption_logs').update({ grass_amount: g, tobacco_amount: t }).eq('id', editingLog)
+    setAllLogs(prev => prev.map(l => l.id === editingLog ? { ...l, grass_amount: g, tobacco_amount: t } : l))
+    setEditingLog(null)
+    toast.success('עודכן')
+  }
 
   async function openLog() {
     setLogOpen(true)
@@ -506,12 +524,48 @@ export default function GrassPage() {
           ) : !allLogs || allLogs.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>אין גלגולים עדיין</div>
           ) : allLogs.map((log, i) => (
-            <div key={log.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.7rem 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{fmtDT(log.created_at)}</div>
-              <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.82rem', fontWeight: 600 }}>
-                <span style={{ color: '#4ade80' }}>🌿 {Number(log.grass_amount).toFixed(1)}ג</span>
-                <span style={{ color: '#a78bfa' }}>🚬 {Number(log.tobacco_amount).toFixed(1)}ג</span>
-              </div>
+            <div key={log.id} style={{ padding: '0.7rem 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+              {editingLog === log.id ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{fmtDT(log.created_at)}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#4ade80', display: 'block', marginBottom: '0.2rem' }}>🌿 גראס (ג׳)</label>
+                      <input className="input-field" type="number" step="0.1" min="0" dir="ltr"
+                        value={logEditForm.grass} onChange={e => setLogEditForm(f => ({ ...f, grass: e.target.value }))}
+                        style={{ textAlign: 'center', padding: '0.4rem' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#a78bfa', display: 'block', marginBottom: '0.2rem' }}>🚬 טבק (ג׳)</label>
+                      <input className="input-field" type="number" step="0.1" min="0" dir="ltr"
+                        value={logEditForm.tobacco} onChange={e => setLogEditForm(f => ({ ...f, tobacco: e.target.value }))}
+                        style={{ textAlign: 'center', padding: '0.4rem' }} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn-ghost" onClick={() => setEditingLog(null)} style={{ flex: 1, padding: '0.4rem', fontSize: '0.8rem' }}>ביטול</button>
+                    <button className="btn-primary" onClick={handleSaveLog} style={{ flex: 1, padding: '0.4rem', fontSize: '0.8rem' }}>שמור</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', flexShrink: 0 }}>{fmtDT(log.created_at)}</div>
+                  <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.82rem', fontWeight: 600, flex: 1, justifyContent: 'center' }}>
+                    <span style={{ color: '#4ade80' }}>🌿 {Number(log.grass_amount).toFixed(1)}ג</span>
+                    <span style={{ color: '#a78bfa' }}>🚬 {Number(log.tobacco_amount).toFixed(1)}ג</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
+                    <button onClick={() => { setEditingLog(log.id); setLogEditForm({ grass: String(log.grass_amount), tobacco: String(log.tobacco_amount) }) }}
+                      style={{ width: 30, height: 30, borderRadius: '0.5rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                      <Edit2 size={13} />
+                    </button>
+                    <button onClick={() => handleDeleteLog(log.id)}
+                      style={{ width: 30, height: 30, borderRadius: '0.5rem', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f87171' }}>
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
