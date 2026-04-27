@@ -395,23 +395,24 @@
     }
   }
 
-  /* ── Sidebar ─────────────────────────────────── */
+  /* ── Sidebar — desktop glass panel ─────────────────── */
   .sidebar {
     width: 240px;
     flex-shrink: 0;
-    background: var(--sidebar-bg);
-    border-left: 1px solid var(--border-subtle);
+    background: rgba(15,15,26,0.82);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255,255,255,0.07);
     display: flex;
     flex-direction: column;
     height: 100vh;
     position: sticky;
     top: 0;
     overflow-y: auto;
-    transition: transform 0.28s ease;
     z-index: 45;
   }
 
-  /* Hamburger button — hidden on desktop */
+  /* Hamburger — hidden on desktop */
   .hamburger-btn {
     display: none;
     background: none;
@@ -424,11 +425,12 @@
     min-height: 44px;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.12s;
   }
-  .hamburger-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .hamburger-btn:hover  { background: rgba(255,255,255,0.08); color: #fff; }
+  .hamburger-btn:active { transform: scale(0.9); }
 
-  /* Sidebar close button — hidden on desktop */
+  /* Close button — hidden on desktop */
   .sidebar-close-btn {
     display: none;
     background: none;
@@ -441,73 +443,72 @@
     min-height: 36px;
     align-items: center;
     justify-content: center;
+    transition: color 0.15s, background 0.15s, transform 0.12s;
   }
-  .sidebar-close-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
+  .sidebar-close-btn:hover  { color: #fff; background: rgba(255,255,255,0.08); }
+  .sidebar-close-btn:active { transform: scale(0.88); }
 
-  /* ── Mobile ──────────────────────────────────── */
+  /* Haptic press on nav links */
+  .sidebar-link { transition: all 0.2s ease, transform 0.1s; }
+  .sidebar-link:active { transform: scale(0.94); }
+
+  /* Staggered nav item entrance */
+  @keyframes sidebar-item-in {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .sidebar-open .sidebar-link {
+    animation: sidebar-item-in 0.4s cubic-bezier(0.68,-0.55,0.265,1.55) both;
+    animation-delay: var(--nav-delay, 0s);
+  }
+
+  /* ── Mobile ──────────────────────────────────────────── */
   @media (max-width: 768px) {
-    /* Sidebar: fixed drawer from right (RTL) */
+    /* 3D content push when sidebar opens */
+    .content-3d-normal {
+      transform-origin: left center;
+      transition: transform 0.45s cubic-bezier(0.68,-0.55,0.265,1.55);
+    }
+    .content-3d-pushed {
+      transform: perspective(1000px) scale(0.87) rotateY(7deg);
+      transform-origin: left center;
+      transition: transform 0.45s cubic-bezier(0.68,-0.55,0.265,1.55);
+      pointer-events: none;
+    }
+
+    /* Floating glass card sidebar */
     .sidebar {
       position: fixed;
-      top: 0;
-      right: 0;
-      height: 100dvh;
-      width: 280px;
-      transform: translateX(100%);
-      box-shadow: -8px 0 32px rgba(0,0,0,0.5);
+      top: 0.875rem;
+      right: 0.875rem;
+      bottom: 0.875rem;
+      height: auto;
+      width: 272px;
+      border-radius: 1.375rem;
+      background: rgba(15,15,26,0.72);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(255,255,255,0.13);
+      box-shadow: -4px 4px 48px rgba(0,0,0,0.72), inset 0 1px 0 rgba(255,255,255,0.09);
+      transform: translateX(calc(100% + 1rem));
+      transition: transform 0.45s cubic-bezier(0.68,-0.55,0.265,1.55);
+      overflow: hidden;
     }
-    .sidebar.sidebar-open {
-      transform: translateX(0);
-    }
+    .sidebar.sidebar-open { transform: translateX(0); }
 
-    /* Show hamburger on mobile */
-    .hamburger-btn {
-      display: inline-flex;
-    }
+    .hamburger-btn    { display: inline-flex; }
+    .sidebar-close-btn { display: inline-flex; }
+    .mobile-overlay   { display: block !important; }
 
-    /* Show close button inside sidebar on mobile */
-    .sidebar-close-btn {
-      display: inline-flex;
-    }
-
-    /* Show overlay on mobile */
-    .mobile-overlay {
-      display: block !important;
-    }
-
-    /* Collapse 2-col grids to 1-col */
     .form-2col { grid-template-columns: 1fr; }
     .cal-grid  { grid-template-columns: 1fr; }
 
-    /* Touch-friendly tap targets */
-    .sidebar-link {
-      padding: 0.875rem 1rem;
-      font-size: 0.95rem;
-      min-height: 48px;
-    }
-    .btn-primary, .btn-ghost, .btn-danger {
-      min-height: 44px;
-      padding: 0.625rem 1rem;
-      font-size: 0.9rem;
-    }
-    .input-field {
-      min-height: 44px;
-      font-size: 1rem;
-      padding: 0.625rem 1rem;
-    }
-
-    /* Main content: less padding on mobile */
-    .main-content {
-      padding: 1rem !important;
-    }
-
-    /* Page cards: reduce padding */
-    .page-card {
-      padding: 1rem;
-    }
-    .stat-card {
-      padding: 1rem;
-    }
+    .sidebar-link { padding: 0.875rem 1rem; font-size: 0.95rem; min-height: 48px; }
+    .btn-primary, .btn-ghost, .btn-danger { min-height: 44px; padding: 0.625rem 1rem; font-size: 0.9rem; }
+    .input-field  { min-height: 44px; font-size: 1rem; padding: 0.625rem 1rem; }
+    .main-content { padding: 1rem !important; }
+    .page-card    { padding: 1rem; }
+    .stat-card    { padding: 1rem; }
   }
 
 /* ── Finance Carousel ──────────────────────────────── */
