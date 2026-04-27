@@ -19,12 +19,13 @@
  * -- CREATE POLICY "auth_all" ON dinner_meals FOR ALL TO authenticated USING (true) WITH CHECK (true);
  */
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Plus, Star, ChefHat, X, SlidersHorizontal, Edit2, BarChart2, GitMerge, SkipForward } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import toast from 'react-hot-toast'
+import { useRealtime } from '../hooks/useRealtime'
 
 // ─── Helper functions ────────────────────────────────────────────────────────
 
@@ -594,11 +595,15 @@ export default function DinnerMeals() {
   const [eatSuggestion, setEatSuggestion] = useState(null)
   const [eatIdx, setEatIdx] = useState(0)
   const [eatPool, setEatPool] = useState([])
+  const [rouletteRunning, setRouletteRunning] = useState(false)
+  const [rouletteDisplay, setRouletteDisplay] = useState('')
+  const rouletteTimer = useRef(null)
 
   const today = israeliToday()
   const todayIsWeekend = isWeekend(today)
 
   useEffect(() => { load() }, [])
+  useRealtime('dinner_meals', () => load(true))
 
   async function load(silent = false) {
     if (!silent) setLoading(true)
@@ -739,32 +744,42 @@ export default function DinnerMeals() {
     const allReal = meals.filter(m => m.meal_text !== '__skip__')
     if (allReal.length === 0) { toast('אין ארוחות בהיסטוריה — הוסף ארוחות תחילה'); return }
 
-    // Count all-time frequency per meal text (case-insensitive key)
     const counts = {}
     allReal.forEach(m => {
       const k = m.meal_text.trim().toLowerCase()
       counts[k] = (counts[k] || 0) + 1
     })
-
-    // Unique meal texts (preserve original casing of last occurrence)
     const uniqueMap = {}
     allReal.forEach(m => { uniqueMap[m.meal_text.trim().toLowerCase()] = m.meal_text.trim() })
     const unique = Object.values(uniqueMap)
-
-    // Pool = meals with minimum count (least used)
     const minCount = Math.min(...unique.map(t => counts[t.trim().toLowerCase()] || 0))
     const pool = unique.filter(t => (counts[t.trim().toLowerCase()] || 0) === minCount)
-
-    // Pick randomly — avoid repeating current suggestion if more options exist
-    let pick
     const alternatives = pool.filter(t => t !== eatSuggestion)
     const pickFrom = alternatives.length > 0 ? alternatives : pool
-    pick = pickFrom[Math.floor(Math.random() * pickFrom.length)]
+    const finalPick = pickFrom[Math.floor(Math.random() * pickFrom.length)]
 
-    setEatSuggestion(pick)
-    // Reset pool state (no longer needed but keep for compat)
+    if (rouletteTimer.current) clearTimeout(rouletteTimer.current)
+    setRouletteRunning(true)
+    setEatSuggestion(null)
     setEatPool([])
     setEatIdx(0)
+
+    const names = allReal.map(m => m.meal_text).sort(() => Math.random() - 0.5)
+    const delays = [70, 70, 70, 80, 90, 110, 140, 190, 270, 390, 560]
+    let step = 0, nameIdx = 0
+
+    function tick() {
+      if (step >= delays.length) {
+        setRouletteDisplay(finalPick)
+        setRouletteRunning(false)
+        setEatSuggestion(finalPick)
+        return
+      }
+      nameIdx = (nameIdx + 1) % names.length
+      setRouletteDisplay(names[nameIdx])
+      rouletteTimer.current = setTimeout(tick, delays[step++])
+    }
+    rouletteTimer.current = setTimeout(tick, delays[0])
   }
 
   // ── Styles ──────────────────────────────────────────────────────────────────
@@ -840,33 +855,45 @@ export default function DinnerMeals() {
         </button>
       </div>
 
-      {/* What to eat suggestion */}
-      {eatSuggestion && (
+      {/* Roulette / suggestion panel */}
+      {(rouletteRunning || eatSuggestion) && (
         <div style={{
           background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)',
           borderRadius: 12, padding: '0.75rem 1rem', marginBottom: '1rem',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
         }}>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#fbbf24', marginBottom: 2 }}>💡 הצעה מהעבר</div>
-            <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: '0.95rem' }}>{eatSuggestion}</div>
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-            <button onClick={handleWhatToEat}
-              style={{ fontSize: '0.8rem', padding: '5px 10px', borderRadius: 8, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)', color: '#fbbf24', cursor: 'pointer' }}>
-              הצעה אחרת
-            </button>
-            <button onClick={() => setEatSuggestion(null)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex' }}>
-              <X size={16}/>
-            </button>
-          </div>
+          {rouletteRunning ? (
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.72rem', color: '#fbbf24', marginBottom: 4 }}>🎰 בוחר...</div>
+              <div className="roulette-spinning" style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text)', minHeight: 28 }}>
+                {rouletteDisplay || '...'}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.75rem', color: '#fbbf24', marginBottom: 2 }}>💡 הצעה מהעבר</div>
+                <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: '0.95rem' }}>{eatSuggestion}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button onClick={handleWhatToEat}
+                  style={{ fontSize: '0.8rem', padding: '5px 10px', borderRadius: 8, background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.3)', color: '#fbbf24', cursor: 'pointer' }}>
+                  הצעה אחרת
+                </button>
+                <button onClick={() => setEatSuggestion(null)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex' }}>
+                  <X size={16}/>
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
       {/* Today status card */}
       {!todayIsWeekend && (
         <div
+          className={todayMeal ? 'today-glow' : undefined}
           style={{
             background: todayMeal ? 'rgba(34,197,94,0.1)' : todaySkipped ? 'rgba(100,116,139,0.1)' : 'rgba(239,68,68,0.1)',
             border: `1px solid ${todayMeal ? 'rgba(34,197,94,0.3)' : todaySkipped ? 'rgba(100,116,139,0.25)' : 'rgba(239,68,68,0.3)'}`,
@@ -955,7 +982,16 @@ export default function DinnerMeals() {
 
       {/* Meals list */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-muted)' }}>טוען...</div>
+        <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="5"/>
+            <circle cx="32" cy="32" r="26" fill="none" stroke="#6c63ff" strokeWidth="5"
+              strokeDasharray="28 135" strokeLinecap="round"
+              style={{ animation: 'plate-orbit 1s linear infinite', transformOrigin: '32px 32px' }}/>
+            <text x="32" y="37" textAnchor="middle" fontSize="20" style={{ userSelect: 'none' }}>🍽️</text>
+          </svg>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 8 }}>טוען ארוחות...</div>
+        </div>
       ) : filteredMeals.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-muted)' }}>
           <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '0.75rem', opacity: 0.3 }}>🍽️</span>
