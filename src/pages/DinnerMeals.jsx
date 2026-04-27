@@ -95,23 +95,30 @@ function formatDateHebrew(dateStr) {
 // ─── StarRating ───────────────────────────────────────────────────────────────
 
 function StarRating({ value, onChange, size = 18 }) {
+  const [justClicked, setJustClicked] = useState(null)
+
+  function handleClick(n) {
+    if (!onChange) return
+    setJustClicked(n)
+    setTimeout(() => setJustClicked(null), 380)
+    onChange(n === value ? 0 : n)
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
       {[1, 2, 3, 4, 5].map(n => (
         <Star
           key={n}
           size={size}
+          className={justClicked === n ? 'star-pop' : undefined}
           style={{
             cursor: onChange ? 'pointer' : 'default',
             color: n <= value ? '#fbbf24' : 'rgba(255,255,255,0.2)',
             fill: n <= value ? '#fbbf24' : 'transparent',
-            transition: 'color 0.15s, fill 0.15s',
+            transition: 'color 0.2s, fill 0.2s',
+            display: 'inline-block',
           }}
-          onClick={
-            onChange
-              ? () => onChange(n === value ? 0 : n)
-              : undefined
-          }
+          onClick={() => handleClick(n)}
         />
       ))}
     </div>
@@ -597,6 +604,7 @@ export default function DinnerMeals() {
   const [eatPool, setEatPool] = useState([])
   const [rouletteRunning, setRouletteRunning] = useState(false)
   const [rouletteDisplay, setRouletteDisplay] = useState('')
+  const [saveSuccess, setSaveSuccess] = useState(false)
   const rouletteTimer = useRef(null)
 
   const today = israeliToday()
@@ -664,6 +672,8 @@ export default function DinnerMeals() {
       return
     }
     toast.success(editMeal ? 'ארוחה עודכנה' : 'ארוחה נוספה')
+    setSaveSuccess(true)
+    setTimeout(() => setSaveSuccess(false), 1800)
     setShowAdd(false)
     // Optimistic update — card re-renders immediately without spinner
     if (editMeal) {
@@ -793,14 +803,25 @@ export default function DinnerMeals() {
     color: 'var(--text)',
   }
 
-  const cardStyle = {
-    background: '#1e1e3a',
+  function ratingCardBg(rating) {
+    if (!rating) return '#1e1e3a'
+    if (rating <= 2) return 'linear-gradient(135deg, rgba(239,68,68,0.1), #1e1e3a)'
+    if (rating === 3) return 'linear-gradient(135deg, rgba(251,191,36,0.08), #1e1e3a)'
+    return 'linear-gradient(135deg, rgba(34,197,94,0.1), #1e1e3a)'
+  }
+  function ratingCardBorder(rating) {
+    if (!rating) return 'rgba(255,255,255,0.07)'
+    if (rating <= 2) return 'rgba(239,68,68,0.2)'
+    if (rating === 3) return 'rgba(251,191,36,0.2)'
+    return 'rgba(34,197,94,0.22)'
+  }
+
+  const cardBase = {
     borderRadius: 14,
     padding: '1rem 1.1rem',
     marginBottom: '0.6rem',
-    border: '1px solid rgba(255,255,255,0.07)',
     cursor: 'pointer',
-    transition: 'background 0.15s',
+    transition: 'background 0.25s, border-color 0.25s',
     display: 'flex',
     alignItems: 'center',
     gap: 12,
@@ -1001,10 +1022,10 @@ export default function DinnerMeals() {
         filteredMeals.map(meal => (
           <div
             key={meal.id}
-            style={cardStyle}
+            style={{ ...cardBase, background: ratingCardBg(meal.rating), border: `1px solid ${ratingCardBorder(meal.rating)}` }}
             onClick={() => setEditMeal(meal)}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-            onMouseLeave={e => e.currentTarget.style.background = '#1e1e3a'}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = ratingCardBg(meal.rating) }}
           >
             <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>🍽</span>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -1102,6 +1123,29 @@ export default function DinnerMeals() {
             <button className="btn-ghost" onClick={clearFilters}>נקה הכל</button>
             <button className="btn-primary" onClick={() => setShowFilter(false)}>החל</button>
           </div>
+        </div>
+      )}
+
+      {/* Save success overlay */}
+      {saveSuccess && (
+        <div className="check-pop" style={{
+          position: 'fixed',
+          bottom: '7rem',
+          left: '50%',
+          background: 'rgba(34,197,94,0.15)',
+          border: '1px solid rgba(34,197,94,0.4)',
+          borderRadius: 50,
+          padding: '0.65rem 1.75rem',
+          zIndex: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          pointerEvents: 'none',
+        }}>
+          <span style={{ fontSize: '1.3rem' }}>✅</span>
+          <span style={{ color: '#4ade80', fontWeight: 700, fontSize: '0.9rem' }}>נשמר!</span>
         </div>
       )}
 
