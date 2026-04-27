@@ -5,11 +5,23 @@ import Header from './Header'
 import Breadcrumbs from './Breadcrumbs'
 import FinanceTabBar from './FinanceTabBar'
 
+const QUOTES = [
+  'חוסכים יחד, חיים טוב יותר 💜',
+  'כל שקל שנחסך — שקל שמשרת אתכם 🌱',
+  'ביחד בונים עתיד פיננסי חזק ✨',
+  'שקיפות בכסף = שלום בבית 🏠',
+  'צעד קטן של חיסכון היום — חופש גדול מחר 🚀',
+  'שניים שמנהלים יחד — מנצחים יחד 💰',
+  'הכסף הוא כלי, האהבה היא המטרה ❤️',
+  'מודעות פיננסית היא מתנה לזוגיות 🎁',
+]
+
 const FINANCE_PATHS = ['/finance', '/transactions', '/wallets', '/categories', '/goals']
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
+  const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)])
 
   const isFinance = FINANCE_PATHS.includes(location.pathname)
 
@@ -43,8 +55,11 @@ export default function Layout() {
           <div key={location.pathname} className="page-enter">
             <Breadcrumbs />
             <Outlet />
-            <footer style={{ textAlign: 'center', color: '#334155', fontSize: '0.75rem', marginTop: '3rem', paddingBottom: '1rem' }}>
-              ⚡ נבנה ע"י י.הרשקו ⚡
+            <footer style={{ textAlign: 'center', marginTop: '3rem', paddingBottom: '1rem' }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.375rem', fontStyle: 'italic' }}>
+                {quote}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#334155' }}>⚡ נבנה ע"י י.הרשקו ⚡</div>
             </footer>
           </div>
         </main>

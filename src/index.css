@@ -781,3 +781,45 @@
   padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
 }
 @keyframes grass-blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── Splash Screen ──────────────────────────────────────── */
+.hersko-splash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #0f0f1a;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1rem;
+  transition: opacity 0.55s ease;
+}
+.hersko-splash-logo {
+  font-family: 'Pacifico', cursive;
+  font-size: 4rem; font-weight: 400;
+  background: linear-gradient(135deg, #6c63ff, #a78bfa, #c4b5fd);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  animation: hersko-breathe 1.9s ease-in-out infinite;
+}
+@keyframes hersko-breathe {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(108,99,255,0.45)); transform: scale(1); }
+  50%       { filter: drop-shadow(0 0 28px rgba(108,99,255,0.95)) drop-shadow(0 0 55px rgba(167,139,250,0.5)); transform: scale(1.065); }
+}
+.hersko-splash-sub {
+  font-size: 0.8rem; color: rgba(255,255,255,0.25); letter-spacing: 0.15em;
+}
+
+/* ── Staggered reveal ───────────────────────────────────── */
+.stagger-item { opacity: 0; transform: translateY(22px); }
+.stagger-item.revealed { animation: stagger-rise 0.5s ease forwards; }
+.stagger-item.revealed:nth-child(1) { animation-delay: 0s; }
+.stagger-item.revealed:nth-child(2) { animation-delay: 0.11s; }
+.stagger-item.revealed:nth-child(3) { animation-delay: 0.22s; }
+.stagger-item.revealed:nth-child(4) { animation-delay: 0.33s; }
+.stagger-item.revealed:nth-child(5) { animation-delay: 0.44s; }
+@keyframes stagger-rise {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Button glow pulse ──────────────────────────────────── */
+@keyframes btn-glow-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(108,99,255,0.55), 0 0 14px rgba(108,99,255,0.2); }
+  50%       { box-shadow: 0 0 20px rgba(108,99,255,0.95), 0 0 42px rgba(167,139,250,0.55), 0 0 65px rgba(139,92,246,0.2); }
+}
+.btn-glow-active { animation: btn-glow-pulse 1.25s ease-in-out infinite; }
