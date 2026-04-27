@@ -26,6 +26,7 @@ const RecurringTransactions = lazy(() => import('./pages/RecurringTransactions')
 const Stores                = lazy(() => import('./pages/Stores'))
 const PrivateScreen         = lazy(() => import('./pages/PrivateScreen'))
 const GrassPage             = lazy(() => import('./pages/GrassPage'))
+const WidgetPage            = lazy(() => import('./pages/WidgetPage'))
 
 function Spinner() {
   return (
@@ -54,6 +55,7 @@ export default function App() {
       <Suspense fallback={<Spinner />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/widget" element={<WidgetPage />} />
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Dashboard />} />
             <Route path="wallets"      element={<Wallets />} />
