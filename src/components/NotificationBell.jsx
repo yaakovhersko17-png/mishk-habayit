@@ -86,8 +86,11 @@ export default function NotificationBell() {
   const [missingDinners, setMissingDinners] = useState([])
   const [overdueReminders, setOverdueReminders] = useState([])
   const [overdueEvents, setOverdueEvents] = useState([])
+  const [pendingRecurring, setPendingRecurring] = useState([])
   const [skipping, setSkipping]     = useState(null)
   const [completing, setCompleting] = useState(null)
+  const [confirmingRec, setConfirmingRec] = useState(null)
+  const [skippingRec, setSkippingRec]     = useState(null)
   const navigate  = useNavigate()
   const ref       = useRef(null)
   const timersRef   = useRef([])   // reminder setTimeout IDs
@@ -142,7 +145,50 @@ export default function NotificationBell() {
   // ── Load all data ──────────────────────────────────────────────────────────
 
   async function loadAll() {
-    await Promise.all([loadDinners(), loadReminders(), loadEvents()])
+    await Promise.all([loadDinners(), loadReminders(), loadEvents(), loadRecurring()])
+  }
+
+  async function loadRecurring() {
+    const { data } = await supabase.from('recurring_rules')
+      .select('*').eq('pending_approval', true).eq('is_active', true)
+    setPendingRecurring(data || [])
+  }
+
+  async function confirmRecurring(r) {
+    setConfirmingRec(r.id)
+    const today = new Date()
+    const thisMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(r.day_of_month).padStart(2, '0')}`
+    const { error } = await supabase.from('transactions').insert({
+      type: r.type, amount: r.amount, description: r.description,
+      category_id: r.category_id || null, wallet_id: r.wallet_id || null,
+      user_id: r.user_id, date: dateStr,
+    })
+    if (!error) {
+      if (r.wallet_id) {
+        const { data: wRow } = await supabase.from('wallets').select('balance').eq('id', r.wallet_id).single()
+        if (wRow) {
+          const sign = r.type === 'income' ? 1 : -1
+          await supabase.from('wallets').update({ balance: Number(wRow.balance) + sign * Number(r.amount) }).eq('id', r.wallet_id)
+        }
+      }
+      await supabase.from('recurring_rules').update({ last_run_month: thisMonth, pending_approval: false }).eq('id', r.id)
+      toast.success(`✅ "${r.description}" בוצעה!`)
+    } else {
+      toast.error('שגיאה בביצוע')
+    }
+    setConfirmingRec(null)
+    await loadRecurring()
+  }
+
+  async function skipRecurring(r) {
+    setSkippingRec(r.id)
+    const today = new Date()
+    const thisMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+    await supabase.from('recurring_rules').update({ last_run_month: thisMonth, pending_approval: false }).eq('id', r.id)
+    toast(`דלג על "${r.description}" לחודש זה`)
+    setSkippingRec(null)
+    await loadRecurring()
   }
 
   async function loadDinners() {
@@ -248,7 +294,7 @@ export default function NotificationBell() {
 
   // ── Badge count ────────────────────────────────────────────────────────────
 
-  const count = missingDinners.length + overdueReminders.length + overdueEvents.length
+  const count = missingDinners.length + overdueReminders.length + overdueEvents.length + pendingRecurring.length
 
   // Sync count to PWA app icon badge (iOS 16.4+ / Android Chrome)
   useEffect(() => {
@@ -332,6 +378,41 @@ export default function NotificationBell() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+
+                {/* ── Recurring approvals ───────────────────────────── */}
+                {pendingRecurring.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#f97316', padding: '0.25rem 0.25rem 0.375rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                      💳 עסקאות חוזרות ({pendingRecurring.length})
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                      {pendingRecurring.map(r => (
+                        <div key={r.id} style={{ background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.25)', borderRadius: '0.625rem', padding: '0.625rem 0.75rem' }}>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.2rem' }}>
+                            אישור עסקה חוזרת: {r.description}
+                          </div>
+                          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: r.type === 'income' ? '#4ade80' : '#f87171', marginBottom: '0.5rem' }}>
+                            {r.type === 'income' ? '+' : '-'}₪{Number(r.amount).toLocaleString()}
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.375rem' }}>
+                            <button
+                              onClick={() => confirmRecurring(r)}
+                              disabled={confirmingRec === r.id || skippingRec === r.id}
+                              style={{ flex: 1, padding: '0.35rem 0.5rem', borderRadius: '0.375rem', background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', color: '#4ade80', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', opacity: confirmingRec === r.id ? 0.6 : 1 }}>
+                              {confirmingRec === r.id ? '...' : '✅ אשר'}
+                            </button>
+                            <button
+                              onClick={() => skipRecurring(r)}
+                              disabled={confirmingRec === r.id || skippingRec === r.id}
+                              style={{ flex: 1, padding: '0.35rem 0.5rem', borderRadius: '0.375rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', opacity: skippingRec === r.id ? 0.6 : 1 }}>
+                              {skippingRec === r.id ? '...' : '⏭️ דלג'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* ── Reminders section ─────────────────────────────── */}
                 {overdueReminders.length > 0 && (

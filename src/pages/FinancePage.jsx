@@ -124,31 +124,16 @@ export default function FinancePage() {
     const thisMonth = currentMonth()
     const { data: freshRules } = await supabase.from('recurring_rules').select('*').eq('is_active', true)
     if (!freshRules?.length) { if (!silent) toast('אין עסקאות חוזרות לביצוע'); return }
-    const due = freshRules.filter(r => r.last_run_month !== thisMonth && r.day_of_month <= todayDay)
+    const due = freshRules.filter(r => r.last_run_month !== thisMonth && !r.pending_approval && r.day_of_month <= todayDay)
     if (!due.length) { if (!silent) toast('אין עסקאות חוזרות לביצוע'); return }
     if (!silent) setRunning(true)
-    let created = 0
+    let queued = 0
     for (const rule of due) {
-      const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(rule.day_of_month).padStart(2, '0')}`
-      const { error } = await supabase.from('transactions').insert({
-        type: rule.type, amount: rule.amount, description: rule.description,
-        category_id: rule.category_id || null, wallet_id: rule.wallet_id || null,
-        user_id: user.id, date: dateStr,
-      })
-      if (!error) {
-        await supabase.from('recurring_rules').update({ last_run_month: thisMonth }).eq('id', rule.id)
-        created++
-        if (rule.wallet_id) {
-          const { data: wRow } = await supabase.from('wallets').select('balance').eq('id', rule.wallet_id).single()
-          if (wRow) {
-            const sign = rule.type === 'income' ? 1 : -1
-            await supabase.from('wallets').update({ balance: Number(wRow.balance) + sign * Number(rule.amount) }).eq('id', rule.wallet_id)
-          }
-        }
-      }
+      const { error } = await supabase.from('recurring_rules').update({ pending_approval: true }).eq('id', rule.id)
+      if (!error) queued++
     }
-    if (!silent) { setRunning(false); if (created > 0) { toast.success(`${created} עסקאות נוצרו`); load() } }
-    else if (created > 0) { toast.success(`${created} עסקאות חוזרות הופעלו אוטומטית`, { duration: 4000 }); load() }
+    if (!silent) { setRunning(false); if (queued > 0) { toast(`${queued} עסקאות ממתינות לאישורך 🔔`); load() } }
+    else if (queued > 0) { toast(`${queued} עסקאות חוזרות ממתינות לאישורך`, { duration: 5000 }); load() }
   }
 
   function openAddRule() { setEditingRule(null); setRuleForm(EMPTY_RULE); setRuleModal(true) }
@@ -255,7 +240,8 @@ export default function FinancePage() {
                         <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'flex', gap: '0.4rem' }}>
                           <span>יום {r.day_of_month}</span>
                           {wallet && <span>• {wallet.name}</span>}
-                          {r.last_run_month === thisMonth && <span style={{ color: 'var(--c-income)' }}>• ✓</span>}
+                          {r.pending_approval && <span style={{ color: '#f97316', fontWeight: 700 }}>● ממתין</span>}
+                          {!r.pending_approval && r.last_run_month === thisMonth && <span style={{ color: 'var(--c-income)' }}>• ✓</span>}
                         </div>
                       </div>
                       <div style={{ fontWeight: 700, color: r.type === 'income' ? 'var(--c-income)' : 'var(--c-expense)', fontSize: '0.875rem', flexShrink: 0 }}>
