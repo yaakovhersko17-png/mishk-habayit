@@ -36,7 +36,9 @@ export default function Layout() {
           onClick={() => setSidebarOpen(false)}
           style={{
             position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.6)',
+            background: 'rgba(0,0,0,0.45)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
             zIndex: 40,
             display: 'none',
           }}
@@ -46,7 +48,10 @@ export default function Layout() {
 
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}
+        className={sidebarOpen ? 'content-3d-pushed' : 'content-3d-normal'}
+      >
         <Header onMenuClick={() => setSidebarOpen(v => !v)} />
         <main
           style={{ flex: 1, padding: '1.5rem', overflowY: 'auto' }}
