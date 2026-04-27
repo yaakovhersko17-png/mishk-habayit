@@ -647,6 +647,34 @@ export default function DinnerMeals() {
 
   const hasFilters = Boolean(filterText || filterFrom || filterTo)
 
+  const chefWisdom = useMemo(() => {
+    const real = meals
+      .filter(m => m.meal_text !== '__skip__')
+      .sort((a, b) => b.meal_date.localeCompare(a.meal_date))
+    if (real.length < 2) return null
+
+    // Sequence detection: same word in last 2 days
+    const [m0, m1] = real
+    const w0 = m0.meal_text.split(/[\s,،.]+/).filter(w => w.length >= 3)
+    const w1 = m1.meal_text.split(/[\s,،.]+/).filter(w => w.length >= 3)
+    const repeated = w0.find(w => w1.some(x => x.toLowerCase() === w.toLowerCase()))
+    if (repeated) {
+      return { type: 'repeat', msg: `אכלתם "${repeated}" יומיים ברצף — אולי נגוון? 🔄` }
+    }
+
+    // Weekly variety: heavy vs green
+    const heavy = ['שניצל','פרגית','בשר','המבורגר','נקניק','סטייק','קציצות','כבד','פיצה','מטוגן','צ׳יפס','אורז','פסטה']
+    const greens = ['סלט','ירקות','חסה','מלפפון','עגבנייה','ברוקולי','תרד','פלפל','גזר']
+    const last7 = real.slice(0, 7)
+    const heavyCount = last7.filter(m => heavy.some(k => m.meal_text.includes(k))).length
+    const greenCount = last7.filter(m => greens.some(k => m.meal_text.includes(k))).length
+    if (heavyCount >= 3 && greenCount === 0) {
+      return { type: 'variety', msg: 'הרבה ארוחות כבדות השבוע — כדאי להוסיף סלט לארוחה הבאה 🥗' }
+    }
+
+    return null
+  }, [meals])
+
   const todayMeal    = meals.find(m => m.meal_date === today && m.meal_text !== '__skip__')
   const todaySkipped = meals.find(m => m.meal_date === today && m.meal_text === '__skip__')
 
@@ -858,7 +886,7 @@ export default function DinnerMeals() {
       </div>
 
       {/* Action buttons */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: eatSuggestion ? '0.5rem' : '1rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: '0.75rem', flexWrap: 'wrap' }}>
         <button
           className="btn-ghost"
           onClick={handleWhatToEat}
@@ -874,6 +902,45 @@ export default function DinnerMeals() {
           <ChefHat size={16} />
           ארוחות חכמות
         </button>
+      </div>
+
+      {/* Chef wisdom corner */}
+      <div style={{
+        background: 'rgba(255,255,255,0.03)',
+        border: `1px solid ${chefWisdom ? 'rgba(251,191,36,0.25)' : missingDays.length > 0 ? 'rgba(239,68,68,0.2)' : 'rgba(74,222,128,0.18)'}`,
+        borderRadius: 14,
+        padding: '0.7rem 1rem',
+        marginBottom: '0.75rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        transition: 'border-color 0.4s',
+      }}>
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <span style={{ fontSize: '1.9rem', lineHeight: 1, display: 'block', transition: 'filter 0.3s' }}>
+            {missingDays.length === 0 ? '👨‍🍳' : '🤔'}
+          </span>
+          {missingDays.length > 0 && (
+            <span style={{
+              position: 'absolute', top: -6, right: -6,
+              background: '#f87171', color: '#fff',
+              borderRadius: '50%', width: 15, height: 15,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.6rem', fontWeight: 700,
+            }}>?</span>
+          )}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 2 }}>פינת השף</div>
+          <div style={{ fontSize: '0.84rem', color: chefWisdom ? '#fbbf24' : missingDays.length > 0 ? '#fca5a5' : '#86efac', lineHeight: 1.4 }}>
+            {chefWisdom
+              ? chefWisdom.msg
+              : missingDays.length === 0
+                ? 'כל הכבוד! הכל מעודכן ✨'
+                : `${missingDays.length} ${missingDays.length === 1 ? 'יום ממתין' : 'ימים ממתינים'} לעדכון 📝`
+            }
+          </div>
+        </div>
       </div>
 
       {/* Roulette / suggestion panel */}
