@@ -4,6 +4,7 @@ import { supabase, withRetry } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2, Lightbulb, ScanLine, Archive, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
+import SplashScreen from '../components/SplashScreen'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import toast from 'react-hot-toast'
 
@@ -34,6 +35,9 @@ export default function Dashboard() {
   const [wallets, setWallets]           = useState([])
   const [monthlyData, setMonthlyData]   = useState({ income: 0, expense: 0, loans: [] })
   const [showAddTx, setShowAddTx]       = useState(false)
+  const [splashFading, setSplashFading] = useState(false)
+  const [revealed, setRevealed]         = useState(false)
+  const [glowActive, setGlowActive]     = useState(true)
 
   // Calendar widget state
   const today = new Date()
@@ -44,6 +48,10 @@ export default function Dashboard() {
 
   useEffect(() => { loadData() }, [])
   useEffect(() => { loadCalendar(calView, calDate) }, [calView, calDate]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const t = setTimeout(() => setGlowActive(false), 5000)
+    return () => clearTimeout(t)
+  }, [])
 
   async function loadData() {
     setLoading(true)
@@ -62,6 +70,8 @@ export default function Dashboard() {
     const loans   = (txData || []).filter(t => t.type.startsWith('loan') || t.type === 'debt_unpaid')
     setMonthlyData({ income, expense, loans })
     setLoading(false)
+    setSplashFading(true)
+    setTimeout(() => setRevealed(true), 550)
   }
 
   async function loadCalendar(view, date) {
@@ -142,9 +152,11 @@ export default function Dashboard() {
   for(let d=1;d<=daysInMonth;d++) monthCells.push(d)
 
   return (
-    <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
+    <>
+      <SplashScreen fading={splashFading} />
+      <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       {/* Greeting */}
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+      <div className={`stagger-item${revealed?' revealed':''}`} style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div>
           <h1 className="hersko-shine" style={{margin:0,fontSize:'3.5rem',fontWeight:400,fontFamily:'"Pacifico", cursive',lineHeight:1.1}}>
             Hersko
@@ -154,12 +166,12 @@ export default function Dashboard() {
           </p>
         </div>
         <div>
-          <button className="btn-primary" onClick={() => setShowAddTx(true)}><Plus size={15}/>הוסף עסקה</button>
+          <button className={`btn-primary${glowActive?' btn-glow-active':''}`} onClick={() => setShowAddTx(true)}><Plus size={15}/>הוסף עסקה</button>
         </div>
       </div>
 
       {/* ── Calendar widget ───────────────────────────────── */}
-      <div className="page-card slide-in-top" style={{padding:0,overflow:'hidden'}}>
+      <div className={`page-card stagger-item${revealed?' revealed':''}`} style={{padding:0,overflow:'hidden'}}>
         {/* Widget header */}
         <div style={{padding:'0.875rem 1rem',display:'flex',flexDirection:'column',gap:'0.625rem',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
           {/* Nav row */}
@@ -277,7 +289,7 @@ export default function Dashboard() {
       </div>
 
       {/* Finance button */}
-      <div className="tracking-in-expand-fwd-bottom" style={{display:'flex',justifyContent:'center',animationDelay:'0.1s'}}>
+      <div className={`stagger-item${revealed?' revealed':''}`} style={{display:'flex',justifyContent:'center'}}>
         <button className="finance-btn" onClick={() => navigate('/finance')}>
           <strong className="finance-btn__label">סקירה פיננסית</strong>
           <div className="finance-btn__stars-container">
@@ -292,7 +304,7 @@ export default function Dashboard() {
 
 
       {/* Quick links */}
-      <div className="page-card tracking-in-expand-fwd-bottom" style={{padding:0,overflow:'hidden',animationDelay:'0.25s'}}>
+      <div className={`page-card stagger-item${revealed?' revealed':''}`} style={{padding:0,overflow:'hidden'}}>
         <div style={{padding:'0.875rem 1rem',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
           <span style={{fontSize:'0.8rem',fontWeight:600,color:'var(--text-muted)'}}>כלים</span>
         </div>
@@ -319,5 +331,6 @@ export default function Dashboard() {
         onSaved={() => { loadData(); loadCalendar(calView, calDate) }}
       />
     </div>
+    </>
   )
 }

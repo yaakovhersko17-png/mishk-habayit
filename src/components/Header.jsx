@@ -5,8 +5,10 @@ export default function Header({ onMenuClick }) {
   return (
     <header style={{
       padding: '0.875rem 1.5rem',
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
-      background: 'rgba(15,15,26,0.97)',
+      borderBottom: '1px solid rgba(255,255,255,0.07)',
+      background: 'rgba(15,15,26,0.6)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
