@@ -1,10 +1,35 @@
 {
-  "name": "HERSKO APP",
-  "short_name": "HERSKO",
+  "name": "מִשְׁק הַבַּיִת",
+  "short_name": "מִשְׁק",
+  "description": "ניהול בית משותף – פיננסים, ארוחות, לוח שנה",
   "start_url": "/mishk-habayit/",
   "scope": "/mishk-habayit/",
   "display": "standalone",
-  "background_color": "#0f1117",
+  "orientation": "portrait",
+  "background_color": "#0f0f1a",
   "theme_color": "#6c63ff",
-  "icons": []
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/mishk-habayit/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "הוסף הוצאה",
+      "short_name": "הוצאה",
+      "url": "/mishk-habayit/transactions?quick=expense",
+      "icons": [{ "src": "/mishk-habayit/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "לוח שנה",
+      "short_name": "לוח שנה",
+      "url": "/mishk-habayit/calendar",
+      "icons": [{ "src": "/mishk-habayit/favicon.svg", "sizes": "any" }]
+    }
+  ]
 }
