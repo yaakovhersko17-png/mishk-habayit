@@ -852,3 +852,69 @@
 .roulette-spinning { animation: roulette-flash 0.13s ease-in-out infinite; }
 .check-pop { animation: check-pop 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards; }
 .today-glow { animation: today-glow-pulse 2.2s ease-in-out infinite; }
+
+/* ── Transaction Success Overlay ─────────────────────────── */
+@keyframes tx-overlay-fade {
+  0%   { opacity: 0; }
+  12%  { opacity: 1; }
+  78%  { opacity: 1; }
+  100% { opacity: 0; pointer-events: none; }
+}
+@keyframes tx-circle-pop {
+  0%   { transform: scale(0); opacity: 0; }
+  55%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+@keyframes tx-ring-pulse {
+  0%   { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes tx-check-draw {
+  from { stroke-dashoffset: 52; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes tx-particle {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--px),var(--py)) scale(0); opacity: 0; }
+}
+@keyframes tx-label-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tx-success-overlay {
+  position: fixed; inset: 0; z-index: 9998;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  animation: tx-overlay-fade 2.6s ease forwards;
+  pointer-events: all;
+}
+.tx-success-circle {
+  width: 108px; height: 108px; border-radius: 50%;
+  background: rgba(34,197,94,0.12);
+  border: 2px solid rgba(74,222,128,0.35);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  animation: tx-circle-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+.tx-success-ring {
+  position: absolute; inset: -14px; border-radius: 50%;
+  border: 2px solid rgba(74,222,128,0.5);
+  animation: tx-ring-pulse 0.9s ease-out forwards;
+}
+.tx-success-ring:nth-child(2) { animation-delay: 0.22s; opacity: 0; }
+.tx-success-ring:nth-child(3) { animation-delay: 0.44s; opacity: 0; }
+.tx-particle {
+  position: absolute; width: 7px; height: 7px; border-radius: 50%;
+  background: #4ade80;
+  animation: tx-particle 0.75s 0.18s ease-out forwards;
+  opacity: 0;
+}
+.tx-success-label {
+  margin-top: 1.5rem;
+  font-size: 1.15rem; font-weight: 700;
+  color: #4ade80; text-align: center;
+  animation: tx-label-up 0.4s 0.38s ease both;
+}
