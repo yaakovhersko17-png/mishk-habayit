@@ -1,4 +1,4 @@
-// Service Worker – HERSKO App
+// Service Worker – HERSKO App v2
 // Handles push notifications and notification click events
 
 self.addEventListener('install', () => self.skipWaiting())
