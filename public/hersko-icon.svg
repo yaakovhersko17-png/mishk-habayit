@@ -1,0 +1,245 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Squircle clip (iOS/Android style) -->
+    <clipPath id="sq">
+      <rect width="1024" height="1024" rx="232" ry="232"/>
+    </clipPath>
+
+    <!-- Background gradient -->
+    <radialGradient id="bgG" cx="50%" cy="38%" r="65%">
+      <stop offset="0%"   stop-color="#1c083a"/>
+      <stop offset="55%"  stop-color="#0e031e"/>
+      <stop offset="100%" stop-color="#020108"/>
+    </radialGradient>
+
+    <!-- Text gradient: top-light to bottom-shadow -->
+    <linearGradient id="txtG" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#e4b8ff"/>
+      <stop offset="28%"  stop-color="#c084fc"/>
+      <stop offset="65%"  stop-color="#9333ea"/>
+      <stop offset="100%" stop-color="#5b21b6"/>
+    </linearGradient>
+
+    <!-- Heart neon gradient -->
+    <linearGradient id="heartG" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#d8b4fe"/>
+      <stop offset="50%"  stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+
+    <!-- Neon glow — heart -->
+    <filter id="heartGlow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5"  result="g1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="g2"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="30" result="g3"/>
+      <feMerge>
+        <feMergeNode in="g3"/>
+        <feMergeNode in="g2"/>
+        <feMergeNode in="g1"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Puffy cloud text filter -->
+    <filter id="puffy" x="-8%" y="-25%" width="116%" height="150%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.038 0.028"
+                    numOctaves="5" seed="9" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise"
+                         scale="9" xChannelSelector="R" yChannelSelector="G"
+                         result="disp"/>
+      <feGaussianBlur in="disp" stdDeviation="1.2" result="soft"/>
+      <feMerge>
+        <feMergeNode in="soft"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Text outer glow -->
+    <filter id="txtGlow" x="-20%" y="-30%" width="140%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="18" result="g1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8"  result="g2"/>
+      <feMerge>
+        <feMergeNode in="g1"/>
+        <feMergeNode in="g2"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Soft cloud blob filter -->
+    <filter id="cloudF" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="36"/>
+    </filter>
+
+    <!-- Tight cloud blob -->
+    <filter id="cloudT" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+
+    <!-- Sparkle glow -->
+    <filter id="spkF" x="-150%" y="-150%" width="400%" height="400%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g clip-path="url(#sq)">
+    <!-- ─── Background ─────────────────────────────────── -->
+    <rect width="1024" height="1024" fill="url(#bgG)"/>
+
+    <!-- ─── Atmospheric haze (far) ───────────────────── -->
+    <ellipse cx="512" cy="960" rx="520" ry="310" fill="#3b0764" filter="url(#cloudF)" opacity="0.65"/>
+    <ellipse cx="180" cy="820" rx="310" ry="210" fill="#4c1d95" filter="url(#cloudF)" opacity="0.45"/>
+    <ellipse cx="840" cy="840" rx="330" ry="210" fill="#3b0764" filter="url(#cloudF)" opacity="0.45"/>
+    <ellipse cx="80"  cy="560" rx="210" ry="160" fill="#2e1065" filter="url(#cloudF)" opacity="0.38"/>
+    <ellipse cx="944" cy="590" rx="210" ry="160" fill="#2e1065" filter="url(#cloudF)" opacity="0.38"/>
+    <ellipse cx="512" cy="200" rx="300" ry="120" fill="#1e0838" filter="url(#cloudF)" opacity="0.4"/>
+
+    <!-- ─── Cloud volumes bottom (near) ──────────────── -->
+    <ellipse cx="512" cy="1010" rx="430" ry="170" fill="#2e1065" filter="url(#cloudT)" opacity="0.9"/>
+    <ellipse cx="270" cy="970"  rx="240" ry="145" fill="#3b0764" filter="url(#cloudT)" opacity="0.75"/>
+    <ellipse cx="754" cy="980"  rx="260" ry="140" fill="#2e1065" filter="url(#cloudT)" opacity="0.75"/>
+    <ellipse cx="512" cy="910"  rx="360" ry="105" fill="#4c1d95" filter="url(#cloudT)" opacity="0.55"/>
+    <!-- Side cloud wisps -->
+    <ellipse cx="60"  cy="700"  rx="140" ry="110" fill="#3b0764" filter="url(#cloudT)" opacity="0.5"/>
+    <ellipse cx="964" cy="720"  rx="140" ry="110" fill="#2e1065" filter="url(#cloudT)" opacity="0.5"/>
+
+    <!-- ─── Neon Heart ────────────────────────────────── -->
+    <!-- Heart path: tip at (512,748), bumps at ~y=165 -->
+    <!-- Glow spread -->
+    <path d="M512,748
+             C512,748 148,548 148,348
+             C148,226 236,162 336,162
+             C406,162 470,196 512,248
+             C554,196 618,162 688,162
+             C788,162 876,226 876,348
+             C876,548 512,748 512,748Z"
+          fill="none" stroke="#7c3aed" stroke-width="4"
+          filter="url(#heartGlow)" opacity="0.55"/>
+    <!-- Core neon line -->
+    <path d="M512,748
+             C512,748 148,548 148,348
+             C148,226 236,162 336,162
+             C406,162 470,196 512,248
+             C554,196 618,162 688,162
+             C788,162 876,226 876,348
+             C876,548 512,748 512,748Z"
+          fill="none" stroke="url(#heartG)" stroke-width="2.2" opacity="0.92"/>
+    <!-- Inner bright line -->
+    <path d="M512,748
+             C512,748 148,548 148,348
+             C148,226 236,162 336,162
+             C406,162 470,196 512,248
+             C554,196 618,162 688,162
+             C788,162 876,226 876,348
+             C876,548 512,748 512,748Z"
+          fill="none" stroke="#f3e8ff" stroke-width="0.8" opacity="0.55"/>
+
+    <!-- ─── HERSKO — cloud-puffy text ─────────────────── -->
+    <!-- Layer 1: deep shadow -->
+    <text x="512" y="582"
+          font-family="'Arial Black','Helvetica Neue',Impact,sans-serif"
+          font-size="174" font-weight="900" text-anchor="middle"
+          fill="#3b0764" opacity="0.9">
+      <tspan dy="6">HERSKO</tspan>
+    </text>
+
+    <!-- Layer 2: main glow halo -->
+    <text x="512" y="576"
+          font-family="'Arial Black','Helvetica Neue',Impact,sans-serif"
+          font-size="174" font-weight="900" text-anchor="middle"
+          fill="#7c3aed" filter="url(#txtGlow)" opacity="0.7">HERSKO</text>
+
+    <!-- Layer 3: main body fill -->
+    <text x="512" y="576"
+          font-family="'Arial Black','Helvetica Neue',Impact,sans-serif"
+          font-size="174" font-weight="900" text-anchor="middle"
+          fill="url(#txtG)">HERSKO</text>
+
+    <!-- Layer 4: cloud/puffy distortion -->
+    <text x="512" y="576"
+          font-family="'Arial Black','Helvetica Neue',Impact,sans-serif"
+          font-size="174" font-weight="900" text-anchor="middle"
+          fill="#b87fff" filter="url(#puffy)" opacity="0.55">HERSKO</text>
+
+    <!-- Layer 5: top highlight sheen -->
+    <text x="512" y="572"
+          font-family="'Arial Black','Helvetica Neue',Impact,sans-serif"
+          font-size="174" font-weight="900" text-anchor="middle"
+          fill="#f3e8ff" opacity="0.22">HERSKO</text>
+
+    <!-- ─── Sparkle stars ─────────────────────────────── -->
+    <!-- Top-center of heart (large) -->
+    <g transform="translate(512,160)" filter="url(#spkF)">
+      <line x1="0" y1="-22" x2="0" y2="22" stroke="white" stroke-width="2.8"/>
+      <line x1="-22" y1="0" x2="22" y2="0" stroke="white" stroke-width="2.8"/>
+      <line x1="-14" y1="-14" x2="14" y2="14" stroke="white" stroke-width="1.3" opacity="0.65"/>
+      <line x1="14" y1="-14" x2="-14" y2="14" stroke="white" stroke-width="1.3" opacity="0.65"/>
+      <circle r="3" fill="white"/>
+    </g>
+
+    <!-- Top-right (largest) -->
+    <g transform="translate(846,182)" filter="url(#spkF)">
+      <line x1="0" y1="-28" x2="0" y2="28" stroke="white" stroke-width="3.2"/>
+      <line x1="-28" y1="0" x2="28" y2="0" stroke="white" stroke-width="3.2"/>
+      <line x1="-17" y1="-17" x2="17" y2="17" stroke="white" stroke-width="1.5" opacity="0.6"/>
+      <line x1="17" y1="-17" x2="-17" y2="17" stroke="white" stroke-width="1.5" opacity="0.6"/>
+      <circle r="4" fill="white"/>
+    </g>
+
+    <!-- Top-left -->
+    <g transform="translate(186,240)" filter="url(#spkF)">
+      <line x1="0" y1="-18" x2="0" y2="18" stroke="white" stroke-width="2.2"/>
+      <line x1="-18" y1="0" x2="18" y2="0" stroke="white" stroke-width="2.2"/>
+      <line x1="-11" y1="-11" x2="11" y2="11" stroke="white" stroke-width="1.1" opacity="0.6"/>
+      <line x1="11" y1="-11" x2="-11" y2="11" stroke="white" stroke-width="1.1" opacity="0.6"/>
+      <circle r="2.5" fill="white"/>
+    </g>
+
+    <!-- Mid-right -->
+    <g transform="translate(900,500)" filter="url(#spkF)">
+      <line x1="0" y1="-16" x2="0" y2="16" stroke="white" stroke-width="2"/>
+      <line x1="-16" y1="0" x2="16" y2="0" stroke="white" stroke-width="2"/>
+      <line x1="-10" y1="-10" x2="10" y2="10" stroke="white" stroke-width="1" opacity="0.6"/>
+      <line x1="10" y1="-10" x2="-10" y2="10" stroke="white" stroke-width="1" opacity="0.6"/>
+    </g>
+
+    <!-- Bottom-right -->
+    <g transform="translate(840,680)" filter="url(#spkF)">
+      <line x1="0" y1="-14" x2="0" y2="14" stroke="#e9d5ff" stroke-width="1.8"/>
+      <line x1="-14" y1="0" x2="14" y2="0" stroke="#e9d5ff" stroke-width="1.8"/>
+      <line x1="-9" y1="-9" x2="9" y2="9" stroke="#e9d5ff" stroke-width="0.9" opacity="0.6"/>
+      <line x1="9" y1="-9" x2="-9" y2="9" stroke="#e9d5ff" stroke-width="0.9" opacity="0.6"/>
+    </g>
+
+    <!-- Bottom-left -->
+    <g transform="translate(210,710)" filter="url(#spkF)">
+      <line x1="0" y1="-13" x2="0" y2="13" stroke="#d8b4fe" stroke-width="1.8"/>
+      <line x1="-13" y1="0" x2="13" y2="0" stroke="#d8b4fe" stroke-width="1.8"/>
+      <line x1="-8" y1="-8" x2="8" y2="8" stroke="#d8b4fe" stroke-width="0.9" opacity="0.55"/>
+      <line x1="8" y1="-8" x2="-8" y2="8" stroke="#d8b4fe" stroke-width="0.9" opacity="0.55"/>
+    </g>
+
+    <!-- Mid-left -->
+    <g transform="translate(148,440)" filter="url(#spkF)">
+      <line x1="0" y1="-15" x2="0" y2="15" stroke="white" stroke-width="2"/>
+      <line x1="-15" y1="0" x2="15" y2="0" stroke="white" stroke-width="2"/>
+      <line x1="-9" y1="-9" x2="9" y2="9" stroke="white" stroke-width="1" opacity="0.6"/>
+      <line x1="9" y1="-9" x2="-9" y2="9" stroke="white" stroke-width="1" opacity="0.6"/>
+    </g>
+
+    <!-- Dot sparkles scattered -->
+    <circle cx="668" cy="282" r="4"   fill="white"   opacity="0.85" filter="url(#spkF)"/>
+    <circle cx="358" cy="270" r="3.5" fill="#e9d5ff" opacity="0.78"/>
+    <circle cx="440" cy="175" r="3"   fill="#c084fc" opacity="0.82"/>
+    <circle cx="590" cy="168" r="3"   fill="#c084fc" opacity="0.75"/>
+    <circle cx="760" cy="748" r="3.5" fill="white"   opacity="0.55"/>
+    <circle cx="262" cy="728" r="3"   fill="#e9d5ff" opacity="0.6"/>
+    <circle cx="930" cy="618" r="2.5" fill="white"   opacity="0.5"/>
+    <circle cx="94"  cy="628" r="2.5" fill="#e9d5ff" opacity="0.5"/>
+    <circle cx="722" cy="178" r="2.5" fill="#f3e8ff" opacity="0.7"/>
+    <circle cx="310" cy="188" r="2"   fill="#e9d5ff" opacity="0.65"/>
+  </g>
+</svg>
