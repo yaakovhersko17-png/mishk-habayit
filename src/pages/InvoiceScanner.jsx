@@ -130,7 +130,7 @@ export default function InvoiceScanner() {
       setScanProgress(100)
       if (parsed.total === 0) toast('לא זוהה סכום — בדוק ידנית', { icon: '⚠️' })
     } catch (err) {
-      console.error('Gemini scan failed:', err)
+      void err
       toast.error('שגיאה בניתוח: ' + (err.message || 'נסה שוב'))
       setStep('not_invoice')
     }

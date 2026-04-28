@@ -135,7 +135,7 @@ export default function Reports() {
       await logActivity({ userId:user.id, userName:profile.name, actionType:ACTION_TYPES.EXPORT, entityType:ENTITY_TYPES.REPORT, description:`ייצא/ה דוח PDF: ${dateFrom} – ${dateTo}` })
       toast.success('PDF יוצא!')
     } catch (err) {
-      console.error(err)
+      void err
       toast.error('שגיאה בייצוא PDF')
     }
   }
@@ -155,7 +155,7 @@ export default function Reports() {
       await logActivity({ userId:user.id, userName:profile.name, actionType:ACTION_TYPES.EXPORT, entityType:ENTITY_TYPES.REPORT, description:`ייצא/ה דוח Excel: ${dateFrom} – ${dateTo}` })
       toast.success('Excel יוצא!')
     } catch (err) {
-      console.error(err)
+      void err
       toast.error('שגיאה בייצוא Excel')
     }
   }

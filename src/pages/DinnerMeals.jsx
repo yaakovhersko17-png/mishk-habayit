@@ -620,7 +620,7 @@ export default function DinnerMeals() {
       .select('*')
       .order('meal_date', { ascending: false })
     if (error) {
-      console.error('DinnerMeals load error:', error)
+      void error
       if (!silent) toast.error('שגיאה בטעינת ארוחות')
     }
     setMeals(data || [])
@@ -694,7 +694,7 @@ export default function DinnerMeals() {
       if (error.code === '23505') {
         toast.error('כבר קיימת ארוחה לתאריך זה')
       } else {
-        console.error('saveMeal error:', error)
+        void error
         toast.error('שגיאה בשמירה')
       }
       return

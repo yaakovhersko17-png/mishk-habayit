@@ -12,7 +12,7 @@ export async function logActivity({ userId, userName, actionType, entityType, de
       metadata,
     })
   } catch (err) {
-    console.error('Activity log error:', err)
+    // silently ignore — activity log is non-critical
   }
 }
 

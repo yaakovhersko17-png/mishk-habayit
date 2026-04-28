@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
 
   async function fetchProfile(userId) {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
-    if (error) { console.error('Profile fetch failed:', error); setLoading(false); return }
+    if (error) { setLoading(false); return }
     setProfile(data)
     // mark online
     await supabase.from('profiles').update({ is_online: true, last_seen: new Date().toISOString() }).eq('id', userId)
