@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import { SuccessProvider } from './context/SuccessContext.jsx'
 import { Toaster } from 'react-hot-toast'
 
 class ErrorBoundary extends Component {
@@ -51,6 +52,7 @@ createRoot(document.getElementById('root')).render(
   <ErrorBoundary>
     <ThemeProvider>
     <AuthProvider>
+      <SuccessProvider>
       <App />
       <Toaster
         position="bottom-left"
@@ -67,6 +69,7 @@ createRoot(document.getElementById('root')).render(
           error:   { iconTheme: { primary: '#f87171', secondary: '#1e1e3a' } },
         }}
       />
+      </SuccessProvider>
     </AuthProvider>
     </ThemeProvider>
   </ErrorBoundary>

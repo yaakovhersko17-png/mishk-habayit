@@ -6,6 +6,8 @@ import { Plus, Bell, Check, Trash2, Clock, ShoppingCart, Edit2, ChevronDown,
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
+import { useRealtime } from '../hooks/useRealtime'
+import { useSuccess } from '../context/SuccessContext'
 import toast from 'react-hot-toast'
 
 const DAYS_HE = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת']
@@ -40,6 +42,7 @@ function computeNextDate(s) {
 
 export default function Reminders() {
   const { user, profile } = useAuth()
+  const showSuccess = useSuccess()
   const [reminders, setReminders] = useState([])
   const [profiles, setProfiles]   = useState([])
   const [loading, setLoading]     = useState(true)
@@ -51,6 +54,8 @@ export default function Reminders() {
   const [selectedFilter, setSelectedFilter] = useState(null)
   const [schedOpen, setSchedOpen] = useState(false)
   const [sched, setSched]         = useState(emptySched)
+
+  useRealtime('reminders', load)
 
   useEffect(() => {
     load()
@@ -108,6 +113,7 @@ export default function Reminders() {
       await supabase.from('reminders').insert(payload)
       await logActivity({ userId:user.id, userName:profile.name, actionType:ACTION_TYPES.CREATE, entityType:ENTITY_TYPES.REMINDER, description:`הוסיף/ה תזכורת: ${form.title}` })
       toast.success('תזכורת נוספה!')
+      showSuccess('התזכורת נוספה בהצלחה!')
     }
     setModal(false); load(); setSaving(false)
   }

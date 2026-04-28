@@ -7,6 +7,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner'
 import EmptyState from '../components/ui/EmptyState'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import { useRealtime } from '../hooks/useRealtime'
+import { useSuccess } from '../context/SuccessContext'
 import toast from 'react-hot-toast'
 
 const TYPE_LABELS = { income:'הכנסה', expense:'הוצאה', loan_given:'הלוואה שנתתי', loan_received:'הלוואה שקיבלתי', debt_unpaid:'חוב שלא שולם', transfer:'מארנק לארנק' }
@@ -46,7 +47,7 @@ export default function Transactions() {
   const [listening, setListening] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
   const [editMode, setEditMode]     = useState(false)
-  const [txSuccess, setTxSuccess]   = useState(false)
+  const showSuccess = useSuccess()
   const recognitionRef = useRef(null)
 
   useEffect(() => { loadAll() }, [])
@@ -378,38 +379,12 @@ export default function Transactions() {
         onClose={() => { setModal(false); setSheetInitial(null) }}
         onSaved={() => {
           loadAll()
-          if (!editing) {
-            setTxSuccess(true)
-            setTimeout(() => setTxSuccess(false), 2650)
-          }
+          if (!editing) showSuccess('העסקה נוספה בהצלחה!')
         }}
         editingTx={editing}
         initialData={editing ? null : sheetInitial}
       />
 
-      {txSuccess && (
-        <div className="tx-success-overlay">
-          <div className="tx-success-circle">
-            <div className="tx-success-ring" />
-            <div className="tx-success-ring" />
-            <div className="tx-success-ring" />
-            {[[0,-52],[37,-37],[52,0],[37,37],[0,52],[-37,37],[-52,0],[-37,-37]].map(([px,py],i) => (
-              <span key={i} className="tx-particle" style={{ '--px':`${px}px`, '--py':`${py}px` }} />
-            ))}
-            <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-              <polyline
-                points="11,28 21,38 41,16"
-                stroke="#4ade80"
-                strokeWidth="4.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ strokeDasharray: 52, strokeDashoffset: 52, animation: 'tx-check-draw 0.45s 0.28s cubic-bezier(0.22,1,0.36,1) both' }}
-              />
-            </svg>
-          </div>
-          <div className="tx-success-label">העסקה נוספה בהצלחה!</div>
-        </div>
-      )}
     </div>
   )
 }

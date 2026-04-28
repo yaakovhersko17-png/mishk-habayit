@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { ChevronRight, ChevronLeft, Plus, X } from 'lucide-react'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
+import { useRealtime } from '../hooks/useRealtime'
+import { useSuccess } from '../context/SuccessContext'
 import toast from 'react-hot-toast'
 
 const DAYS_HE   = ['א','ב','ג','ד','ה','ו','ש']
@@ -18,6 +20,7 @@ function sameDay(a, b) {
 
 export default function CalendarPage() {
   const { user } = useAuth()
+  const showSuccess = useSuccess()
   const [today]   = useState(new Date())
   const [current, setCurrent]     = useState(new Date())
   const [txByDate, setTxByDate]   = useState({})
@@ -33,6 +36,7 @@ export default function CalendarPage() {
   const [saving, setSaving]   = useState(false)
   const [addForm, setAddForm] = useState({ title:'', date:'', time:'09:00', description:'' })
 
+  useRealtime(['calendar_events', 'reminders'], load)
   useEffect(() => { load() }, [current, view]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function load() {
@@ -106,6 +110,7 @@ export default function CalendarPage() {
     setSaving(false)
     if (error) { toast.error(`שגיאה בשמירה: ${error.message}`); return }
     toast.success('אירוע נוסף!')
+    showSuccess('האירוע נוסף בהצלחה!')
     setShowAdd(false)
     await load()
   }
