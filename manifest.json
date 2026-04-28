@@ -12,6 +12,12 @@
   "dir": "rtl",
   "icons": [
     {
+      "src": "/mishk-habayit/hersko-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
       "src": "/mishk-habayit/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
