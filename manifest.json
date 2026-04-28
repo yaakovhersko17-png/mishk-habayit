@@ -12,10 +12,10 @@
   "dir": "rtl",
   "icons": [
     {
-      "src": "/mishk-habayit/favicon.svg",
+      "src": "/mishk-habayit/hersko-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ],
   "shortcuts": [
