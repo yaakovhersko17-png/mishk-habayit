@@ -54,10 +54,13 @@ export default function ShoppingCard() {
   const inputRef  = useRef(null)
   const longTimer = useRef(null)
 
-  useEffect(() => { load() }, [])
-  useRealtime('shopping_items', load)
+  // loadRef prevents stale closure in useRealtime callback
+  const loadRef = useRef(null)
+  loadRef.current = load
 
-  // Always full SELECT — never append manually; DB is source of truth
+  useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useRealtime('shopping_items', () => loadRef.current())
+
   async function load() {
     const { data } = await supabase
       .from('shopping_items')
@@ -70,30 +73,44 @@ export default function ShoppingCard() {
     const name = newName.trim()
     if (!name) return
     setSaving(true)
-    const { error } = await supabase.from('shopping_items').insert({
-      name,
-      category: categorize(name),
-    })
-    if (error) toast.error('שגיאה בהוספה')
+
+    // Optimistic: show immediately, no wait for DB
+    const tempId = `opt-${Date.now()}`
+    const optimistic = { id: tempId, name, category: categorize(name), done: false, created_at: new Date().toISOString() }
+    setItems(prev => [...prev, optimistic])
     setNewName('')
     setAddOpen(false)
     setSaving(false)
+
+    const { error } = await supabase.from('shopping_items').insert({ name, category: categorize(name) })
+    if (error) {
+      toast.error('שגיאה בהוספה')
+      setItems(prev => prev.filter(i => i.id !== tempId))
+    } else {
+      load() // sync real UUID from DB, replace optimistic
+    }
   }
 
   async function toggleDone(id, done) {
     setActiveId(null)
+    // Optimistic
+    setItems(prev => prev.map(i => i.id === id ? { ...i, done: !done } : i))
     await supabase.from('shopping_items').update({ done: !done }).eq('id', id)
   }
 
   async function deleteItem(id) {
     setActiveId(null)
+    // Optimistic
+    setItems(prev => prev.filter(i => i.id !== id))
     await supabase.from('shopping_items').delete().eq('id', id)
   }
 
   async function moveCat(item, newCat) {
     saveOverride(item.name, newCat)
-    await supabase.from('shopping_items').update({ category: newCat }).eq('id', item.id)
+    // Optimistic
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, category: newCat } : i))
     setMovingItem(null)
+    await supabase.from('shopping_items').update({ category: newCat }).eq('id', item.id)
   }
 
   function onTouchStart(item) {
