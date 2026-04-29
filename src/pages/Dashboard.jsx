@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Wallet, CreditCard, Plus, Settings, BarChart2
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import SplashScreen from '../components/SplashScreen'
 import AddTransactionSheet from '../components/AddTransactionSheet'
+import ShoppingCard from '../components/ShoppingCard'
 import toast from 'react-hot-toast'
 
 const DAYS_HE   = ['א','ב','ג','ד','ה','ו','ש']
@@ -302,6 +303,11 @@ export default function Dashboard() {
         </button>
       </div>
 
+
+      {/* Shopping Card */}
+      <div className={`stagger-item${revealed?' revealed':''}`}>
+        <ShoppingCard />
+      </div>
 
       {/* Quick links */}
       <div className={`page-card stagger-item${revealed?' revealed':''}`} style={{padding:0,overflow:'hidden'}}>

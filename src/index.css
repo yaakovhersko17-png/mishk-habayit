@@ -918,3 +918,19 @@
   color: #4ade80; text-align: center;
   animation: tx-label-up 0.4s 0.38s ease both;
 }
+
+/* ── Shopping Card ──────────────────────────────── */
+@keyframes shopping-item-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.shopping-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  transition: background 0.12s;
+  animation: shopping-item-in 0.22s ease-out both;
+}
+.shopping-item:hover { background: rgba(255,255,255,0.04); }
