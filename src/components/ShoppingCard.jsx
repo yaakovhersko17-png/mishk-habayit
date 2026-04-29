@@ -91,11 +91,11 @@ export default function ShoppingCard() {
     }
   }
 
-  async function toggleDone(id, done) {
+  async function toggleDone(id) {
+    // "Done" = delete immediately, no strikethrough
     setActiveId(null)
-    // Optimistic
-    setItems(prev => prev.map(i => i.id === id ? { ...i, done: !done } : i))
-    await supabase.from('shopping_items').update({ done: !done }).eq('id', id)
+    setItems(prev => prev.filter(i => i.id !== id))
+    await supabase.from('shopping_items').delete().eq('id', id)
   }
 
   async function deleteItem(id) {
@@ -126,7 +126,6 @@ export default function ShoppingCard() {
   })
 
   const total = items.length
-  const done  = items.filter(i => i.done).length
 
   return (
     <div className="page-card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -138,7 +137,7 @@ export default function ShoppingCard() {
           <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>רשימת קניות</span>
           {total > 0 && (
             <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.06)', borderRadius: '0.75rem', padding: '0.1rem 0.45rem' }}>
-              {done}/{total}
+              {total}
             </span>
           )}
         </div>
@@ -160,16 +159,17 @@ export default function ShoppingCard() {
             רשימה ריקה — לחץ + להוסיף 🛍️
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'row', gap: '0', alignItems: 'flex-start', width: 'max-content', minWidth: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'row', gap: '0', alignItems: 'flex-start', width: '100%' }}>
             {Object.entries(grouped).map(([cat, catItems], colIdx) => (
               <div
                 key={cat}
                 style={{
-                  minWidth: 110, maxWidth: 145,
+                  flex: 1, minWidth: 0,
                   display: 'flex', flexDirection: 'column', gap: '0.2rem',
                   padding: '0 0.625rem',
                   borderLeft: colIdx < Object.keys(grouped).length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none',
                   animation: 'column-slide-in 0.25s ease-out both',
+                  transition: 'flex 0.25s ease',
                 }}
                 onClick={e => e.stopPropagation()}
               >
@@ -199,27 +199,23 @@ export default function ShoppingCard() {
                         animation: 'shopping-item-in 0.22s ease-out both',
                       }}
                     >
-                      {/* Mini checkbox */}
+                      {/* Tap circle = done = delete */}
                       <div
-                        onClick={e => { e.stopPropagation(); toggleDone(item.id, item.done) }}
+                        onClick={e => { e.stopPropagation(); toggleDone(item.id) }}
                         style={{
                           width: 14, height: 14, borderRadius: '50%', flexShrink: 0, cursor: 'pointer',
-                          border: item.done ? '1.5px solid #4ade80' : '1.5px solid rgba(255,255,255,0.25)',
-                          background: item.done ? 'rgba(74,222,128,0.18)' : 'transparent',
+                          border: '1.5px solid rgba(255,255,255,0.25)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          transition: 'all 0.15s',
+                          transition: 'border-color 0.15s',
                         }}
-                      >
-                        {item.done && <Check size={8} strokeWidth={3} color="#4ade80" />}
-                      </div>
+                        onMouseEnter={e => e.currentTarget.style.borderColor = '#4ade80'}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'}
+                      />
                       {/* Name */}
                       <span style={{
-                        fontSize: '0.8rem',
-                        color: item.done ? 'var(--text-muted)' : 'var(--text)',
-                        textDecoration: item.done ? 'line-through' : 'none',
+                        fontSize: '0.8rem', color: 'var(--text)',
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        flex: 1, transition: 'color 0.15s',
-                        maxWidth: 95,
+                        flex: 1,
                       }}>
                         {item.name}
                       </span>
@@ -239,11 +235,11 @@ export default function ShoppingCard() {
                         onClick={e => e.stopPropagation()}
                       >
                         <button
-                          onClick={() => toggleDone(item.id, item.done)}
+                          onClick={() => toggleDone(item.id)}
                           style={{ padding: '0.2rem 0.45rem', borderRadius: '0.35rem', fontSize: '0.67rem', cursor: 'pointer', background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', color: '#4ade80', display: 'flex', alignItems: 'center', gap: '0.18rem' }}
                         >
                           <Check size={9} strokeWidth={3} />
-                          {item.done ? 'בטל' : 'בוצע'}
+                          בוצע
                         </button>
                         <button
                           onClick={() => deleteItem(item.id)}
