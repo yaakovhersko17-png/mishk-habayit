@@ -150,91 +150,120 @@ export default function ShoppingCard() {
         </button>
       </div>
 
-      {/* ── List body — fixed height, scroll ── */}
-      <div style={{ maxHeight: 260, overflowY: 'auto', padding: '0.25rem 0' }}
-        onClick={() => setActiveId(null)}>
+      {/* ── Columns body — horizontal scroll ── */}
+      <div
+        style={{ overflowX: 'auto', overflowY: 'hidden', padding: '0.75rem', direction: 'rtl' }}
+        onClick={() => setActiveId(null)}
+      >
         {total === 0 ? (
-          <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.825rem' }}>
+          <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.825rem', direction: 'rtl' }}>
             רשימה ריקה — לחץ + להוסיף 🛍️
           </div>
         ) : (
-          Object.entries(grouped).map(([cat, catItems]) => (
-            <div key={cat} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.45rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.035)' }}
-              onClick={e => e.stopPropagation()}>
+          <div style={{ display: 'flex', flexDirection: 'row', gap: '0', alignItems: 'flex-start', width: 'max-content', minWidth: '100%' }}>
+            {Object.entries(grouped).map(([cat, catItems], colIdx) => (
+              <div
+                key={cat}
+                style={{
+                  minWidth: 110, maxWidth: 145,
+                  display: 'flex', flexDirection: 'column', gap: '0.2rem',
+                  padding: '0 0.625rem',
+                  borderLeft: colIdx < Object.keys(grouped).length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none',
+                  animation: 'column-slide-in 0.25s ease-out both',
+                }}
+                onClick={e => e.stopPropagation()}
+              >
+                {/* Column header */}
+                <div style={{
+                  fontSize: '0.62rem', fontWeight: 700, color: '#a78bfa',
+                  letterSpacing: '0.04em', paddingBottom: '0.35rem',
+                  borderBottom: '1px solid rgba(167,139,250,0.2)',
+                  marginBottom: '0.15rem', whiteSpace: 'nowrap',
+                }}>
+                  {cat}
+                </div>
 
-              {/* Category label — fixed width, right side */}
-              <div style={{ minWidth: 68, maxWidth: 68, fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dim)', paddingTop: '0.3rem', textAlign: 'right', flexShrink: 0, letterSpacing: '0.02em' }}>
-                {cat}
-              </div>
-
-              {/* Product tags — wrap horizontally */}
-              <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center' }}>
+                {/* Items — vertical list */}
                 {catItems.map(item => (
                   <div key={item.id} style={{ position: 'relative' }}>
-                    {/* Tag */}
-                    <button
-                      className="shopping-tag"
+                    <div
                       onTouchStart={() => onTouchStart(item)}
                       onTouchEnd={onTouchEnd}
                       onTouchMove={onTouchEnd}
                       onClick={e => { e.stopPropagation(); setActiveId(activeId === item.id ? null : item.id) }}
                       style={{
-                        padding: '0.22rem 0.6rem',
-                        borderRadius: '1rem',
-                        fontSize: '0.78rem',
-                        cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '0.25rem',
-                        background: item.done ? 'rgba(74,222,128,0.1)' : activeId === item.id ? 'rgba(108,99,255,0.2)' : 'rgba(255,255,255,0.07)',
-                        border: `1px solid ${item.done ? 'rgba(74,222,128,0.3)' : activeId === item.id ? 'rgba(108,99,255,0.4)' : 'rgba(255,255,255,0.12)'}`,
-                        color: item.done ? '#4ade80' : 'var(--text)',
-                        textDecoration: item.done ? 'line-through' : 'none',
-                        transition: 'all 0.13s',
+                        display: 'flex', alignItems: 'center', gap: '0.3rem',
+                        padding: '0.22rem 0.3rem', borderRadius: '0.4rem', cursor: 'pointer',
+                        background: activeId === item.id ? 'rgba(108,99,255,0.15)' : 'transparent',
+                        transition: 'background 0.1s',
                         animation: 'shopping-item-in 0.22s ease-out both',
                       }}
                     >
-                      {item.done && <Check size={9} strokeWidth={3} color="#4ade80" />}
-                      {item.name}
-                    </button>
+                      {/* Mini checkbox */}
+                      <div
+                        onClick={e => { e.stopPropagation(); toggleDone(item.id, item.done) }}
+                        style={{
+                          width: 14, height: 14, borderRadius: '50%', flexShrink: 0, cursor: 'pointer',
+                          border: item.done ? '1.5px solid #4ade80' : '1.5px solid rgba(255,255,255,0.25)',
+                          background: item.done ? 'rgba(74,222,128,0.18)' : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {item.done && <Check size={8} strokeWidth={3} color="#4ade80" />}
+                      </div>
+                      {/* Name */}
+                      <span style={{
+                        fontSize: '0.8rem',
+                        color: item.done ? 'var(--text-muted)' : 'var(--text)',
+                        textDecoration: item.done ? 'line-through' : 'none',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        flex: 1, transition: 'color 0.15s',
+                        maxWidth: 95,
+                      }}>
+                        {item.name}
+                      </span>
+                    </div>
 
-                    {/* Floating action mini-card */}
+                    {/* Floating action card above item */}
                     {activeId === item.id && (
                       <div
                         style={{
-                          position: 'absolute', bottom: 'calc(100% + 6px)', right: 0, zIndex: 50,
+                          position: 'absolute', bottom: 'calc(100% + 4px)', right: 0, zIndex: 60,
                           background: '#1e1e3a', border: '1px solid rgba(255,255,255,0.12)',
-                          borderRadius: '0.625rem', padding: '0.35rem 0.45rem',
-                          display: 'flex', gap: '0.35rem', whiteSpace: 'nowrap',
-                          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                          borderRadius: '0.625rem', padding: '0.3rem 0.4rem',
+                          display: 'flex', gap: '0.3rem', whiteSpace: 'nowrap',
+                          boxShadow: '0 4px 24px rgba(0,0,0,0.6)',
                           animation: 'shopping-item-in 0.15s ease-out both',
                         }}
                         onClick={e => e.stopPropagation()}
                       >
                         <button
                           onClick={() => toggleDone(item.id, item.done)}
-                          style={{ padding: '0.22rem 0.5rem', borderRadius: '0.4rem', fontSize: '0.68rem', cursor: 'pointer', background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', color: '#4ade80', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                          style={{ padding: '0.2rem 0.45rem', borderRadius: '0.35rem', fontSize: '0.67rem', cursor: 'pointer', background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', color: '#4ade80', display: 'flex', alignItems: 'center', gap: '0.18rem' }}
                         >
-                          <Check size={10} strokeWidth={3} />
+                          <Check size={9} strokeWidth={3} />
                           {item.done ? 'בטל' : 'בוצע'}
                         </button>
                         <button
                           onClick={() => deleteItem(item.id)}
-                          style={{ padding: '0.22rem 0.4rem', borderRadius: '0.4rem', fontSize: '0.68rem', cursor: 'pointer', background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171', display: 'flex', alignItems: 'center' }}
+                          style={{ padding: '0.2rem 0.38rem', borderRadius: '0.35rem', fontSize: '0.67rem', cursor: 'pointer', background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171', display: 'flex', alignItems: 'center' }}
                         >
-                          <Trash2 size={10} />
+                          <Trash2 size={9} />
                         </button>
                         <button
                           onClick={() => setActiveId(null)}
-                          style={{ padding: '0.22rem 0.35rem', borderRadius: '0.4rem', fontSize: '0.68rem', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
+                          style={{ padding: '0.2rem 0.32rem', borderRadius: '0.35rem', fontSize: '0.67rem', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}
                         >
-                          <X size={10} />
+                          <X size={9} />
                         </button>
                       </div>
                     )}
                   </div>
                 ))}
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
 
