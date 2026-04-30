@@ -46,7 +46,8 @@ export default function Transactions() {
   const [filter, setFilter]     = useState({ type:'', category:'', wallet:'', user:'', dateFrom:'', dateTo:'' })
   const [listening, setListening] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
-  const [editMode, setEditMode]     = useState(false)
+  const [saving, setSaving]         = useState(false)
+  const [expandedId, setExpandedId] = useState(null)
   const showSuccess = useSuccess()
   const recognitionRef = useRef(null)
 
@@ -230,9 +231,6 @@ export default function Transactions() {
           <button className={`btn-ghost${listening?' active':''}`} onClick={startVoice} style={listening?{background:'rgba(239,68,68,0.15)',borderColor:'rgba(239,68,68,0.3)',color:'#f87171'}:{}}>
             {listening ? <><MicOff size={15}/>מקשיב...</> : <><Mic size={15}/>קולי</>}
           </button>
-          <button className={editMode?'btn-primary':'btn-ghost'} onClick={()=>setEditMode(v=>!v)} style={{padding:'0.4rem 0.75rem'}}>
-            {editMode?'סיום':'עריכה'}
-          </button>
         </div>
       </div>
 
@@ -242,63 +240,68 @@ export default function Transactions() {
         <input className="input-field" placeholder="חיפוש..." value={search} onChange={e=>setSearch(e.target.value)} style={{paddingRight:'2.25rem'}}/>
       </div>
 
-      {/* Table */}
+      {/* Bubble cards */}
       {filtered.length === 0
         ? <EmptyState icon="📊" title="אין עסקאות" subtitle="הוסף עסקה ראשונה" action={<button className="btn-primary" onClick={openAdd}><Plus size={14}/>הוסף</button>}/>
         : (
-          <div className="page-card" style={{padding:0,overflow:'hidden'}}>
-            <div style={{overflowX:'auto'}}>
-              <table style={{width:'100%',borderCollapse:'collapse'}}>
-                <thead>
-                  <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-                    {['תאריך','תיאור','סכום','קטגוריה','ארנק','משתמש','סוג',...(editMode?['']:[])] .map(h=>(
-                      <th key={h} style={{padding:'0.875rem 1rem',textAlign:'right',fontSize:'0.75rem',color:'var(--text-muted)',fontWeight:500,whiteSpace:'nowrap'}}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(t => (
-                    <tr key={t.id} style={{borderBottom:'1px solid rgba(255,255,255,0.04)',transition:'background 0.15s'}}
-                        onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.03)'}
-                        onMouseLeave={e=>e.currentTarget.style.background=''}>
-                      <td style={{padding:'0.875rem 1rem',color:'var(--text-muted)',fontSize:'0.8rem',whiteSpace:'nowrap'}}>{new Date(t.date).toLocaleDateString('he-IL')}</td>
-                      <td style={{padding:'0.875rem 1rem',maxWidth:200,overflow:'hidden'}}>
-                        <div style={{color:'var(--text)',fontSize:'0.875rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.description}</div>
-                        {t.stores?.name && <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{t.stores.name}</div>}
-                      </td>
-                      <td style={{padding:'0.875rem 1rem',fontWeight:600,whiteSpace:'nowrap',color: t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>
-                        {t.type==='income'?'+':t.type==='transfer'?'↔':'-'}{t.currency}{Number(t.amount).toLocaleString()}
-                      </td>
-                      <td style={{padding:'0.875rem 1rem',fontSize:'0.8rem',color:'var(--text-sub)'}}>{t.categories ? `${t.categories.icon||''} ${t.categories.name}` : '—'}</td>
-                      <td style={{padding:'0.875rem 1rem',fontSize:'0.8rem',color:'var(--text-sub)'}}>
-                        {t.type === 'transfer'
-                          ? <>
-                              <span>{t.wallets?.icon||''} {t.wallets?.name||'—'}</span>
-                              <span style={{color:'#22d3ee',margin:'0 0.25rem'}}>→</span>
-                              <span>{wallets.find(w=>w.id===t.to_wallet_id)?.icon||''} {wallets.find(w=>w.id===t.to_wallet_id)?.name||'—'}</span>
-                            </>
-                          : t.wallets ? `${t.wallets.icon||''} ${t.wallets.name}` : '—'}
-                      </td>
-                      <td style={{padding:'0.875rem 1rem',fontSize:'0.8rem',color:'var(--text-sub)'}}>{t.profiles?.name || '—'}</td>
-                      <td style={{padding:'0.875rem 1rem'}}>
-                        <span className={t.type==='income'?'badge-income':t.type==='transfer'?'badge-transfer':t.type.startsWith('loan')?'badge-loan':'badge-expense'}>
-                          {TYPE_LABELS[t.type]}
-                        </span>
-                        {t.type.startsWith('loan') && t.loan_returned && <span style={{marginRight:'0.375rem',fontSize:'0.7rem',color:'#4ade80'}}>✓ הוחזר</span>}
-                      </td>
-                      {editMode && (
-                        <td style={{padding:'0.875rem 1rem'}}>
-                          <div style={{display:'flex',gap:'0.25rem'}}>
-                            <button onClick={()=>openEdit(t)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',padding:'0.25rem',borderRadius:'0.375rem'}}><Edit2 size={13}/></button>
-                            <button onClick={()=>handleDelete(t)} style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.25rem',borderRadius:'0.375rem'}}><Trash2 size={13}/></button>
+          <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+            {filtered.map(t => {
+              const isOpen = expandedId === t.id
+              const col = t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type?.startsWith('loan')?'#fbbf24':'#f87171'
+              const sign = t.type==='income'?'+':t.type==='transfer'?'↔':'-'
+              const toW = wallets.find(w=>w.id===t.to_wallet_id)
+              const details = [
+                ['👤', t.profiles?.name||'—'],
+                ['📂', TYPE_LABELS[t.type]||t.type],
+                ['💳', t.type==='transfer'?`${t.wallets?.name||'—'} → ${toW?.name||'—'}`:(t.wallets?.name||'—')],
+                ...(t.categories?[['🏷️', `${t.categories.icon||''} ${t.categories.name}`]]:[]),
+                ...(t.stores?.name?[['🏪', t.stores.name]]:[]),
+              ]
+              return (
+                <div key={t.id}
+                  style={{background:'var(--surface)',border:`1px solid ${isOpen?col+'44':'var(--border)'}`,borderRadius:'0.875rem',overflow:'hidden',cursor:'pointer',transition:'border-color 0.15s'}}
+                  onClick={()=>setExpandedId(isOpen?null:t.id)}>
+
+                  {/* Compact row */}
+                  <div style={{display:'flex',alignItems:'center',gap:'0.5rem',padding:'0.7rem 0.875rem'}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:'0.875rem',fontWeight:600,color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.description}</div>
+                      <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginTop:'0.15rem'}}>{t.date}</div>
+                    </div>
+                    <div style={{fontSize:'0.875rem',fontWeight:700,flexShrink:0,color:col}}>
+                      {sign}{t.currency||'₪'}{Number(t.amount).toLocaleString()}
+                    </div>
+                  </div>
+
+                  {/* Expanded details */}
+                  {isOpen && (
+                    <div style={{padding:'0 0.875rem 0.875rem',borderTop:`1px solid ${col}22`}} onClick={e=>e.stopPropagation()}>
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.4rem',margin:'0.625rem 0'}}>
+                        {details.map(([ic,val])=>(
+                          <div key={ic} style={{background:'rgba(255,255,255,0.03)',borderRadius:'0.5rem',padding:'0.375rem 0.625rem'}}>
+                            <div style={{fontSize:'0.65rem',color:'var(--text-muted)',marginBottom:'0.1rem'}}>{ic}</div>
+                            <div style={{fontSize:'0.78rem',color:'var(--text)',fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{val}</div>
                           </div>
-                        </td>
+                        ))}
+                      </div>
+                      {t.notes && (
+                        <div style={{fontSize:'0.78rem',color:'var(--text-muted)',marginBottom:'0.625rem',padding:'0.375rem 0.625rem',background:'rgba(255,255,255,0.03)',borderRadius:'0.5rem'}}>
+                          📝 {t.notes}
+                        </div>
                       )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      <div style={{display:'flex',gap:'0.5rem'}}>
+                        <button onClick={()=>openEdit(t)} style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'0.375rem',padding:'0.45rem',borderRadius:'0.625rem',background:'rgba(255,255,255,0.05)',border:'1px solid var(--border)',color:'var(--text-muted)',cursor:'pointer',fontSize:'0.8rem'}}>
+                          <Edit2 size={13}/>ערוך
+                        </button>
+                        <button onClick={()=>handleDelete(t)} style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:'0.375rem',padding:'0.45rem',borderRadius:'0.625rem',background:'rgba(248,113,113,0.07)',border:'1px solid rgba(248,113,113,0.2)',color:'#f87171',cursor:'pointer',fontSize:'0.8rem'}}>
+                          <Trash2 size={13}/>מחק
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )
       }
