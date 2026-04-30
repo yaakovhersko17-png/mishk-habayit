@@ -53,6 +53,8 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
   const [saving, setSaving]               = useState(false)
   const [stores, setStores]               = useState([])
   const [detectedStore, setDetectedStore] = useState(null)
+  const [goals, setGoals]                 = useState([])
+  const [selectedGoalId, setSelectedGoalId] = useState('')
 
   useEffect(() => {
     if (!open) return
@@ -96,16 +98,18 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
   }, [open])
 
   async function loadData() {
-    const [{ data: w }, { data: c }, { data: p }, { data: s }] = await Promise.all([
+    const [{ data: w }, { data: c }, { data: p }, { data: s }, { data: g }] = await Promise.all([
       supabase.from('wallets').select('*').order('created_at'),
       cached('categories', () => supabase.from('categories').select('*'), 120_000),
       cached('profiles', () => supabase.from('profiles').select('*'), 120_000),
       cached('stores', () => supabase.from('stores').select('id,name'), 120_000),
+      supabase.from('goals').select('id,name,icon,color,current_amount,target_amount').order('created_at'),
     ])
     setWallets(w || [])
     setCats(c || [])
     setProfiles(p || [])
     setStores(s || [])
+    setGoals(g || [])
   }
 
   function detectStore(desc) {
@@ -126,7 +130,27 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
     if (!form.description || !form.amount) { toast.error('מלא תיאור וסכום'); return }
     if (type === 'transfer' && !form.to_wallet_id)              { toast.error('בחר ארנק יעד'); return }
     if (type === 'transfer' && form.wallet_id === form.to_wallet_id) { toast.error('ארנקים חייבים להיות שונים'); return }
+    if (type === 'savings' && !selectedGoalId) { toast.error('בחר יעד חיסכון'); return }
     setSaving(true)
+
+    if (type === 'savings') {
+      const amt = Number(form.amount)
+      const { data: goal } = await supabase.from('goals').select('*').eq('id', selectedGoalId).single()
+      if (goal) {
+        const newAmt = Math.min(Number(goal.current_amount) + amt, Number(goal.target_amount))
+        await Promise.all([
+          supabase.from('goal_deposits').insert({ goal_id: selectedGoalId, user_id: user.id, amount: amt, note: form.description || null }),
+          supabase.from('goals').update({ current_amount: newAmt }).eq('id', selectedGoalId),
+        ])
+        if (form.wallet_id) {
+          const { data: w } = await supabase.from('wallets').select('balance').eq('id', form.wallet_id).single()
+          if (w) await supabase.from('wallets').update({ balance: w.balance - amt }).eq('id', form.wallet_id)
+        }
+      }
+      toast.success('הכסף הופקד בצנצנת! 🏺')
+      setSaving(false); onClose(); onSaved?.()
+      return
+    }
 
     const dbType = type === 'loan'
       ? (loanSubType === 'given' ? 'loan_given' : 'loan_received')
@@ -202,7 +226,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
 
   const selW = wallets.find(w => w.id === form.wallet_id)
   const showWallet = !(type === 'loan' && loanSubType === 'received')
-  const activeColor = type === 'income' ? '#4ade80' : type === 'transfer' ? '#22d3ee' : type === 'loan' ? '#fbbf24' : '#f87171'
+  const activeColor = type === 'income' ? '#4ade80' : type === 'transfer' ? '#22d3ee' : type === 'loan' ? '#fbbf24' : type === 'savings' ? '#a78bfa' : '#f87171'
   const sep = () => <div style={{height:1,background:'rgba(255,255,255,0.06)',margin:'0 1rem'}}/>
 
   if (!open) return null
@@ -223,7 +247,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
 
       {/* ── Type tabs ── */}
       <div style={{display:'flex',gap:'0.5rem',padding:'0.625rem 1rem',background:'rgba(255,255,255,0.02)',borderBottom:'1px solid rgba(255,255,255,0.06)',flexShrink:0}}>
-        {[['expense','הוצאה','#f87171'],['income','הכנסה','#4ade80'],['transfer','העברה','#22d3ee'],['loan','חוב','#fbbf24']].map(([t,lbl,col]) => (
+        {[['expense','הוצאה','#f87171'],['income','הכנסה','#4ade80'],['transfer','העברה','#22d3ee'],['loan','חוב','#fbbf24'],['savings','חיסכון','#a78bfa']].map(([t,lbl,col]) => (
           <button key={t} onClick={() => setType(t)} style={{
             flex:1,padding:'0.5rem',borderRadius:'0.75rem',fontSize:'0.82rem',cursor:'pointer',
             border:`1px solid ${type===t?col+'60':'rgba(255,255,255,0.07)'}`,
@@ -244,6 +268,21 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
               color:loanSubType===sub?'#fbbf24':'var(--text-muted)',fontWeight:loanSubType===sub?600:400,transition:'all 0.15s',
             }}>{lbl}</button>
           ))}
+        </div>
+      )}
+
+      {/* ── Savings goal selector ── */}
+      {type === 'savings' && (
+        <div style={{padding:'0.5rem 1rem',background:'rgba(167,139,250,0.06)',borderBottom:'1px solid rgba(255,255,255,0.06)',flexShrink:0}}>
+          <select value={selectedGoalId} onChange={e=>setSelectedGoalId(e.target.value)}
+            style={{width:'100%',background:'rgba(167,139,250,0.1)',border:'1px solid rgba(167,139,250,0.3)',borderRadius:'0.75rem',padding:'0.5rem 0.75rem',color:selectedGoalId?'var(--text)':'var(--text-muted)',fontSize:'0.875rem',outline:'none',fontFamily:'inherit',direction:'rtl'}}>
+            <option value="">בחר צנצנת / יעד...</option>
+            {goals.map(g=>{
+              const cur=Number(g.current_amount), tgt=Number(g.target_amount)
+              const p=tgt>0?Math.round(cur/tgt*100):0
+              return <option key={g.id} value={g.id}>{g.icon} {g.name} — {p}% (₪{cur.toLocaleString()} / ₪{tgt.toLocaleString()})</option>
+            })}
+          </select>
         </div>
       )}
 
