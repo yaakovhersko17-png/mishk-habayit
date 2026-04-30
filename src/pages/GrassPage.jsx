@@ -122,6 +122,9 @@ export default function GrassPage() {
     .filter(it => it.purchase_date && it.purchase_date.slice(0, 7) === nowMonth && it.price > 0)
     .reduce((s, it) => s + Number(it.price), 0)
 
+  // All-time total spend
+  const totalSpend = items.reduce((s, it) => s + (Number(it.price) || 0), 0)
+
   // Weekly chart — smart distribution: spread each קיסוס evenly until next one
   const weeklyData = (() => {
     const logsAsc = [...consumptionLogs].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
@@ -367,11 +370,18 @@ export default function GrassPage() {
           </div>
         </div>
 
-        {/* Monthly spend */}
-        {monthlySpend > 0 && (
-          <div style={{ padding: '0.625rem 0.875rem', borderRadius: '0.875rem', background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>הוצאה חודשית</span>
-            <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fbbf24' }}>₪{monthlySpend.toLocaleString()}</span>
+        {/* Spend tracker */}
+        {totalSpend > 0 && (
+          <div style={{ padding: '0.75rem 0.875rem', borderRadius: '0.875rem', background: 'rgba(248,113,113,0.07)', border: '1px solid rgba(248,113,113,0.22)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>💸 סה"כ הוצאות</span>
+              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f87171' }}>₪{totalSpend.toLocaleString()}</span>
+            </div>
+            {monthlySpend > 0 && (
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.2rem', textAlign: 'left' }}>
+                החודש: ₪{monthlySpend.toLocaleString()}
+              </div>
+            )}
           </div>
         )}
 

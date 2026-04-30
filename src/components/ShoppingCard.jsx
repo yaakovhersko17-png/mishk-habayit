@@ -138,7 +138,16 @@ export default function ShoppingCard() {
           <ShoppingCart size={15} color="#a78bfa" />
           <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)' }}>קניות וסידורים לבית</span>
           {total > 0 && (
-            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.06)', borderRadius: '0.75rem', padding: '0.1rem 0.45rem' }}>
+            <span style={{
+              fontSize: '0.72rem', fontWeight: 700,
+              color: '#a78bfa',
+              background: 'rgba(108,99,255,0.18)',
+              borderRadius: '0.75rem',
+              padding: '0.15rem 0.55rem',
+              border: '1px solid rgba(108,99,255,0.4)',
+              boxShadow: '0 0 7px rgba(108,99,255,0.55), 0 0 18px rgba(108,99,255,0.18)',
+              transition: 'box-shadow 0.3s ease',
+            }}>
               {total}
             </span>
           )}
