@@ -7,6 +7,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner'
 import SplashScreen from '../components/SplashScreen'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import ShoppingCard from '../components/ShoppingCard'
+import { useSuccess } from '../context/SuccessContext'
 import toast from 'react-hot-toast'
 
 const DAYS_HE   = ['א','ב','ג','ד','ה','ו','ש']
@@ -31,7 +32,8 @@ function StatCard({ icon, label, value, color, sub }) {
 
 export default function Dashboard() {
   const { user, profile } = useAuth()
-  const navigate = useNavigate()
+  const navigate   = useNavigate()
+  const showSuccess = useSuccess()
   const [loading, setLoading]           = useState(true)
   const [wallets, setWallets]           = useState([])
   const [monthlyData, setMonthlyData]   = useState({ income: 0, expense: 0, loans: [] })
@@ -334,7 +336,7 @@ export default function Dashboard() {
       <AddTransactionSheet
         open={showAddTx}
         onClose={() => setShowAddTx(false)}
-        onSaved={() => { loadData(); loadCalendar(calView, calDate) }}
+        onSaved={() => { loadData(); loadCalendar(calView, calDate); showSuccess('העסקה נוספה בהצלחה!') }}
       />
     </div>
     </>
