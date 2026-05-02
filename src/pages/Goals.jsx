@@ -86,13 +86,13 @@ export default function Goals() {
 
   async function handleSave() {
     if (!form.name) { toast.error('שם צנצנת חובה'); return }
-    if (!form.wallet_id) { toast.error('יש לבחור ארנק לצנצנת'); return }
     setSaving(true)
     const payload = {
-      name: form.name, icon: form.icon, color: form.color,
-      wallet_id: form.wallet_id,
-      target_amount: form.target_amount ? Number(form.target_amount) : null,
-      current_amount: editing ? undefined : 0,
+      name: form.name,
+      icon: form.icon,
+      color: form.color,
+      wallet_id: form.wallet_id || null,
+      target_amount: form.target_amount ? Number(form.target_amount) : 0,
       target_date: form.target_date || null,
       is_dream: form.is_dream || false,
       auto_amount: form.auto_amount ? Number(form.auto_amount) : null,
@@ -101,10 +101,10 @@ export default function Goals() {
     if (!editing) payload.current_amount = 0
     if (editing) {
       const { error } = await supabase.from('goals').update(payload).eq('id', editing.id)
-      if (error) { toast.error('שגיאה בעדכון'); setSaving(false); return }
+      if (error) { console.error('goals update error:', error); toast.error(`שגיאה בעדכון: ${error.message}`); setSaving(false); return }
     } else {
       const { error } = await supabase.from('goals').insert(payload)
-      if (error) { toast.error('שגיאה בשמירה'); setSaving(false); return }
+      if (error) { console.error('goals insert error:', error); toast.error(`שגיאה בשמירה: ${error.message}`); setSaving(false); return }
       hapticSuccess()
     }
     setModal(false); setSaving(false); load()
