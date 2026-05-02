@@ -22,6 +22,14 @@ export default function Header({ onMenuClick }) {
         <Menu size={22} />
       </button>
 
+      <h1 className="hersko-shine" style={{
+        margin: 0, fontSize: '1.75rem', fontWeight: 400,
+        fontFamily: '"Pacifico", cursive', lineHeight: 1,
+        position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+      }}>
+        Hersko
+      </h1>
+
       <NotificationBell />
     </header>
   )

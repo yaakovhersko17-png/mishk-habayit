@@ -159,18 +159,8 @@ export default function Dashboard() {
       <SplashScreen fading={splashFading} />
       <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
       {/* Greeting */}
-      <div className={`stagger-item${revealed?' revealed':''}`} style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <div>
-          <h1 className="hersko-shine" style={{margin:0,fontSize:'3.5rem',fontWeight:400,fontFamily:'"Pacifico", cursive',lineHeight:1.1}}>
-            Hersko
-          </h1>
-          <p style={{margin:'0.25rem 0 0',color:'var(--text-muted)',fontSize:'0.875rem'}}>
-            {today.toLocaleDateString('he-IL', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
-          </p>
-        </div>
-        <div>
-          <button className={`btn-primary${glowActive?' btn-glow-active':''}`} onClick={() => setShowAddTx(true)}><Plus size={15}/>הוסף עסקה</button>
-        </div>
+      <div className={`stagger-item${revealed?' revealed':''}`} style={{display:'flex',alignItems:'center',justifyContent:'flex-end'}}>
+        <button className={`btn-primary${glowActive?' btn-glow-active':''}`} onClick={() => setShowAddTx(true)}><Plus size={15}/>הוסף עסקה</button>
       </div>
 
       {/* ── Calendar widget ───────────────────────────────── */}
@@ -291,6 +281,11 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Shopping Card */}
+      <div className={`stagger-item${revealed?' revealed':''}`}>
+        <ShoppingCard />
+      </div>
+
       {/* Finance button */}
       <div className={`stagger-item${revealed?' revealed':''}`} style={{display:'flex',justifyContent:'center'}}>
         <button className="finance-btn" onClick={() => navigate('/finance')}>
@@ -303,12 +298,6 @@ export default function Dashboard() {
             <div className="finance-btn__circle" />
           </div>
         </button>
-      </div>
-
-
-      {/* Shopping Card */}
-      <div className={`stagger-item${revealed?' revealed':''}`}>
-        <ShoppingCard />
       </div>
 
       {/* Quick links */}

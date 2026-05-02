@@ -11,8 +11,11 @@ import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import toast from 'react-hot-toast'
+import { useSuccess } from '../context/SuccessContext'
 
 const EMPTY_RULE = { description: '', amount: '', type: 'expense', category_id: '', wallet_id: '', day_of_month: 1 }
+
+const TYPE_LABELS = { loan_given: 'הלוואה שנתתי', loan_received: 'הלוואה שקיבלתי', debt_unpaid: 'חוב' }
 
 function currentMonth() {
   const n = new Date()
@@ -72,6 +75,7 @@ function AccordionRow({ icon, label, sub, color, open, onToggle, hasBorderBottom
 export default function FinancePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const showSuccess = useSuccess()
 
   const [loading, setLoading] = useState(true)
   const [wallets, setWallets] = useState([])
@@ -80,6 +84,12 @@ export default function FinancePage() {
 
   const [openSection, setOpenSection] = useState(null)
   const [addTxOpen, setAddTxOpen] = useState(false)
+
+  // Debt repayment
+  const [debtModal, setDebtModal]   = useState(false)
+  const [repayLoan, setRepayLoan]   = useState(null)
+  const [repayWallet, setRepayWallet] = useState('')
+  const [repaying, setRepaying]     = useState(false)
 
   // Recurring
   const [rules, setRules] = useState([])
@@ -98,7 +108,7 @@ export default function FinancePage() {
       { data: rData }, { data: catData },
     ] = await Promise.all([
       supabase.from('wallets').select('*'),
-      supabase.from('transactions').select('type,amount,date,loan_returned'),
+      supabase.from('transactions').select('id,type,amount,date,loan_returned,description,wallet_id,loan_party,currency'),
       supabase.from('recurring_rules').select('*').order('day_of_month'),
       supabase.from('categories').select('id,name,icon,color,type'),
     ])
@@ -113,7 +123,7 @@ export default function FinancePage() {
       income: monthTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0),
       expense: monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0),
     })
-    setLoans((txData || []).filter(t => t.type.startsWith('loan')))
+    setLoans((txData || []).filter(t => t.type.startsWith('loan') || t.type === 'debt_unpaid'))
     setLoading(false)
     autoRun(true)
   }
@@ -159,6 +169,32 @@ export default function FinancePage() {
     toast.success('נמחק'); load()
   }
 
+  async function handleRepay() {
+    if (!repayWallet) { toast.error('בחר ארנק'); return }
+    setRepaying(true)
+    const amt = Number(repayLoan.amount) - Number(repayLoan.loan_returned || 0)
+    await supabase.from('transactions').update({ loan_returned: Number(repayLoan.amount) }).eq('id', repayLoan.id)
+    const newType = repayLoan.type === 'loan_given' ? 'income' : 'expense'
+    await supabase.from('transactions').insert({
+      type: newType,
+      description: `החזר חוב — ${repayLoan.description}`,
+      amount: amt,
+      currency: repayLoan.currency || '₪',
+      wallet_id: repayWallet,
+      date: new Date().toISOString().split('T')[0],
+      user_id: user.id,
+    })
+    const sign = newType === 'income' ? 1 : -1
+    const { data: w } = await supabase.from('wallets').select('balance').eq('id', repayWallet).single()
+    if (w) await supabase.from('wallets').update({ balance: w.balance + sign * amt }).eq('id', repayWallet)
+    setRepaying(false)
+    setRepayLoan(null)
+    setDebtModal(false)
+    setRepayWallet('')
+    showSuccess('החוב שולם ונסגר בהצלחה! ✓')
+    load()
+  }
+
   if (loading) return <LoadingSpinner />
 
   const totalBalance = wallets.reduce((s, w) => s + Number(w.balance), 0)
@@ -183,8 +219,11 @@ export default function FinancePage() {
         <MiniStat label="יתרה כוללת" value={`₪${totalBalance.toLocaleString()}`} color="#6c63ff" />
         <MiniStat label="הכנסות החודש" value={`₪${monthly.income.toLocaleString()}`} color="#4ade80" />
         <MiniStat label="הוצאות החודש" value={`₪${monthly.expense.toLocaleString()}`} color="#f87171" />
-        <MiniStat label="הלוואות פתוחות" value={openLoans.length} color="#fbbf24"
-          sub={openLoans.length > 0 ? `₪${openLoans.reduce((s, l) => s + Number(l.amount) - Number(l.loan_returned || 0), 0).toLocaleString()} סה"כ` : undefined} />
+        <div onClick={() => openLoans.length > 0 && setDebtModal(true)}
+          style={{ cursor: openLoans.length > 0 ? 'pointer' : 'default' }}>
+          <MiniStat label="הלוואות פתוחות" value={openLoans.length} color="#fbbf24"
+            sub={openLoans.length > 0 ? `₪${openLoans.reduce((s, l) => s + Number(l.amount) - Number(l.loan_returned || 0), 0).toLocaleString()} סה"כ — לחץ לסגירה` : undefined} />
+        </div>
       </div>
 
       {/* Nav + Recurring accordion */}
@@ -320,6 +359,74 @@ export default function FinancePage() {
       </Modal>
 
       <AddTransactionSheet open={addTxOpen} onClose={() => setAddTxOpen(false)} onSaved={load} />
+
+      {/* Debt repayment modal */}
+      {debtModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 60,
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          onClick={() => { setDebtModal(false); setRepayLoan(null) }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--modal-bg)',
+            border: '1px solid var(--border)', borderRadius: '1.5rem 1.5rem 0 0',
+            padding: '1.5rem', width: '100%', maxWidth: 440, maxHeight: '80vh',
+            display: 'flex', flexDirection: 'column',
+            paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom,0px))' }}>
+
+            {!repayLoan ? (
+              <>
+                <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '1rem' }}>
+                  💳 חובות פעילים ({openLoans.length})
+                </div>
+                <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {openLoans.map(loan => (
+                    <div key={loan.id} style={{ background: 'rgba(251,191,36,0.07)',
+                      border: '1px solid rgba(251,191,36,0.2)', borderRadius: '0.875rem',
+                      padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.875rem' }}>
+                          {loan.description}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                          {TYPE_LABELS[loan.type]} · ₪{(Number(loan.amount) - Number(loan.loan_returned || 0)).toLocaleString()} נותר
+                          {loan.loan_party && ` · ${loan.loan_party}`}
+                        </div>
+                      </div>
+                      <button onClick={() => { setRepayLoan(loan); setRepayWallet('') }}
+                        style={{ padding: '0.4rem 0.875rem', borderRadius: '0.625rem', fontSize: '0.8rem',
+                          fontWeight: 700, background: 'rgba(74,222,128,0.15)',
+                          border: '1px solid rgba(74,222,128,0.35)', color: '#4ade80', cursor: 'pointer' }}>
+                        שולם ✓
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '0.5rem' }}>
+                  מאיזה חשבון?
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                  {repayLoan.description} — ₪{(Number(repayLoan.amount) - Number(repayLoan.loan_returned || 0)).toLocaleString()}
+                </div>
+                <select value={repayWallet} onChange={e => setRepayWallet(e.target.value)}
+                  className="input-field" style={{ marginBottom: '1.25rem', direction: 'rtl' }}>
+                  <option value="">בחר חשבון...</option>
+                  {wallets.map(w => <option key={w.id} value={w.id}>{w.icon || '💳'} {w.name} — ₪{Number(w.balance).toLocaleString()}</option>)}
+                </select>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button className="btn-ghost" onClick={() => setRepayLoan(null)} style={{ flex: 1, justifyContent: 'center' }}>
+                    חזרה
+                  </button>
+                  <button className="btn-primary" onClick={handleRepay} disabled={repaying || !repayWallet}
+                    style={{ flex: 2, justifyContent: 'center' }}>
+                    {repaying ? 'מעדכן...' : '✓ אשר תשלום'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
