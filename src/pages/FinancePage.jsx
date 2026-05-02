@@ -222,7 +222,7 @@ export default function FinancePage() {
         <div onClick={() => openLoans.length > 0 && setDebtModal(true)}
           style={{ cursor: openLoans.length > 0 ? 'pointer' : 'default' }}>
           <MiniStat label="הלוואות פתוחות" value={openLoans.length} color="#fbbf24"
-            sub={openLoans.length > 0 ? `₪${openLoans.reduce((s, l) => s + Number(l.amount) - Number(l.loan_returned || 0), 0).toLocaleString()} סה"כ — לחץ לסגירה` : undefined} />
+            sub={openLoans.length > 0 ? `₪${openLoans.reduce((s, l) => s + Number(l.amount) - Number(l.loan_returned || 0), 0).toLocaleString()}` : undefined} />
         </div>
       </div>
 
@@ -362,14 +362,14 @@ export default function FinancePage() {
 
       {/* Debt repayment modal */}
       {debtModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 60,
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 100,
           display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
           onClick={() => { setDebtModal(false); setRepayLoan(null) }}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--modal-bg)',
             border: '1px solid var(--border)', borderRadius: '1.5rem 1.5rem 0 0',
             padding: '1.5rem', width: '100%', maxWidth: 440, maxHeight: '80vh',
             display: 'flex', flexDirection: 'column',
-            paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom,0px))' }}>
+            paddingBottom: 'calc(1.5rem + 74px + env(safe-area-inset-bottom,0px))' }}>
 
             {!repayLoan ? (
               <>
