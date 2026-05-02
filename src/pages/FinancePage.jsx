@@ -324,25 +324,34 @@ export default function FinancePage() {
       {/* ── PIE CHART ───────────────────────────────────────── */}
       {pieData.length > 0 && (
         <div className="page-card">
-          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-sub)', marginBottom: '0.75rem' }}>הוצאות לפי קטגוריה</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <PieChart width={220} height={200}>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={52} outerRadius={85} dataKey="value" nameKey="name">
-                  {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} formatter={v => `₪${v.toLocaleString()}`} />
-              </PieChart>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              {pieData.map((d, i) => (
-                <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', padding: '0.45rem 0.75rem', borderRadius: '0.625rem', background: 'rgba(255,255,255,0.03)' }}>
-                  <div style={{ width: 9, height: 9, borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
-                  <span style={{ color: 'var(--text-sub)', flex: 1, fontSize: '0.8rem' }}>{d.name}</span>
-                  <span style={{ color: 'var(--text)', fontWeight: 600, fontSize: '0.82rem' }}>₪{d.value.toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
+          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-sub)', marginBottom: '0.5rem' }}>הוצאות לפי קטגוריה</div>
+          <div style={{ display: 'flex', justifyContent: 'center', overflow: 'visible' }}>
+            <PieChart width={300} height={260}>
+              <Pie
+                data={pieData}
+                cx="50%" cy="50%"
+                innerRadius={50} outerRadius={80}
+                dataKey="value" nameKey="name"
+                labelLine={{ stroke: 'rgba(255,255,255,0.25)', strokeWidth: 1 }}
+                label={({ cx, cy, midAngle, outerRadius, name, percent }) => {
+                  if (percent < 0.04) return null
+                  const RADIAN = Math.PI / 180
+                  const r = outerRadius + 22
+                  const x = cx + r * Math.cos(-midAngle * RADIAN)
+                  const y = cy + r * Math.sin(-midAngle * RADIAN)
+                  const short = name.length > 7 ? name.slice(0, 7) + '…' : name
+                  return (
+                    <text x={x} y={y} fill="rgba(255,255,255,0.75)" textAnchor={x > cx ? 'start' : 'end'}
+                      dominantBaseline="central" fontSize={9} fontWeight={600}>
+                      {short} {(percent * 100).toFixed(0)}%
+                    </text>
+                  )
+                }}
+              >
+                {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+              </Pie>
+              <Tooltip contentStyle={tooltipStyle} formatter={v => `₪${v.toLocaleString()}`} />
+            </PieChart>
           </div>
         </div>
       )}
