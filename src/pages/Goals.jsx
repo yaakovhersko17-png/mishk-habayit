@@ -243,18 +243,25 @@ export default function Goals() {
           </div>
         )}
 
-        {timeLabel && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, width: '100%' }}>
-            <div style={{ fontSize: '0.62rem', color: daysLeft < 0 ? '#f87171' : daysLeft <= 30 ? '#fbbf24' : 'var(--text-muted)', textAlign: 'center' }}>
+        {/* Adaptive savings info */}
+        {timeLabel ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: '100%',
+            background: 'rgba(255,255,255,0.04)', borderRadius: '0.5rem', padding: '5px 4px', marginTop: 2 }}>
+            <div style={{ fontSize: '0.7rem', color: daysLeft < 0 ? '#f87171' : daysLeft <= 30 ? '#fbbf24' : 'var(--text-muted)', textAlign: 'center', fontWeight: 500 }}>
               {timeLabel}
             </div>
             {depositLabel && (
-              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: g.color, background: `${g.color}18`, border: `1px solid ${g.color}40`, borderRadius: 999, padding: '2px 8px', letterSpacing: '0.01em' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: g.color, background: `${g.color}22`,
+                border: `1px solid ${g.color}55`, borderRadius: 999, padding: '3px 10px' }}>
                 {depositLabel}
               </div>
             )}
           </div>
-        )}
+        ) : tgt > 0 && !isDone ? (
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', opacity: 0.6, marginTop: 2 }}>
+            הוסף תאריך יעד לחישוב הפקדה
+          </div>
+        ) : null}
 
         {/* Action row */}
         <div style={{ display: 'flex', gap: '0.3rem', width: '100%', marginTop: 3 }}>
