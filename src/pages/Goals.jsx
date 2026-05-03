@@ -51,10 +51,11 @@ export default function Goals() {
   const [form, setForm]               = useState(emptyForm)
   const [saving, setSaving]           = useState(false)
 
-  const [depositGoal, setDepositGoal] = useState(null)
-  const [depositAmt, setDepositAmt]   = useState('')
-  const [depositNote, setDepositNote] = useState('')
-  const [depositing, setDepositing]   = useState(false)
+  const [depositGoal, setDepositGoal]         = useState(null)
+  const [depositAmt, setDepositAmt]           = useState('')
+  const [depositNote, setDepositNote]         = useState('')
+  const [depositSourceWallet, setDepositSrc]  = useState('')
+  const [depositing, setDepositing]           = useState(false)
 
   const [histGoal, setHistGoal]       = useState(null)
   const [deposits, setDeposits]       = useState([])
@@ -82,7 +83,7 @@ export default function Goals() {
     setForm({ name: g.name, icon: g.icon, color: g.color, wallet_id: g.wallet_id || '', target_amount: g.target_amount || '', target_date: g.target_date || '', is_dream: g.is_dream || false, auto_amount: g.auto_amount || '' })
     setModal(true)
   }
-  function openDeposit(g) { setDepositGoal(g); setDepositAmt(''); setDepositNote('') }
+  function openDeposit(g) { setDepositGoal(g); setDepositAmt(''); setDepositNote(''); setDepositSrc(g.wallet_id || '') }
 
   async function handleSave() {
     if (!form.name) { toast.error('שם צנצנת חובה'); return }
@@ -91,8 +92,7 @@ export default function Goals() {
     const payload = {
       name: form.name, icon: form.icon, color: form.color,
       wallet_id: form.wallet_id,
-      target_amount: form.target_amount ? Number(form.target_amount) : null,
-      current_amount: editing ? undefined : 0,
+      target_amount: form.target_amount ? Number(form.target_amount) : 0,
       target_date: form.target_date || null,
       is_dream: form.is_dream || false,
       auto_amount: form.auto_amount ? Number(form.auto_amount) : null,
@@ -120,16 +120,53 @@ export default function Goals() {
     const amt = Number(depositAmt)
     if (!amt || amt <= 0) { toast.error('סכום לא תקין'); return }
     setDepositing(true)
+
     const cur = Number(depositGoal.current_amount)
     const tgt = Number(depositGoal.target_amount)
     const newAmt = tgt > 0 ? Math.min(cur + amt, tgt) : cur + amt
+    const srcId = depositSourceWallet || null
+    const dstId = depositGoal.wallet_id || null
+
+    // 1. Update jar progress + record deposit
     await Promise.all([
       supabase.from('goal_deposits').insert({ goal_id: depositGoal.id, user_id: user.id, amount: amt, note: depositNote || null }),
       supabase.from('goals').update({ current_amount: newAmt }).eq('id', depositGoal.id),
     ])
+
+    // 2. Wallet balance movement
+    if (srcId && dstId && srcId !== dstId) {
+      // Cross-wallet transfer: source − amt, destination + amt
+      const [{ data: sw }, { data: dw }] = await Promise.all([
+        supabase.from('wallets').select('balance').eq('id', srcId).single(),
+        supabase.from('wallets').select('balance').eq('id', dstId).single(),
+      ])
+      await Promise.all([
+        sw && supabase.from('wallets').update({ balance: Number(sw.balance) - amt }).eq('id', srcId),
+        dw && supabase.from('wallets').update({ balance: Number(dw.balance) + amt }).eq('id', dstId),
+        supabase.from('transactions').insert({
+          type: 'transfer', description: `הפקדה לחיסכון: ${depositGoal.name}`,
+          amount: amt, currency: '₪',
+          wallet_id: srcId, to_wallet_id: dstId,
+          date: new Date().toISOString().split('T')[0], user_id: user.id,
+        }),
+      ])
+    } else if (srcId) {
+      // Same wallet or no destination — just deduct from source + log
+      const { data: sw } = await supabase.from('wallets').select('balance').eq('id', srcId).single()
+      await Promise.all([
+        sw && supabase.from('wallets').update({ balance: Number(sw.balance) - amt }).eq('id', srcId),
+        supabase.from('transactions').insert({
+          type: 'expense', description: `הפקדה לחיסכון: ${depositGoal.name}`,
+          amount: amt, currency: '₪',
+          wallet_id: srcId,
+          date: new Date().toISOString().split('T')[0], user_id: user.id,
+        }),
+      ])
+    }
+
     if (tgt > 0 && newAmt >= tgt) { hapticSuccess(); showSuccess('🎉 הגעת ליעד!') }
     else showSuccess('הכסף הופקד בצנצנת! 🏺')
-    setDepositGoal(null); setDepositAmt(''); setDepositNote('')
+    setDepositGoal(null); setDepositAmt(''); setDepositNote(''); setDepositSrc('')
     setDepositing(false)
     load()
   }
@@ -359,6 +396,33 @@ export default function Goals() {
                 )}
               </div>
             </div>
+
+            {/* Source wallet selector */}
+            {wallets.length > 0 && (
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-sub)', marginBottom: '0.4rem', fontWeight: 600 }}>מאיזה ארנק?</div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setDepositSrc('')}
+                    style={{ padding: '0.35rem 0.75rem', borderRadius: '1.5rem', fontSize: '0.78rem', fontWeight: 600,
+                      background: depositSourceWallet === '' ? 'rgba(108,99,255,0.2)' : 'var(--surface)',
+                      border: `1px solid ${depositSourceWallet === '' ? 'rgba(108,99,255,0.5)' : 'var(--border)'}`,
+                      color: depositSourceWallet === '' ? '#a78bfa' : 'var(--text-muted)', cursor: 'pointer' }}>
+                    ללא
+                  </button>
+                  {wallets.map(w => (
+                    <button key={w.id} onClick={() => setDepositSrc(w.id)}
+                      style={{ padding: '0.35rem 0.75rem', borderRadius: '1.5rem', fontSize: '0.78rem', fontWeight: 600,
+                        background: depositSourceWallet === w.id ? 'rgba(108,99,255,0.2)' : 'var(--surface)',
+                        border: `1px solid ${depositSourceWallet === w.id ? 'rgba(108,99,255,0.5)' : 'var(--border)'}`,
+                        color: depositSourceWallet === w.id ? '#a78bfa' : 'var(--text-muted)', cursor: 'pointer' }}>
+                      {w.icon || '💳'} {w.name}
+                      <span style={{ marginRight: '0.3rem', opacity: 0.7 }}>₪{Number(w.balance).toLocaleString()}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Amount input — big, numeric keyboard on mobile */}
             <input
