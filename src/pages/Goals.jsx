@@ -160,6 +160,8 @@ export default function Goals() {
     const p      = tgt > 0 ? Math.min(cur / tgt * 100, 100) : 0
     const isDone = tgt > 0 && cur >= tgt
     const daysLeft = g.target_date ? Math.ceil((new Date(g.target_date + 'T00:00:00') - new Date()) / 86400000) : null
+    const remaining = tgt > cur ? tgt - cur : 0
+    const dailyTarget = daysLeft !== null && daysLeft > 0 && remaining > 0 ? Math.ceil(remaining / daysLeft) : null
     const wallet = wallets.find(w => w.id === g.wallet_id)
     return (
       <div key={g.id} style={{ background: 'var(--surface)', border: `1px solid ${isDone ? 'rgba(74,222,128,0.3)' : 'var(--border)'}`, borderRadius: '1rem', padding: '0.875rem 0.75rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem', position: 'relative' }}>
@@ -186,8 +188,15 @@ export default function Goals() {
         )}
 
         {daysLeft !== null && (
-          <div style={{ fontSize: '0.63rem', color: daysLeft < 0 ? '#f87171' : daysLeft < 30 ? '#fbbf24' : 'var(--text-muted)' }}>
-            {daysLeft < 0 ? `עבר ב-${Math.abs(daysLeft)} ימים` : `${daysLeft} ימים`}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <div style={{ fontSize: '0.63rem', color: daysLeft < 0 ? '#f87171' : daysLeft < 30 ? '#fbbf24' : 'var(--text-muted)' }}>
+              {daysLeft < 0 ? `עבר ב-${Math.abs(daysLeft)} ימים` : `${daysLeft} ימים נותרו`}
+            </div>
+            {dailyTarget && (
+              <div style={{ fontSize: '0.58rem', fontWeight: 700, color: g.color, background: `${g.color}18`, border: `1px solid ${g.color}35`, borderRadius: 999, padding: '1px 6px' }}>
+                ₪{dailyTarget.toLocaleString()} ליום
+              </div>
+            )}
           </div>
         )}
 

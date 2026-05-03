@@ -206,23 +206,32 @@ export default function FinancePage() {
   const allExpense = useMemo(() => allTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0), [allTxs])
   const allNet     = allIncome - allExpense
 
-  // All-time trend: one point per month from first tx to now
+  // All-time trend: weekly granularity to show real spikes/dips
   const trendData = useMemo(() => {
     if (!allTxs.length) return []
     const sorted = [...allTxs].sort((a, b) => a.date.localeCompare(b.date))
-    const start = new Date(sorted[0].date)
+    // Snap to the Sunday of the first tx's week
+    const firstDate = new Date(sorted[0].date + 'T00:00:00')
+    firstDate.setDate(firstDate.getDate() - firstDate.getDay())
     const now = new Date()
     const points = []
-    const cur = new Date(start.getFullYear(), start.getMonth(), 1)
+    const cur = new Date(firstDate)
     while (cur <= now) {
-      const mo = cur.getMonth(); const yr = cur.getFullYear()
-      const mTxs = allTxs.filter(t => { const d = new Date(t.date); return d.getMonth() === mo && d.getFullYear() === yr })
-      points.push({
-        name: cur.toLocaleDateString('he-IL', { month: 'short', year: '2-digit' }),
-        הכנסות: mTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0),
-        הוצאות: mTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0),
-      })
-      cur.setMonth(cur.getMonth() + 1)
+      const wStart = cur.toISOString().split('T')[0]
+      const wEndDate = new Date(cur); wEndDate.setDate(wEndDate.getDate() + 6)
+      const wEnd = wEndDate.toISOString().split('T')[0]
+      const wTxs = allTxs.filter(t => t.date >= wStart && t.date <= wEnd)
+      const inc = wTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+      const exp = wTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
+      // Only add points that have activity OR are the latest week (always show current)
+      if (inc > 0 || exp > 0 || wStart === now.toISOString().split('T')[0].slice(0,10)) {
+        points.push({
+          name: cur.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }),
+          הכנסות: inc,
+          הוצאות: exp,
+        })
+      }
+      cur.setDate(cur.getDate() + 7)
     }
     return points
   }, [allTxs])
@@ -244,7 +253,7 @@ export default function FinancePage() {
   const thisMonth = currentMonth()
   const activeRules = rules.filter(r => r.is_active).length
   const doneThisMonth = rules.filter(r => r.last_run_month === thisMonth).length
-  const trendChartWidth = Math.max(360, trendData.length * 68)
+  const trendChartWidth = Math.max(360, trendData.length * 52)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
