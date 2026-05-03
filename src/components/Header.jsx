@@ -9,15 +9,16 @@ export default function Header({ onMenuClick }) {
       background: 'rgba(15,15,26,0.6)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
-      display: 'flex',
+      display: 'grid',
+      gridTemplateColumns: '1fr auto 1fr',
       alignItems: 'center',
-      justifyContent: 'space-between',
       position: 'sticky', top: 0, zIndex: 30,
     }}>
       <button
         onClick={onMenuClick}
         className="hamburger-btn"
         aria-label="פתח תפריט"
+        style={{ justifySelf: 'start' }}
       >
         <Menu size={22} />
       </button>
@@ -25,12 +26,13 @@ export default function Header({ onMenuClick }) {
       <h1 className="hersko-shine" style={{
         margin: 0, fontSize: '1.75rem', fontWeight: 400,
         fontFamily: '"Pacifico", cursive', lineHeight: 1,
-        position: 'absolute', left: '50%', transform: 'translateX(-50%)',
       }}>
         Hersko
       </h1>
 
-      <NotificationBell />
+      <div style={{ justifySelf: 'end' }}>
+        <NotificationBell />
+      </div>
     </header>
   )
 }

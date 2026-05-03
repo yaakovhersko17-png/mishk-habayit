@@ -55,6 +55,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
   const [detectedStore, setDetectedStore] = useState(null)
   const [goals, setGoals]                 = useState([])
   const [selectedGoalId, setSelectedGoalId] = useState('')
+  const [savingsAlert, setSavingsAlert]   = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -103,7 +104,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
       cached('categories', () => supabase.from('categories').select('*'), 120_000),
       cached('profiles', () => supabase.from('profiles').select('*'), 120_000),
       cached('stores', () => supabase.from('stores').select('id,name'), 120_000),
-      supabase.from('goals').select('id,name,icon,color,current_amount,target_amount').order('created_at'),
+      supabase.from('goals').select('id,name,icon,color,current_amount,target_amount,wallet_id').order('created_at'),
     ])
     setWallets(w || [])
     setCats(c || [])
@@ -227,6 +228,14 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
   const selW = wallets.find(w => w.id === form.wallet_id)
   const showWallet = !(type === 'loan' && loanSubType === 'received')
   const activeColor = type === 'income' ? '#4ade80' : type === 'transfer' ? '#22d3ee' : type === 'loan' ? '#fbbf24' : type === 'savings' ? '#a78bfa' : '#f87171'
+  const savingsWalletIds = new Set(goals.filter(g => g.wallet_id).map(g => g.wallet_id))
+  function onWalletChange(walletId) {
+    if (type === 'expense' && walletId && savingsWalletIds.has(walletId)) {
+      setSavingsAlert(true)
+      return
+    }
+    setForm(f => ({ ...f, wallet_id: walletId }))
+  }
   const sep = () => <div style={{height:1,background:'rgba(255,255,255,0.06)',margin:'0 1rem'}}/>
 
   if (!open) return null
@@ -325,10 +334,10 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
                     {selW.icon || selW.name[0]}
                   </div>
                 )}
-                <select value={form.wallet_id} onChange={e=>setForm(f=>({...f,wallet_id:e.target.value}))}
+                <select value={form.wallet_id} onChange={e=>onWalletChange(e.target.value)}
                   style={{background:'none',border:'none',outline:'none',color:form.wallet_id?'var(--text)':'var(--text-dim)',fontSize:'0.875rem',cursor:'pointer',fontFamily:'inherit',direction:'rtl',maxWidth:160}}>
                   <option value="">בחר חשבון</option>
-                  {wallets.map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}</option>)}
+                  {wallets.map(w=><option key={w.id} value={w.id}>{w.icon} {w.name}{savingsWalletIds.has(w.id)?' 🏺':''}</option>)}
                 </select>
               </div>
             </div>
@@ -402,6 +411,23 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
             style={{width:'100%',background:'none',border:'none',outline:'none',color:notes?'var(--text)':'var(--text-dim)',fontSize:'0.875rem',fontFamily:'inherit',padding:'0.875rem 1rem',resize:'none',direction:'rtl',textAlign:'right',boxSizing:'border-box'}}/>
         </div>
       </div>
+
+      {/* ── Anti-savings-withdrawal full-screen alert ── */}
+      {savingsAlert && (
+        <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(185,28,28,0.97)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'1.5rem',padding:'2rem',textAlign:'center'}}>
+          <div style={{fontSize:'4rem',lineHeight:1}}>🚫</div>
+          <div style={{fontSize:'2.25rem',fontWeight:900,color:'#fff',lineHeight:1.1}}>עצור!</div>
+          <div style={{fontSize:'1.35rem',fontWeight:800,color:'#fca5a5'}}>אסור להוציא כסף מהחיסכון!</div>
+          <div style={{fontSize:'0.95rem',color:'#fecaca',maxWidth:280,lineHeight:1.5}}>
+            הארנק הזה מקושר לצנצנת חיסכון.<br/>הכסף שמור — לא נוגעים!
+          </div>
+          <button
+            onClick={() => setSavingsAlert(false)}
+            style={{marginTop:'0.5rem',padding:'0.875rem 3rem',borderRadius:'1rem',background:'#fff',color:'#b91c1c',fontWeight:900,fontSize:'1.05rem',border:'none',cursor:'pointer',boxShadow:'0 4px 20px rgba(0,0,0,0.3)'}}>
+            הבנתי — חזרה
+          </button>
+        </div>
+      )}
     </div>,
     document.body
   )

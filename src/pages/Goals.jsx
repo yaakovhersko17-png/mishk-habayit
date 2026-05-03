@@ -87,11 +87,12 @@ export default function Goals() {
 
   async function handleSave() {
     if (!form.name) { toast.error('שם צנצנת חובה'); return }
-    if (!form.wallet_id) { toast.error('יש לבחור ארנק לצנצנת'); return }
     setSaving(true)
     const payload = {
-      name: form.name, icon: form.icon, color: form.color,
-      wallet_id: form.wallet_id,
+      name: form.name,
+      icon: form.icon,
+      color: form.color,
+      wallet_id: form.wallet_id || null,
       target_amount: form.target_amount ? Number(form.target_amount) : 0,
       target_date: form.target_date || null,
       is_dream: form.is_dream || false,
@@ -101,10 +102,10 @@ export default function Goals() {
     if (!editing) payload.current_amount = 0
     if (editing) {
       const { error } = await supabase.from('goals').update(payload).eq('id', editing.id)
-      if (error) { toast.error('שגיאה בעדכון'); setSaving(false); return }
+      if (error) { console.error('goals update error:', error); toast.error(`שגיאה בעדכון: ${error.message}`); setSaving(false); return }
     } else {
       const { error } = await supabase.from('goals').insert(payload)
-      if (error) { toast.error('שגיאה בשמירה'); setSaving(false); return }
+      if (error) { console.error('goals insert error:', error); toast.error(`שגיאה בשמירה: ${error.message}`); setSaving(false); return }
       hapticSuccess()
     }
     setModal(false); setSaving(false); load()
@@ -163,7 +164,6 @@ export default function Goals() {
         }),
       ])
     }
-
     if (tgt > 0 && newAmt >= tgt) { hapticSuccess(); showSuccess('🎉 הגעת ליעד!') }
     else showSuccess('הכסף הופקד בצנצנת! 🏺')
     setDepositGoal(null); setDepositAmt(''); setDepositNote(''); setDepositSrc('')
@@ -191,7 +191,33 @@ export default function Goals() {
     const tgt    = Number(g.target_amount)
     const p      = tgt > 0 ? Math.min(cur / tgt * 100, 100) : 0
     const isDone = tgt > 0 && cur >= tgt
-    const daysLeft = g.target_date ? Math.ceil((new Date(g.target_date) - new Date()) / 86400000) : null
+    const daysLeft = g.target_date ? Math.ceil((new Date(g.target_date + 'T00:00:00') - new Date()) / 86400000) : null
+    const remaining = tgt > cur ? tgt - cur : 0
+
+    // Adaptive frequency based on time horizon
+    let timeLabel = null
+    let depositLabel = null
+    if (daysLeft !== null) {
+      if (daysLeft < 0) {
+        timeLabel = `פג תוקף לפני ${Math.abs(daysLeft)} ימים`
+      } else if (daysLeft <= 30) {
+        // ≤30 days → daily
+        const months = daysLeft
+        timeLabel = `${daysLeft} ימים נותרו`
+        if (remaining > 0) depositLabel = `₪${Math.ceil(remaining / daysLeft).toLocaleString()} / יום`
+      } else if (daysLeft <= 365) {
+        // 1–12 months → monthly
+        const monthsLeft = Math.ceil(daysLeft / 30.44)
+        timeLabel = `${monthsLeft} חודש${monthsLeft > 1 ? 'ים' : ''} נותר${monthsLeft > 1 ? 'ו' : ''}`
+        if (remaining > 0) depositLabel = `₪${Math.ceil(remaining / monthsLeft).toLocaleString()} / חודש`
+      } else {
+        // >1 year → yearly
+        const yearsLeft = Math.ceil(daysLeft / 365.25)
+        timeLabel = `${yearsLeft} שנ${yearsLeft > 1 ? 'ים' : 'ה'} נותר${yearsLeft > 1 ? 'ו' : 'ת'}`
+        if (remaining > 0) depositLabel = `₪${Math.ceil(remaining / yearsLeft).toLocaleString()} / שנה`
+      }
+    }
+
     const wallet = wallets.find(w => w.id === g.wallet_id)
     return (
       <div key={g.id} style={{ background: 'var(--surface)', border: `1px solid ${isDone ? 'rgba(74,222,128,0.3)' : 'var(--border)'}`, borderRadius: '1rem', padding: '0.875rem 0.75rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem', position: 'relative' }}>
@@ -217,9 +243,16 @@ export default function Goals() {
           </div>
         )}
 
-        {daysLeft !== null && (
-          <div style={{ fontSize: '0.63rem', color: daysLeft < 0 ? '#f87171' : daysLeft < 30 ? '#fbbf24' : 'var(--text-muted)' }}>
-            {daysLeft < 0 ? `עבר ב-${Math.abs(daysLeft)} ימים` : `${daysLeft} ימים`}
+        {timeLabel && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, width: '100%' }}>
+            <div style={{ fontSize: '0.62rem', color: daysLeft < 0 ? '#f87171' : daysLeft <= 30 ? '#fbbf24' : 'var(--text-muted)', textAlign: 'center' }}>
+              {timeLabel}
+            </div>
+            {depositLabel && (
+              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: g.color, background: `${g.color}18`, border: `1px solid ${g.color}40`, borderRadius: 999, padding: '2px 8px', letterSpacing: '0.01em' }}>
+                {depositLabel}
+              </div>
+            )}
           </div>
         )}
 
@@ -376,8 +409,8 @@ export default function Goals() {
 
       {/* Deposit sheet */}
       {depositGoal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', zIndex: 60, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setDepositGoal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--modal-bg)', border: '1px solid var(--border)', borderRadius: '1.5rem 1.5rem 0 0', padding: '1.5rem', width: '100%', maxWidth: 420, paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom,0px))' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setDepositGoal(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--modal-bg)', border: '1px solid var(--border)', borderRadius: '1.5rem 1.5rem 0 0', padding: '1.5rem', width: '100%', maxWidth: 420, paddingBottom: 'calc(1.5rem + 74px + env(safe-area-inset-bottom,0px))' }}>
 
             {/* Jar header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '1.5rem' }}>
@@ -450,8 +483,8 @@ export default function Goals() {
 
       {/* History sheet */}
       {histGoal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', zIndex: 60, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setHistGoal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--modal-bg)', border: '1px solid var(--border)', borderRadius: '1.5rem 1.5rem 0 0', padding: '1.5rem', width: '100%', maxWidth: 420, maxHeight: '70vh', display: 'flex', flexDirection: 'column', paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom,0px))' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={() => setHistGoal(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--modal-bg)', border: '1px solid var(--border)', borderRadius: '1.5rem 1.5rem 0 0', padding: '1.5rem', width: '100%', maxWidth: 420, maxHeight: '70vh', display: 'flex', flexDirection: 'column', paddingBottom: 'calc(1.5rem + 74px + env(safe-area-inset-bottom,0px))' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexShrink: 0 }}>
               <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.95rem' }}>היסטוריית הפקדות — {histGoal.name}</div>
               <button onClick={() => setHistGoal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex' }}><X size={18} /></button>

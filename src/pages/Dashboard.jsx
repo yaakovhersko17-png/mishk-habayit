@@ -8,7 +8,7 @@ import SplashScreen from '../components/SplashScreen'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import ShoppingCard from '../components/ShoppingCard'
 import { useSuccess } from '../context/SuccessContext'
-import toast from 'react-hot-toast'
+import { getHebrewDate } from '../lib/hebrewDate'
 
 const DAYS_HE   = ['א','ב','ג','ד','ה','ו','ש']
 const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']
@@ -41,6 +41,13 @@ export default function Dashboard() {
   const [splashFading, setSplashFading] = useState(false)
   const [revealed, setRevealed]         = useState(false)
   const [glowActive, setGlowActive]     = useState(true)
+
+  // Hebrew date — recalculated every minute so it flips at sunset automatically
+  const [hebrewDate, setHebrewDate] = useState(() => getHebrewDate())
+  useEffect(() => {
+    const t = setInterval(() => setHebrewDate(getHebrewDate()), 60_000)
+    return () => clearInterval(t)
+  }, [])
 
   // Calendar widget state
   const today = new Date()
@@ -175,6 +182,18 @@ export default function Dashboard() {
             </button>
             <button onClick={calNext} style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'0.5rem',cursor:'pointer',color:'var(--text)',padding:'0.3rem',display:'flex'}}><ChevronLeft size={16}/></button>
           </div>
+          {/* Hebrew date */}
+          {hebrewDate && (
+            <div style={{
+              display:'flex', alignItems:'center', justifyContent:'center',
+              gap:'0.5rem', padding:'0.25rem 0',
+            }}>
+              <span style={{
+                fontSize:'0.72rem', fontWeight:600, color:'#a78bfa',
+                letterSpacing:'0.03em', direction:'rtl',
+              }}>✡ {hebrewDate}</span>
+            </div>
+          )}
           {/* View tabs */}
           <div style={{display:'flex',gap:'0.375rem'}}>
             {[['day','יומי'],['week','שבועי'],['month','חודשי']].map(([v,l])=>(

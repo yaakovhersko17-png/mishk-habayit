@@ -33,11 +33,14 @@ function CatRow({ c, txCounts, onClick, onEdit, onDelete, editMode }) {
           {c.icon}
         </div>
       </div>
-      {/* LEFT: name + amount */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)' }}>{c.name}</div>
-        <div style={{ fontSize: '0.7rem', marginTop: '0.05rem', color: count > 0 ? (c.type === 'income' ? 'var(--c-income)' : 'var(--c-expense)') : 'var(--text-dim)' }}>
-          {count > 0 ? `₪${total.toLocaleString()} • ${count} טרנ׳` : '₪0'}
+      {/* CENTER: name | amount split */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
+        <div style={{ textAlign: 'left', flexShrink: 0 }}>
+          <div style={{ fontSize: '0.82rem', fontWeight: count > 0 ? 700 : 400, color: count > 0 ? (c.type === 'income' ? 'var(--c-income)' : 'var(--c-expense)') : 'var(--text-dim)' }}>
+            {count > 0 ? `₪${total.toLocaleString()}` : '—'}
+          </div>
+          {count > 0 && <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: 1 }}>{count} פעולות</div>}
         </div>
       </div>
       {editMode && (

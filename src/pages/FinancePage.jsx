@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -7,6 +7,10 @@ import {
   ScanLine, Archive, BarChart2, Plus, Edit2, Trash2,
   RefreshCw, ToggleLeft, ToggleRight, Store,
 } from 'lucide-react'
+import {
+  LineChart, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, Tooltip, Legend,
+} from 'recharts'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import AddTransactionSheet from '../components/AddTransactionSheet'
@@ -14,8 +18,8 @@ import toast from 'react-hot-toast'
 import { useSuccess } from '../context/SuccessContext'
 
 const EMPTY_RULE = { description: '', amount: '', type: 'expense', category_id: '', wallet_id: '', day_of_month: 1 }
-
 const TYPE_LABELS = { loan_given: 'הלוואה שנתתי', loan_received: 'הלוואה שקיבלתי', debt_unpaid: 'חוב' }
+const PIE_COLORS = ['#6c63ff','#f87171','#fbbf24','#4ade80','#60a5fa','#f472b6','#a78bfa','#34d399','#fb923c','#22d3ee']
 
 function currentMonth() {
   const n = new Date()
@@ -72,33 +76,36 @@ function AccordionRow({ icon, label, sub, color, open, onToggle, hasBorderBottom
   )
 }
 
+const tooltipStyle = { background: '#1e1e3a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.75rem', color: 'var(--text)' }
+
 export default function FinancePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const showSuccess = useSuccess()
 
-  const [loading, setLoading] = useState(true)
-  const [wallets, setWallets] = useState([])
-  const [monthly, setMonthly] = useState({ income: 0, expense: 0 })
-  const [loans, setLoans] = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [wallets, setWallets]   = useState([])
+  const [monthly, setMonthly]   = useState({ income: 0, expense: 0 })
+  const [loans, setLoans]       = useState([])
+  const [allTxs, setAllTxs]     = useState([])
 
   const [openSection, setOpenSection] = useState(null)
-  const [addTxOpen, setAddTxOpen] = useState(false)
+  const [addTxOpen, setAddTxOpen]     = useState(false)
 
   // Debt repayment
-  const [debtModal, setDebtModal]   = useState(false)
-  const [repayLoan, setRepayLoan]   = useState(null)
+  const [debtModal, setDebtModal]     = useState(false)
+  const [repayLoan, setRepayLoan]     = useState(null)
   const [repayWallet, setRepayWallet] = useState('')
-  const [repaying, setRepaying]     = useState(false)
+  const [repaying, setRepaying]       = useState(false)
 
   // Recurring
-  const [rules, setRules] = useState([])
-  const [cats, setCats] = useState([])
-  const [ruleModal, setRuleModal] = useState(false)
+  const [rules, setRules]           = useState([])
+  const [cats, setCats]             = useState([])
+  const [ruleModal, setRuleModal]   = useState(false)
   const [editingRule, setEditingRule] = useState(null)
-  const [ruleForm, setRuleForm] = useState(EMPTY_RULE)
+  const [ruleForm, setRuleForm]     = useState(EMPTY_RULE)
   const [savingRule, setSavingRule] = useState(false)
-  const [running, setRunning] = useState(false)
+  const [running, setRunning]       = useState(false)
 
   useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -108,14 +115,16 @@ export default function FinancePage() {
       { data: rData }, { data: catData },
     ] = await Promise.all([
       supabase.from('wallets').select('*'),
-      supabase.from('transactions').select('id,type,amount,date,loan_returned,description,wallet_id,loan_party,currency'),
+      supabase.from('transactions').select('id,type,amount,date,loan_returned,description,wallet_id,loan_party,currency,category_id,categories(name,color)'),
       supabase.from('recurring_rules').select('*').order('day_of_month'),
       supabase.from('categories').select('id,name,icon,color,type'),
     ])
     const w = wData || []
+    const txs = txData || []
     setWallets(w); setCats(catData || []); setRules(rData || [])
+    setAllTxs(txs)
     const now = new Date()
-    const monthTxs = (txData || []).filter(t => {
+    const monthTxs = txs.filter(t => {
       const d = new Date(t.date)
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
     })
@@ -123,7 +132,7 @@ export default function FinancePage() {
       income: monthTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0),
       expense: monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0),
     })
-    setLoans((txData || []).filter(t => t.type.startsWith('loan') || t.type === 'debt_unpaid'))
+    setLoans(txs.filter(t => t.type.startsWith('loan') || t.type === 'debt_unpaid'))
     setLoading(false)
     autoRun(true)
   }
@@ -187,13 +196,55 @@ export default function FinancePage() {
     const sign = newType === 'income' ? 1 : -1
     const { data: w } = await supabase.from('wallets').select('balance').eq('id', repayWallet).single()
     if (w) await supabase.from('wallets').update({ balance: w.balance + sign * amt }).eq('id', repayWallet)
-    setRepaying(false)
-    setRepayLoan(null)
-    setDebtModal(false)
-    setRepayWallet('')
+    setRepaying(false); setRepayLoan(null); setDebtModal(false); setRepayWallet('')
     showSuccess('החוב שולם ונסגר בהצלחה! ✓')
     load()
   }
+
+  // ── All-time computations ────────────────────────────────────────────────
+  const allIncome  = useMemo(() => allTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0), [allTxs])
+  const allExpense = useMemo(() => allTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0), [allTxs])
+  const allNet     = allIncome - allExpense
+
+  // All-time trend: weekly granularity to show real spikes/dips
+  const trendData = useMemo(() => {
+    if (!allTxs.length) return []
+    const sorted = [...allTxs].sort((a, b) => a.date.localeCompare(b.date))
+    // Snap to the Sunday of the first tx's week
+    const firstDate = new Date(sorted[0].date + 'T00:00:00')
+    firstDate.setDate(firstDate.getDate() - firstDate.getDay())
+    const now = new Date()
+    const points = []
+    const cur = new Date(firstDate)
+    while (cur <= now) {
+      const wStart = cur.toISOString().split('T')[0]
+      const wEndDate = new Date(cur); wEndDate.setDate(wEndDate.getDate() + 6)
+      const wEnd = wEndDate.toISOString().split('T')[0]
+      const wTxs = allTxs.filter(t => t.date >= wStart && t.date <= wEnd)
+      const inc = wTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+      const exp = wTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
+      // Only add points that have activity OR are the latest week (always show current)
+      if (inc > 0 || exp > 0 || wStart === now.toISOString().split('T')[0].slice(0,10)) {
+        points.push({
+          name: cur.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }),
+          הכנסות: inc,
+          הוצאות: exp,
+        })
+      }
+      cur.setDate(cur.getDate() + 7)
+    }
+    return points
+  }, [allTxs])
+
+  // All-time pie: expenses by category
+  const pieData = useMemo(() => {
+    const map = {}
+    allTxs.filter(t => t.type === 'expense').forEach(t => {
+      const name = t.categories?.name || 'אחר'
+      map[name] = (map[name] || 0) + Number(t.amount)
+    })
+    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 8)
+  }, [allTxs])
 
   if (loading) return <LoadingSpinner />
 
@@ -202,6 +253,7 @@ export default function FinancePage() {
   const thisMonth = currentMonth()
   const activeRules = rules.filter(r => r.is_active).length
   const doneThisMonth = rules.filter(r => r.last_run_month === thisMonth).length
+  const trendChartWidth = Math.max(360, trendData.length * 52)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -214,24 +266,111 @@ export default function FinancePage() {
         </button>
       </div>
 
-      {/* Stat grid */}
+      {/* ── TOP CARDS ────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '0.75rem' }}>
+        {/* Row 1 */}
         <MiniStat label="יתרה כוללת" value={`₪${totalBalance.toLocaleString()}`} color="#6c63ff" />
-        <MiniStat label="הכנסות החודש" value={`₪${monthly.income.toLocaleString()}`} color="#4ade80" />
-        <MiniStat label="הוצאות החודש" value={`₪${monthly.expense.toLocaleString()}`} color="#f87171" />
         <div onClick={() => openLoans.length > 0 && setDebtModal(true)}
           style={{ cursor: openLoans.length > 0 ? 'pointer' : 'default' }}>
           <MiniStat label="הלוואות פתוחות" value={openLoans.length} color="#fbbf24"
-            sub={openLoans.length > 0 ? `₪${openLoans.reduce((s, l) => s + Number(l.amount) - Number(l.loan_returned || 0), 0).toLocaleString()} סה"כ — לחץ לסגירה` : undefined} />
+            sub={openLoans.length > 0 ? `₪${openLoans.reduce((s, l) => s + Number(l.amount) - Number(l.loan_returned || 0), 0).toLocaleString()}` : undefined} />
+        </div>
+        {/* Row 2 */}
+        <MiniStat label="הכנסות החודש" value={`₪${monthly.income.toLocaleString()}`} color="#4ade80" />
+        <MiniStat label="הוצאות החודש" value={`₪${monthly.expense.toLocaleString()}`} color="#f87171" />
+      </div>
+
+      {/* ── SEPARATOR ────────────────────────────────────────── */}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ flex: 1, height: 1, background: 'linear-gradient(to left, transparent, rgba(255,255,255,0.12), transparent)' }} />
+        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>ALL-TIME</span>
+        <div style={{ flex: 1, height: 1, background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.12), transparent)' }} />
+      </div>
+
+      {/* ── ALL-TIME STATS ───────────────────────────────────── */}
+      {/* Income + Expense boxes */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div className="stat-card" style={{ borderColor: 'rgba(74,222,128,0.15)' }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>הכנסות סה"כ</div>
+          <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#4ade80' }}>₪{allIncome.toLocaleString()}</div>
+        </div>
+        <div className="stat-card" style={{ borderColor: 'rgba(248,113,113,0.15)' }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>הוצאות סה"כ</div>
+          <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f87171' }}>₪{allExpense.toLocaleString()}</div>
         </div>
       </div>
 
-      {/* Nav + Recurring accordion */}
+      {/* Balance row */}
+      <div className="stat-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderColor: allNet >= 0 ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)', background: allNet >= 0 ? 'rgba(74,222,128,0.04)' : 'rgba(248,113,113,0.04)' }}>
+        <div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>מאזן כולל</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: allNet >= 0 ? '#4ade80' : '#f87171' }}>
+            {allNet >= 0 ? '+' : '-'}₪{Math.abs(allNet).toLocaleString()}
+          </div>
+        </div>
+        <div style={{ fontSize: '1.5rem' }}>{allNet >= 0 ? '📈' : '📉'}</div>
+      </div>
+
+      {/* ── TREND CHART ─────────────────────────────────────── */}
+      {trendData.length > 1 && (
+        <div className="page-card" style={{ padding: '1rem 0.75rem 0.75rem' }}>
+          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-sub)', marginBottom: '0.75rem', paddingRight: '0.25rem' }}>
+            מגמה מצטברת
+          </div>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', cursor: 'grab', paddingBottom: '0.5rem' }}>
+            <LineChart width={trendChartWidth} height={220} data={trendData} style={{ direction: 'ltr' }}>
+              <XAxis dataKey="name" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={false} tickLine={false} width={50} tickFormatter={v => `₪${(v/1000).toFixed(0)}k`} />
+              <Tooltip contentStyle={tooltipStyle} formatter={v => `₪${v.toLocaleString()}`} />
+              <Legend wrapperStyle={{ fontSize: '0.78rem', color: 'var(--text-sub)', paddingTop: '0.5rem' }} />
+              <Line type="monotone" dataKey="הכנסות" stroke="#4ade80" strokeWidth={2.5} dot={{ r: 3, fill: '#4ade80' }} activeDot={{ r: 5 }} />
+              <Line type="monotone" dataKey="הוצאות" stroke="#f87171" strokeWidth={2.5} dot={{ r: 3, fill: '#f87171' }} activeDot={{ r: 5 }} />
+            </LineChart>
+          </div>
+        </div>
+      )}
+
+      {/* ── PIE CHART ───────────────────────────────────────── */}
+      {pieData.length > 0 && (
+        <div className="page-card">
+          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-sub)', marginBottom: '0.5rem' }}>הוצאות לפי קטגוריה</div>
+          <div style={{ display: 'flex', justifyContent: 'center', overflow: 'visible' }}>
+            <PieChart width={300} height={260}>
+              <Pie
+                data={pieData}
+                cx="50%" cy="50%"
+                innerRadius={50} outerRadius={80}
+                dataKey="value" nameKey="name"
+                labelLine={{ stroke: 'rgba(255,255,255,0.25)', strokeWidth: 1 }}
+                label={({ cx, cy, midAngle, outerRadius, name, percent }) => {
+                  if (percent < 0.04) return null
+                  const RADIAN = Math.PI / 180
+                  const r = outerRadius + 22
+                  const x = cx + r * Math.cos(-midAngle * RADIAN)
+                  const y = cy + r * Math.sin(-midAngle * RADIAN)
+                  const short = name.length > 7 ? name.slice(0, 7) + '…' : name
+                  return (
+                    <text x={x} y={y} fill="rgba(255,255,255,0.75)" textAnchor={x > cx ? 'start' : 'end'}
+                      dominantBaseline="central" fontSize={9} fontWeight={600}>
+                      {short} {(percent * 100).toFixed(0)}%
+                    </text>
+                  )
+                }}
+              >
+                {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+              </Pie>
+              <Tooltip contentStyle={tooltipStyle} formatter={v => `₪${v.toLocaleString()}`} />
+            </PieChart>
+          </div>
+        </div>
+      )}
+
+      {/* ── NAVIGATION ──────────────────────────────────────── */}
       <div className="page-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <NavRow icon={<Store size={18} />}          label="חנויות"           sub="ניהול חנויות וסיכום הוצאות"       color="#a78bfa" onClick={() => navigate('/stores')} />
-        <NavRow icon={<ScanLine size={18} />}       label="סריקת חשבונית"    sub="סרוק חשבונית עם AI"               color="#6c63ff" onClick={() => navigate('/scanner')} />
-        <NavRow icon={<Archive size={18} />}        label="ארכיון חשבוניות"  sub="כל החשבוניות השמורות"             color="#a78bfa" onClick={() => navigate('/invoices')} />
-        <NavRow icon={<BarChart2 size={18} />}      label="דוחות"            sub="גרפים, תרשימים וייצוא נתונים"   color="#34d399" onClick={() => navigate('/reports')} />
+        <NavRow icon={<Store size={18} />}     label="חנויות"          sub="ניהול חנויות וסיכום הוצאות"      color="#a78bfa" onClick={() => navigate('/stores')} />
+        <NavRow icon={<ScanLine size={18} />}  label="סריקת חשבונית"   sub="סרוק חשבונית עם AI"              color="#6c63ff" onClick={() => navigate('/scanner')} />
+        <NavRow icon={<Archive size={18} />}   label="ארכיון חשבוניות" sub="כל החשבוניות השמורות"            color="#a78bfa" onClick={() => navigate('/invoices')} />
+        <NavRow icon={<BarChart2 size={18} />} label="דוחות"           sub="גרפים, תרשימים וייצוא נתונים"  color="#34d399" onClick={() => navigate('/reports')} />
 
         {/* Recurring accordion */}
         <AccordionRow
@@ -362,14 +501,14 @@ export default function FinancePage() {
 
       {/* Debt repayment modal */}
       {debtModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 60,
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 100,
           display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
           onClick={() => { setDebtModal(false); setRepayLoan(null) }}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--modal-bg)',
             border: '1px solid var(--border)', borderRadius: '1.5rem 1.5rem 0 0',
             padding: '1.5rem', width: '100%', maxWidth: 440, maxHeight: '80vh',
             display: 'flex', flexDirection: 'column',
-            paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom,0px))' }}>
+            paddingBottom: 'calc(1.5rem + 74px + env(safe-area-inset-bottom,0px))' }}>
 
             {!repayLoan ? (
               <>
@@ -402,9 +541,7 @@ export default function FinancePage() {
               </>
             ) : (
               <>
-                <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '0.5rem' }}>
-                  מאיזה חשבון?
-                </div>
+                <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '0.5rem' }}>מאיזה חשבון?</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                   {repayLoan.description} — ₪{(Number(repayLoan.amount) - Number(repayLoan.loan_returned || 0)).toLocaleString()}
                 </div>
@@ -414,9 +551,7 @@ export default function FinancePage() {
                   {wallets.map(w => <option key={w.id} value={w.id}>{w.icon || '💳'} {w.name} — ₪{Number(w.balance).toLocaleString()}</option>)}
                 </select>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <button className="btn-ghost" onClick={() => setRepayLoan(null)} style={{ flex: 1, justifyContent: 'center' }}>
-                    חזרה
-                  </button>
+                  <button className="btn-ghost" onClick={() => setRepayLoan(null)} style={{ flex: 1, justifyContent: 'center' }}>חזרה</button>
                   <button className="btn-primary" onClick={handleRepay} disabled={repaying || !repayWallet}
                     style={{ flex: 2, justifyContent: 'center' }}>
                     {repaying ? 'מעדכן...' : '✓ אשר תשלום'}
