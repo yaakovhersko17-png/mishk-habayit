@@ -161,7 +161,31 @@ export default function Goals() {
     const isDone = tgt > 0 && cur >= tgt
     const daysLeft = g.target_date ? Math.ceil((new Date(g.target_date + 'T00:00:00') - new Date()) / 86400000) : null
     const remaining = tgt > cur ? tgt - cur : 0
-    const dailyTarget = daysLeft !== null && daysLeft > 0 && remaining > 0 ? Math.ceil(remaining / daysLeft) : null
+
+    // Adaptive frequency based on time horizon
+    let timeLabel = null
+    let depositLabel = null
+    if (daysLeft !== null) {
+      if (daysLeft < 0) {
+        timeLabel = `פג תוקף לפני ${Math.abs(daysLeft)} ימים`
+      } else if (daysLeft <= 30) {
+        // ≤30 days → daily
+        const months = daysLeft
+        timeLabel = `${daysLeft} ימים נותרו`
+        if (remaining > 0) depositLabel = `₪${Math.ceil(remaining / daysLeft).toLocaleString()} / יום`
+      } else if (daysLeft <= 365) {
+        // 1–12 months → monthly
+        const monthsLeft = Math.ceil(daysLeft / 30.44)
+        timeLabel = `${monthsLeft} חודש${monthsLeft > 1 ? 'ים' : ''} נותר${monthsLeft > 1 ? 'ו' : ''}`
+        if (remaining > 0) depositLabel = `₪${Math.ceil(remaining / monthsLeft).toLocaleString()} / חודש`
+      } else {
+        // >1 year → yearly
+        const yearsLeft = Math.ceil(daysLeft / 365.25)
+        timeLabel = `${yearsLeft} שנ${yearsLeft > 1 ? 'ים' : 'ה'} נותר${yearsLeft > 1 ? 'ו' : 'ת'}`
+        if (remaining > 0) depositLabel = `₪${Math.ceil(remaining / yearsLeft).toLocaleString()} / שנה`
+      }
+    }
+
     const wallet = wallets.find(w => w.id === g.wallet_id)
     return (
       <div key={g.id} style={{ background: 'var(--surface)', border: `1px solid ${isDone ? 'rgba(74,222,128,0.3)' : 'var(--border)'}`, borderRadius: '1rem', padding: '0.875rem 0.75rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem', position: 'relative' }}>
@@ -187,14 +211,14 @@ export default function Goals() {
           </div>
         )}
 
-        {daysLeft !== null && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <div style={{ fontSize: '0.63rem', color: daysLeft < 0 ? '#f87171' : daysLeft < 30 ? '#fbbf24' : 'var(--text-muted)' }}>
-              {daysLeft < 0 ? `עבר ב-${Math.abs(daysLeft)} ימים` : `${daysLeft} ימים נותרו`}
+        {timeLabel && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, width: '100%' }}>
+            <div style={{ fontSize: '0.62rem', color: daysLeft < 0 ? '#f87171' : daysLeft <= 30 ? '#fbbf24' : 'var(--text-muted)', textAlign: 'center' }}>
+              {timeLabel}
             </div>
-            {dailyTarget && (
-              <div style={{ fontSize: '0.58rem', fontWeight: 700, color: g.color, background: `${g.color}18`, border: `1px solid ${g.color}35`, borderRadius: 999, padding: '1px 6px' }}>
-                ₪{dailyTarget.toLocaleString()} ליום
+            {depositLabel && (
+              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: g.color, background: `${g.color}18`, border: `1px solid ${g.color}40`, borderRadius: 999, padding: '2px 8px', letterSpacing: '0.01em' }}>
+                {depositLabel}
               </div>
             )}
           </div>
