@@ -144,18 +144,20 @@ export default function FinancePage() {
   useRealtime(['transactions', 'wallets'], () => loadRef.current())
 
   async function load() {
-    const abort = new AbortController()
-    const timer = setTimeout(() => abort.abort(), 12000)
     try {
-      const [
-        { data: wData }, { data: txData },
-        { data: rData }, { data: catData },
-      ] = await Promise.all([
-        supabase.from('wallets').select('*').abortSignal(abort.signal),
-        supabase.from('transactions').select('id,type,amount,date,loan_returned,description,wallet_id,loan_party,currency,category_id,categories(name,color)').abortSignal(abort.signal),
-        supabase.from('recurring_rules').select('*').order('day_of_month').abortSignal(abort.signal),
-        supabase.from('categories').select('id,name,icon,color,type').abortSignal(abort.signal),
+      const deadline = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('load_timeout')), 10000)
+      )
+      const results = await Promise.race([
+        Promise.all([
+          supabase.from('wallets').select('*'),
+          supabase.from('transactions').select('id,type,amount,date,loan_returned,description,wallet_id,loan_party,currency,category_id,categories(name,color)'),
+          supabase.from('recurring_rules').select('*').order('day_of_month'),
+          supabase.from('categories').select('id,name,icon,color,type'),
+        ]),
+        deadline,
       ])
+      const [{ data: wData }, { data: txData }, { data: rData }, { data: catData }] = results
       const w = wData || []
       const txs = txData || []
       setWallets(w); setCats(catData || []); setRules(rData || [])
@@ -173,11 +175,8 @@ export default function FinancePage() {
       autoRun(true)
     } catch (e) {
       console.error('load error', e)
-      if (e?.name === 'AbortError' || String(e).includes('abort')) {
-        toast.error('הטעינה נכשלה — בדוק חיבור לאינטרנט')
-      }
+      toast.error('הטעינה נכשלה — נסה לרענן את הדף')
     } finally {
-      clearTimeout(timer)
       setLoading(false)
     }
   }
