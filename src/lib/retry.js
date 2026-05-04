@@ -4,25 +4,24 @@
  */
 
 const DEFAULT_OPTS = {
-  maxRetries: 3,
-  baseDelay: 500,   // ms
-  maxDelay: 8000,   // ms
+  maxRetries: 1,
+  baseDelay: 500,
+  maxDelay: 4000,
+  timeout: 8000,
 }
 
-/**
- * Execute a Supabase query with automatic retry on transient failures.
- * @param {() => Promise<{data:any, error:any}>} fn - Supabase query function
- * @param {object} opts - Retry options
- * @returns {Promise<{data:any, error:any}>}
- */
 export async function withRetry(fn, opts = {}) {
-  const { maxRetries, baseDelay, maxDelay } = { ...DEFAULT_OPTS, ...opts }
+  const { maxRetries, baseDelay, maxDelay, timeout } = { ...DEFAULT_OPTS, ...opts }
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const result = await fn()
+      const result = await Promise.race([
+        fn(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('request_timeout')), timeout)
+        ),
+      ])
 
-      // Supabase errors with 5xx status → retry
       if (result.error && isRetryable(result.error) && attempt < maxRetries) {
         await sleep(getDelay(attempt, baseDelay, maxDelay))
         continue
@@ -30,7 +29,6 @@ export async function withRetry(fn, opts = {}) {
 
       return result
     } catch (err) {
-      // Network error → retry
       if (attempt < maxRetries) {
         await sleep(getDelay(attempt, baseDelay, maxDelay))
         continue

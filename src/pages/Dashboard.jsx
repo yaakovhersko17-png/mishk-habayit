@@ -65,23 +65,35 @@ export default function Dashboard() {
 
   async function loadData() {
     setLoading(true)
-    const [{ data: walletsData }, { data: txData }] = await Promise.all([
-      withRetry(() => supabase.from('wallets').select('*').order('created_at')),
-      withRetry(() => supabase.from('transactions').select('*,categories(name,color),profiles(name)').order('date', { ascending: false })),
-    ])
-    setWallets(walletsData || [])
-    const now = new Date()
-    const monthTxs = (txData || []).filter(t => {
-      const d = new Date(t.date)
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-    })
-    const income  = monthTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
-    const expense = monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
-    const loans   = (txData || []).filter(t => t.type.startsWith('loan') || t.type === 'debt_unpaid')
-    setMonthlyData({ income, expense, loans })
-    setLoading(false)
-    setSplashFading(true)
-    setTimeout(() => setRevealed(true), 550)
+    try {
+      const deadline = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('load_timeout')), 10000)
+      )
+      const results = await Promise.race([
+        Promise.all([
+          supabase.from('wallets').select('*').order('created_at'),
+          supabase.from('transactions').select('*,categories(name,color),profiles(name)').order('date', { ascending: false }),
+        ]),
+        deadline,
+      ])
+      const [{ data: walletsData }, { data: txData }] = results
+      setWallets(walletsData || [])
+      const now = new Date()
+      const monthTxs = (txData || []).filter(t => {
+        const d = new Date(t.date)
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      })
+      const income  = monthTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+      const expense = monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
+      const loans   = (txData || []).filter(t => t.type.startsWith('loan') || t.type === 'debt_unpaid')
+      setMonthlyData({ income, expense, loans })
+    } catch (e) {
+      console.error('loadData error', e)
+    } finally {
+      setLoading(false)
+      setSplashFading(true)
+      setTimeout(() => setRevealed(true), 550)
+    }
   }
 
   async function loadCalendar(view, date) {
