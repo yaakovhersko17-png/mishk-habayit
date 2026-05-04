@@ -46,6 +46,11 @@ function LoanRow({ loan, color, bgColor, borderColor, onRepay }) {
   )
 }
 const PIE_COLORS = ['#6c63ff','#f87171','#fbbf24','#4ade80','#60a5fa','#f472b6','#a78bfa','#34d399','#fb923c','#22d3ee']
+const PIE_W = 360, PIE_H = 300
+const PIE_CX = 180, PIE_CY = 150
+const PIE_OR = 78, PIE_IR = 50
+const PIE_RADIAN = Math.PI / 180
+const PIE_MIN_GAP = 22
 
 function currentMonth() {
   const n = new Date()
@@ -275,6 +280,49 @@ export default function FinancePage() {
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 8)
   }, [allTxs])
 
+  const pieLabelLayout = useMemo(() => {
+    if (!pieData.length) return {}
+    const total = pieData.reduce((s, d) => s + d.value, 0)
+    let cumAngle = 0
+    const entries = []
+    pieData.forEach((d, i) => {
+      const pct = d.value / total
+      const sliceAngle = pct * 360
+      const midAngle = cumAngle + sliceAngle / 2
+      cumAngle += sliceAngle
+      if (pct < 0.04) return
+      const rad = -midAngle * PIE_RADIAN
+      const arcX = PIE_CX + PIE_OR * Math.cos(rad)
+      const arcY = PIE_CY + PIE_OR * Math.sin(rad)
+      const elbowX = PIE_CX + (PIE_OR + 14) * Math.cos(rad)
+      const elbowY = PIE_CY + (PIE_OR + 14) * Math.sin(rad)
+      entries.push({ i, arcX, arcY, elbowX, rawY: elbowY, isLeft: elbowX <= PIE_CX })
+    })
+    const left  = entries.filter(e => e.isLeft).sort((a, b) => a.rawY - b.rawY)
+    const right = entries.filter(e => !e.isLeft).sort((a, b) => a.rawY - b.rawY)
+    function resolve(group) {
+      for (let pass = 0; pass < 20; pass++) {
+        let moved = false
+        for (let j = 1; j < group.length; j++) {
+          if (group[j].rawY - group[j-1].rawY < PIE_MIN_GAP) {
+            const mid = (group[j].rawY + group[j-1].rawY) / 2
+            group[j-1].rawY = mid - PIE_MIN_GAP / 2
+            group[j].rawY   = mid + PIE_MIN_GAP / 2
+            moved = true
+          }
+        }
+        if (!moved) break
+      }
+      group.forEach(e => { e.rawY = Math.max(10, Math.min(PIE_H - 10, e.rawY)) })
+    }
+    resolve(left); resolve(right)
+    const layout = {}
+    ;[...left, ...right].forEach(e => {
+      layout[e.i] = { arcX: e.arcX, arcY: e.arcY, elbowX: e.elbowX, finalY: e.rawY, isLeft: e.isLeft }
+    })
+    return layout
+  }, [pieData])
+
   if (loading) return <LoadingSpinner />
 
   const totalBalance = wallets.reduce((s, w) => s + Number(w.balance), 0)
@@ -398,28 +446,36 @@ export default function FinancePage() {
 
       {/* ── PIE CHART ───────────────────────────────────────── */}
       {pieData.length > 0 && (
-        <div className="page-card">
+        <div className="page-card" style={{ overflow: 'visible' }}>
           <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-sub)', marginBottom: '0.5rem' }}>הוצאות לפי קטגוריה</div>
           <div style={{ display: 'flex', justifyContent: 'center', overflow: 'visible' }}>
-            <PieChart width={300} height={260}>
+            <PieChart width={PIE_W} height={PIE_H} style={{ overflow: 'visible' }}>
               <Pie
                 data={pieData}
-                cx="50%" cy="50%"
-                innerRadius={50} outerRadius={80}
+                cx={PIE_CX} cy={PIE_CY}
+                innerRadius={PIE_IR} outerRadius={PIE_OR}
                 dataKey="value" nameKey="name"
-                labelLine={{ stroke: 'rgba(255,255,255,0.25)', strokeWidth: 1 }}
-                label={({ cx, cy, midAngle, outerRadius, name, percent }) => {
-                  if (percent < 0.04) return null
-                  const RADIAN = Math.PI / 180
-                  const r = outerRadius + 22
-                  const x = cx + r * Math.cos(-midAngle * RADIAN)
-                  const y = cy + r * Math.sin(-midAngle * RADIAN)
-                  const short = name.length > 7 ? name.slice(0, 7) + '…' : name
+                labelLine={false}
+                label={({ index, percent }) => {
+                  const pos = pieLabelLayout[index]
+                  if (!pos) return null
+                  const color = PIE_COLORS[index % PIE_COLORS.length]
+                  const name = pieData[index].name
+                  const pct = (percent * 100).toFixed(0) + '%'
+                  const { arcX, arcY, elbowX, finalY, isLeft } = pos
+                  const tailX = isLeft ? elbowX - 24 : elbowX + 24
+                  const textX = tailX + (isLeft ? -4 : 4)
                   return (
-                    <text x={x} y={y} fill="rgba(255,255,255,0.75)" textAnchor={x > cx ? 'start' : 'end'}
-                      dominantBaseline="central" fontSize={9} fontWeight={600}>
-                      {short} {(percent * 100).toFixed(0)}%
-                    </text>
+                    <g>
+                      <polyline
+                        points={`${arcX.toFixed(1)},${arcY.toFixed(1)} ${elbowX.toFixed(1)},${finalY.toFixed(1)} ${tailX},${finalY.toFixed(1)}`}
+                        fill="none" stroke={color} strokeWidth={1.2} strokeOpacity={0.6}
+                      />
+                      <text x={textX} y={finalY - 5} textAnchor={isLeft ? 'end' : 'start'}
+                        fill={color} fontSize={10} fontWeight={700}>{name}</text>
+                      <text x={textX} y={finalY + 7} textAnchor={isLeft ? 'end' : 'start'}
+                        fill="rgba(255,255,255,0.55)" fontSize={9}>{pct}</text>
+                    </g>
                   )
                 }}
               >
