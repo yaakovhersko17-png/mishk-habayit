@@ -144,34 +144,40 @@ export default function FinancePage() {
   useRealtime(['transactions', 'wallets'], () => loadRef.current())
 
   async function load() {
+    const abort = new AbortController()
+    const timer = setTimeout(() => abort.abort(), 12000)
     try {
-    const [
-      { data: wData }, { data: txData },
-      { data: rData }, { data: catData },
-    ] = await Promise.all([
-      supabase.from('wallets').select('*'),
-      supabase.from('transactions').select('id,type,amount,date,loan_returned,description,wallet_id,loan_party,currency,category_id,categories(name,color)'),
-      supabase.from('recurring_rules').select('*').order('day_of_month'),
-      supabase.from('categories').select('id,name,icon,color,type'),
-    ])
-    const w = wData || []
-    const txs = txData || []
-    setWallets(w); setCats(catData || []); setRules(rData || [])
-    setAllTxs(txs)
-    const now = new Date()
-    const monthTxs = txs.filter(t => {
-      const d = new Date(t.date)
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-    })
-    setMonthly({
-      income: monthTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0),
-      expense: monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0),
-    })
-    setLoans(txs.filter(t => t.type.startsWith('loan') || t.type === 'debt_unpaid'))
-    autoRun(true)
+      const [
+        { data: wData }, { data: txData },
+        { data: rData }, { data: catData },
+      ] = await Promise.all([
+        supabase.from('wallets').select('*').abortSignal(abort.signal),
+        supabase.from('transactions').select('id,type,amount,date,loan_returned,description,wallet_id,loan_party,currency,category_id,categories(name,color)').abortSignal(abort.signal),
+        supabase.from('recurring_rules').select('*').order('day_of_month').abortSignal(abort.signal),
+        supabase.from('categories').select('id,name,icon,color,type').abortSignal(abort.signal),
+      ])
+      const w = wData || []
+      const txs = txData || []
+      setWallets(w); setCats(catData || []); setRules(rData || [])
+      setAllTxs(txs)
+      const now = new Date()
+      const monthTxs = txs.filter(t => {
+        const d = new Date(t.date)
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      })
+      setMonthly({
+        income: monthTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0),
+        expense: monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0),
+      })
+      setLoans(txs.filter(t => t.type.startsWith('loan') || t.type === 'debt_unpaid'))
+      autoRun(true)
     } catch (e) {
       console.error('load error', e)
+      if (e?.name === 'AbortError' || String(e).includes('abort')) {
+        toast.error('הטעינה נכשלה — בדוק חיבור לאינטרנט')
+      }
     } finally {
+      clearTimeout(timer)
       setLoading(false)
     }
   }
