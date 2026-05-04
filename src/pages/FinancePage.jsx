@@ -144,6 +144,7 @@ export default function FinancePage() {
   useRealtime(['transactions', 'wallets'], () => loadRef.current())
 
   async function load() {
+    try {
     const [
       { data: wData }, { data: txData },
       { data: rData }, { data: catData },
@@ -167,8 +168,12 @@ export default function FinancePage() {
       expense: monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0),
     })
     setLoans(txs.filter(t => t.type.startsWith('loan') || t.type === 'debt_unpaid'))
-    setLoading(false)
     autoRun(true)
+    } catch (e) {
+      console.error('load error', e)
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function autoRun(silent) {
