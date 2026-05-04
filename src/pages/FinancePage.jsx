@@ -541,9 +541,12 @@ export default function FinancePage() {
               </>
             ) : (
               <>
-                <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '0.5rem' }}>מאיזה חשבון?</div>
+                <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '0.5rem' }}>
+                  {repayLoan.type === 'loan_given' ? '💰 לאיזה חשבון נכנס ההחזר?' : '💸 מאיזה חשבון יצא התשלום?'}
+                </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                   {repayLoan.description} — ₪{(Number(repayLoan.amount) - Number(repayLoan.loan_returned || 0)).toLocaleString()}
+                  {repayLoan.loan_party && ` · ${repayLoan.loan_party}`}
                 </div>
                 <select value={repayWallet} onChange={e => setRepayWallet(e.target.value)}
                   className="input-field" style={{ marginBottom: '1.25rem', direction: 'rtl' }}>

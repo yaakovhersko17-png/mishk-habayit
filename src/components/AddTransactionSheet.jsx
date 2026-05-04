@@ -56,6 +56,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
   const [goals, setGoals]                 = useState([])
   const [selectedGoalId, setSelectedGoalId] = useState('')
   const [savingsAlert, setSavingsAlert]   = useState(false)
+  const [addLoanToBalance, setAddLoanToBalance] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -216,8 +217,13 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
       if (type === 'transfer') {
         await applyTransfer(form.wallet_id, form.to_wallet_id, form.amount)
       } else if (payload.wallet_id) {
-        const { data: w } = await supabase.from('wallets').select('balance').eq('id', payload.wallet_id).single()
-        if (w) await supabase.from('wallets').update({ balance: w.balance + balanceSign(dbType) * Number(form.amount) }).eq('id', payload.wallet_id)
+        const sign = balanceSign(dbType)
+        // loan_received only updates balance if user explicitly opted in
+        const shouldUpdate = dbType !== 'loan_received' || addLoanToBalance
+        if (sign !== 0 && shouldUpdate) {
+          const { data: w } = await supabase.from('wallets').select('balance').eq('id', payload.wallet_id).single()
+          if (w) await supabase.from('wallets').update({ balance: w.balance + sign * Number(form.amount) }).eq('id', payload.wallet_id)
+        }
       }
       await logActivity({ userId: user.id, userName: profile.name, actionType: ACTION_TYPES.CREATE, entityType: ENTITY_TYPES.TRANSACTION, description: `הוסיף/ה: ${form.description} – ${form.amount}₪` })
       toast.success('העסקה נשמרה!')
@@ -226,7 +232,8 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
   }
 
   const selW = wallets.find(w => w.id === form.wallet_id)
-  const showWallet = !(type === 'loan' && loanSubType === 'received')
+  // loan_received hides wallet unless user opts to add the amount to a wallet balance
+  const showWallet = !(type === 'loan' && loanSubType === 'received' && !addLoanToBalance)
   const activeColor = type === 'income' ? '#4ade80' : type === 'transfer' ? '#22d3ee' : type === 'loan' ? '#fbbf24' : type === 'savings' ? '#a78bfa' : '#f87171'
   const savingsWalletIds = new Set(goals.filter(g => g.wallet_id).map(g => g.wallet_id))
   function onWalletChange(walletId) {
@@ -280,6 +287,19 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
         </div>
       )}
 
+      {/* ── Loan-received: optional wallet toggle ── */}
+      {type === 'loan' && loanSubType === 'received' && (
+        <div style={{padding:'0.5rem 1rem',background:'rgba(251,191,36,0.04)',borderBottom:'1px solid rgba(255,255,255,0.06)',flexShrink:0}}>
+          <label style={{display:'flex',alignItems:'center',gap:'0.625rem',cursor:'pointer'}}>
+            <input type="checkbox" checked={addLoanToBalance} onChange={e => { setAddLoanToBalance(e.target.checked); if (!e.target.checked) setForm(f=>({...f,wallet_id:''})) }}
+              style={{width:16,height:16,cursor:'pointer',accentColor:'#fbbf24'}} />
+            <span style={{fontSize:'0.8rem',color:addLoanToBalance?'#fbbf24':'var(--text-muted)',fontWeight:addLoanToBalance?600:400}}>
+              💰 הוסף את הסכום ליתרת הארנק (הכסף נכנס לחשבון)
+            </span>
+          </label>
+        </div>
+      )}
+
       {/* ── Savings goal selector ── */}
       {type === 'savings' && (
         <div style={{padding:'0.5rem 1rem',background:'rgba(167,139,250,0.06)',borderBottom:'1px solid rgba(255,255,255,0.06)',flexShrink:0}}>
@@ -327,7 +347,9 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
           {/* Wallet (hidden for debt_unpaid) */}
           {showWallet && (<>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52}}>
-              <span style={{color:'var(--text-sub)',fontSize:'0.875rem',flexShrink:0}}>{type==='transfer'?'מארנק':'חשבון לחיוב'}</span>
+              <span style={{color:'var(--text-sub)',fontSize:'0.875rem',flexShrink:0}}>
+                {type==='transfer' ? 'מארנק' : (type==='loan' && loanSubType==='received') ? 'לאיזה חשבון?' : 'חשבון לחיוב'}
+              </span>
               <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
                 {selW && (
                   <div style={{width:26,height:26,borderRadius:'50%',background:'rgba(239,68,68,0.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.85rem',fontWeight:700,color:'#f87171',flexShrink:0}}>
