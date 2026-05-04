@@ -1,7 +1,8 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useRealtime } from '../hooks/useRealtime'
 import {
   ChevronLeft, ChevronDown, ChevronUp,
   ScanLine, Archive, BarChart2, Plus, Edit2, Trash2,
@@ -18,7 +19,32 @@ import toast from 'react-hot-toast'
 import { useSuccess } from '../context/SuccessContext'
 
 const EMPTY_RULE = { description: '', amount: '', type: 'expense', category_id: '', wallet_id: '', day_of_month: 1 }
-const TYPE_LABELS = { loan_given: 'הלוואה שנתתי', loan_received: 'הלוואה שקיבלתי', debt_unpaid: 'חוב' }
+const TYPE_LABELS = { loan_given: 'הלויתי', loan_received: 'לקחתי', debt_unpaid: 'חוב' }
+
+function LoanRow({ loan, color, bgColor, borderColor, onRepay }) {
+  const remaining = Number(loan.amount) - Number(loan.loan_returned || 0)
+  return (
+    <div style={{ background: bgColor, border: `1px solid ${borderColor}`, borderRadius: '0.75rem',
+      padding: '0.625rem 0.875rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {loan.description}
+        </div>
+        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2, display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+          <span style={{ color, fontWeight: 700 }}>₪{remaining.toLocaleString()}</span>
+          {loan.loan_party && <span>· {loan.loan_party}</span>}
+          {loan.loan_due_date && <span>· {new Date(loan.loan_due_date).toLocaleDateString('he-IL', { day:'numeric', month:'short' })}</span>}
+        </div>
+      </div>
+      <button onClick={onRepay}
+        style={{ padding: '0.35rem 0.75rem', borderRadius: '0.5rem', fontSize: '0.75rem',
+          fontWeight: 700, background: `${color}18`, border: `1px solid ${color}40`,
+          color, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' }}>
+        שולם ✓
+      </button>
+    </div>
+  )
+}
 const PIE_COLORS = ['#6c63ff','#f87171','#fbbf24','#4ade80','#60a5fa','#f472b6','#a78bfa','#34d399','#fb923c','#22d3ee']
 
 function currentMonth() {
@@ -107,7 +133,10 @@ export default function FinancePage() {
   const [savingRule, setSavingRule] = useState(false)
   const [running, setRunning]       = useState(false)
 
+  const loadRef = useRef(load)
+  loadRef.current = load
   useEffect(() => { load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useRealtime(['transactions', 'wallets'], () => loadRef.current())
 
   async function load() {
     const [
@@ -249,7 +278,11 @@ export default function FinancePage() {
   if (loading) return <LoadingSpinner />
 
   const totalBalance = wallets.reduce((s, w) => s + Number(w.balance), 0)
-  const openLoans = loans.filter(l => Number(l.loan_returned || 0) < Number(l.amount))
+  const openLoans    = loans.filter(l => Number(l.loan_returned || 0) < Number(l.amount))
+  const openLent     = openLoans.filter(l => l.type === 'loan_given')
+  const openBorrowed = openLoans.filter(l => l.type === 'loan_received' || l.type === 'debt_unpaid')
+  const lentTotal     = openLent.reduce((s, l) => s + Number(l.amount) - Number(l.loan_returned || 0), 0)
+  const borrowedTotal = openBorrowed.reduce((s, l) => s + Number(l.amount) - Number(l.loan_returned || 0), 0)
   const thisMonth = currentMonth()
   const activeRules = rules.filter(r => r.is_active).length
   const doneThisMonth = rules.filter(r => r.last_run_month === thisMonth).length
@@ -268,16 +301,49 @@ export default function FinancePage() {
 
       {/* ── TOP CARDS ────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '0.75rem' }}>
-        {/* Row 1 */}
         <MiniStat label="יתרה כוללת" value={`₪${totalBalance.toLocaleString()}`} color="#6c63ff" />
-        <div onClick={() => openLoans.length > 0 && setDebtModal(true)}
-          style={{ cursor: openLoans.length > 0 ? 'pointer' : 'default' }}>
-          <MiniStat label="הלוואות פתוחות" value={openLoans.length} color="#fbbf24"
-            sub={openLoans.length > 0 ? `₪${openLoans.reduce((s, l) => s + Number(l.amount) - Number(l.loan_returned || 0), 0).toLocaleString()}` : undefined} />
-        </div>
-        {/* Row 2 */}
         <MiniStat label="הכנסות החודש" value={`₪${monthly.income.toLocaleString()}`} color="#4ade80" />
         <MiniStat label="הוצאות החודש" value={`₪${monthly.expense.toLocaleString()}`} color="#f87171" />
+
+        {/* Loan split card */}
+        <div
+          onClick={() => openLoans.length > 0 && setDebtModal(true)}
+          style={{ cursor: openLoans.length > 0 ? 'pointer' : 'default',
+            padding: '0.875rem', borderRadius: '0.875rem',
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>חובות והלוואות</div>
+
+          {openLoans.length === 0 ? (
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>אין פתוחות</div>
+          ) : (
+            <div style={{ display: 'flex', gap: 0 }}>
+              {/* Lent — green */}
+              {openLent.length > 0 && (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2,
+                  paddingLeft: openBorrowed.length > 0 ? '0.5rem' : 0,
+                  borderLeft: openBorrowed.length > 0 ? '1px solid rgba(255,255,255,0.09)' : 'none' }}>
+                  <div style={{ fontSize: '0.6rem', color: '#4ade80', fontWeight: 700, letterSpacing: '0.04em' }}>💚 הלויתי</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#4ade80' }}>₪{lentTotal.toLocaleString()}</div>
+                  <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{openLent.length} פתוח{openLent.length !== 1 ? 'ות' : ''}</div>
+                </div>
+              )}
+              {/* Borrowed — red */}
+              {openBorrowed.length > 0 && (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2,
+                  paddingRight: openLent.length > 0 ? '0.5rem' : 0 }}>
+                  <div style={{ fontSize: '0.6rem', color: '#f87171', fontWeight: 700, letterSpacing: '0.04em' }}>🔴 חייב</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#f87171' }}>₪{borrowedTotal.toLocaleString()}</div>
+                  <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{openBorrowed.length} פתוח{openBorrowed.length !== 1 ? 'ות' : ''}</div>
+                </div>
+              )}
+            </div>
+          )}
+          {openLoans.length > 0 && (
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', opacity: 0.6, marginTop: 1 }}>לחץ לניהול ←</div>
+          )}
+        </div>
       </div>
 
       {/* ── SEPARATOR ────────────────────────────────────────── */}
@@ -512,31 +578,43 @@ export default function FinancePage() {
 
             {!repayLoan ? (
               <>
-                <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '1rem' }}>
-                  💳 חובות פעילים ({openLoans.length})
+                <div style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '1rem', fontSize: '1rem' }}>
+                  חובות והלוואות פעילים
                 </div>
-                <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {openLoans.map(loan => (
-                    <div key={loan.id} style={{ background: 'rgba(251,191,36,0.07)',
-                      border: '1px solid rgba(251,191,36,0.2)', borderRadius: '0.875rem',
-                      padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.875rem' }}>
-                          {loan.description}
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                          {TYPE_LABELS[loan.type]} · ₪{(Number(loan.amount) - Number(loan.loan_returned || 0)).toLocaleString()} נותר
-                          {loan.loan_party && ` · ${loan.loan_party}`}
-                        </div>
+                <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+
+                  {/* Lent section */}
+                  {openLent.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: '0.68rem', color: '#4ade80', fontWeight: 700, marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        💚 הלויתי — ₪{lentTotal.toLocaleString()} מגיע לי
                       </div>
-                      <button onClick={() => { setRepayLoan(loan); setRepayWallet('') }}
-                        style={{ padding: '0.4rem 0.875rem', borderRadius: '0.625rem', fontSize: '0.8rem',
-                          fontWeight: 700, background: 'rgba(74,222,128,0.15)',
-                          border: '1px solid rgba(74,222,128,0.35)', color: '#4ade80', cursor: 'pointer' }}>
-                        שולם ✓
-                      </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        {openLent.map(loan => (
+                          <LoanRow key={loan.id} loan={loan} color="#4ade80" bgColor="rgba(74,222,128,0.07)" borderColor="rgba(74,222,128,0.2)" onRepay={() => { setRepayLoan(loan); setRepayWallet('') }} />
+                        ))}
+                      </div>
                     </div>
-                  ))}
+                  )}
+
+                  {/* Separator */}
+                  {openLent.length > 0 && openBorrowed.length > 0 && (
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '0.25rem 0' }} />
+                  )}
+
+                  {/* Borrowed section */}
+                  {openBorrowed.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: '0.68rem', color: '#f87171', fontWeight: 700, marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        🔴 חייב — ₪{borrowedTotal.toLocaleString()} צריך להחזיר
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        {openBorrowed.map(loan => (
+                          <LoanRow key={loan.id} loan={loan} color="#f87171" bgColor="rgba(248,113,113,0.07)" borderColor="rgba(248,113,113,0.2)" onRepay={() => { setRepayLoan(loan); setRepayWallet('') }} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
