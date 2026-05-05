@@ -263,7 +263,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
 
       {/* ── Type tabs ── */}
       <div style={{display:'flex',gap:'0.5rem',padding:'0.625rem 1rem',background:'rgba(255,255,255,0.02)',borderBottom:'1px solid rgba(255,255,255,0.06)',flexShrink:0}}>
-        {[['expense','הוצאה','#f87171'],['income','הכנסה','#4ade80'],['transfer','העברה','#22d3ee'],['loan','חוב','#fbbf24'],['savings','חיסכון','#a78bfa']].map(([t,lbl,col]) => (
+        {[['expense','הוצאה','#f87171'],['income','הכנסה','#4ade80'],['transfer','העברה','#22d3ee'],['loan','חוב','#fbbf24']].map(([t,lbl,col]) => (
           <button key={t} onClick={() => setType(t)} style={{
             flex:1,padding:'0.5rem',borderRadius:'0.75rem',fontSize:'0.82rem',cursor:'pointer',
             border:`1px solid ${type===t?col+'60':'rgba(255,255,255,0.07)'}`,

@@ -382,7 +382,7 @@ export default function FinancePage() {
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2,
                   paddingLeft: openBorrowed.length > 0 ? '0.5rem' : 0,
                   borderLeft: openBorrowed.length > 0 ? '1px solid rgba(255,255,255,0.09)' : 'none' }}>
-                  <div style={{ fontSize: '0.6rem', color: '#4ade80', fontWeight: 700, letterSpacing: '0.04em' }}>💚 הלויתי</div>
+                  <div style={{ fontSize: '0.6rem', color: '#4ade80', fontWeight: 700 }}>לזכות</div>
                   <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#4ade80' }}>₪{lentTotal.toLocaleString()}</div>
                   <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{openLent.length} פתוח{openLent.length !== 1 ? 'ות' : ''}</div>
                 </div>
@@ -391,7 +391,7 @@ export default function FinancePage() {
               {openBorrowed.length > 0 && (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2,
                   paddingRight: openLent.length > 0 ? '0.5rem' : 0 }}>
-                  <div style={{ fontSize: '0.6rem', color: '#f87171', fontWeight: 700, letterSpacing: '0.04em' }}>🔴 חייב</div>
+                  <div style={{ fontSize: '0.6rem', color: '#f87171', fontWeight: 700 }}>לחובה</div>
                   <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#f87171' }}>₪{borrowedTotal.toLocaleString()}</div>
                   <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{openBorrowed.length} פתוח{openBorrowed.length !== 1 ? 'ות' : ''}</div>
                 </div>
@@ -653,7 +653,7 @@ export default function FinancePage() {
                   {openLent.length > 0 && (
                     <div>
                       <div style={{ fontSize: '0.68rem', color: '#4ade80', fontWeight: 700, marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        💚 הלויתי — ₪{lentTotal.toLocaleString()} מגיע לי
+                        לזכות — ₪{lentTotal.toLocaleString()} מגיע לי
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                         {openLent.map(loan => (
@@ -672,7 +672,7 @@ export default function FinancePage() {
                   {openBorrowed.length > 0 && (
                     <div>
                       <div style={{ fontSize: '0.68rem', color: '#f87171', fontWeight: 700, marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        🔴 חייב — ₪{borrowedTotal.toLocaleString()} צריך להחזיר
+                        לחובה — ₪{borrowedTotal.toLocaleString()} צריך להחזיר
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                         {openBorrowed.map(loan => (
