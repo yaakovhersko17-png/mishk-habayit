@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase, cached, withRetry, invalidate } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Search, Mic, MicOff, Edit2, Trash2, SlidersHorizontal, X } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, SlidersHorizontal, X } from 'lucide-react'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import EmptyState from '../components/ui/EmptyState'
@@ -41,15 +41,12 @@ export default function Transactions() {
   const [modal, setModal]         = useState(false)
   const [editing, setEditing]     = useState(null)
   const [form, setForm]           = useState(emptyTx)
-  const [sheetInitial, setSheetInitial] = useState(null)
   const [search, setSearch]     = useState('')
   const [filter, setFilter]     = useState({ type:'', category:'', wallet:'', user:'', dateFrom:'', dateTo:'' })
-  const [listening, setListening] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
   const [saving, setSaving]         = useState(false)
   const [expandedId, setExpandedId] = useState(null)
   const showSuccess = useSuccess()
-  const recognitionRef = useRef(null)
 
   useEffect(() => { loadAll() }, [])
   useRealtime(['transactions', 'wallets'], loadAll)
@@ -181,31 +178,6 @@ export default function Transactions() {
     loadAll()
   }
 
-  function startVoice() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) { toast.error('הדפדפן לא תומך בזיהוי קולי'); return }
-    const rec = new SR()
-    rec.lang = 'he-IL'
-    rec.continuous = false
-    rec.onresult = (e) => {
-      const text = e.results[0][0].transcript
-      toast.success(`שמעתי: "${text}"`)
-      const numMatch = text.match(/\d+/)
-      setEditing(null)
-      setSheetInitial(numMatch
-        ? { amount: numMatch[0], description: text.replace(numMatch[0], '').trim() }
-        : { description: text }
-      )
-      setModal(true)
-      setListening(false)
-    }
-    rec.onerror = () => { setListening(false); toast.error('לא הצלחתי לשמוע') }
-    rec.onend = () => setListening(false)
-    rec.start()
-    recognitionRef.current = rec
-    setListening(true)
-  }
-
   const filtered = txs.filter(t => {
     const q = search.toLowerCase()
     if (q && !t.description?.toLowerCase().includes(q)) return false
@@ -226,11 +198,6 @@ export default function Transactions() {
         <div>
           <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>עסקאות</h1>
           <p style={{margin:'0.25rem 0 0',color:'var(--text-muted)',fontSize:'0.875rem'}}>{filtered.length} רשומות</p>
-        </div>
-        <div style={{display:'flex',gap:'0.5rem'}}>
-          <button className={`btn-ghost${listening?' active':''}`} onClick={startVoice} style={listening?{background:'rgba(239,68,68,0.15)',borderColor:'rgba(239,68,68,0.3)',color:'#f87171'}:{}}>
-            {listening ? <><MicOff size={15}/>מקשיב...</> : <><Mic size={15}/>קולי</>}
-          </button>
         </div>
       </div>
 
@@ -385,7 +352,7 @@ export default function Transactions() {
           if (!editing) showSuccess('העסקה נוספה בהצלחה!')
         }}
         editingTx={editing}
-        initialData={editing ? null : sheetInitial}
+        initialData={null}
       />
 
     </div>
