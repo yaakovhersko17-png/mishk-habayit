@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import {
   LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, Legend,
+  XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
@@ -250,32 +250,22 @@ export default function FinancePage() {
   const allExpense = useMemo(() => allTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0), [allTxs])
   const allNet     = allIncome - allExpense
 
-  // All-time trend: weekly granularity to show real spikes/dips
+  // Trend: last 6 months (monthly)
   const trendData = useMemo(() => {
-    if (!allTxs.length) return []
-    const sorted = [...allTxs].sort((a, b) => a.date.localeCompare(b.date))
-    // Snap to the Sunday of the first tx's week
-    const firstDate = new Date(sorted[0].date + 'T00:00:00')
-    firstDate.setDate(firstDate.getDate() - firstDate.getDay())
     const now = new Date()
     const points = []
-    const cur = new Date(firstDate)
-    while (cur <= now) {
-      const wStart = cur.toISOString().split('T')[0]
-      const wEndDate = new Date(cur); wEndDate.setDate(wEndDate.getDate() + 6)
-      const wEnd = wEndDate.toISOString().split('T')[0]
-      const wTxs = allTxs.filter(t => t.date >= wStart && t.date <= wEnd)
-      const inc = wTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
-      const exp = wTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
-      // Only add points that have activity OR are the latest week (always show current)
-      if (inc > 0 || exp > 0 || wStart === now.toISOString().split('T')[0].slice(0,10)) {
-        points.push({
-          name: cur.toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }),
-          הכנסות: inc,
-          הוצאות: exp,
-        })
-      }
-      cur.setDate(cur.getDate() + 7)
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const label = d.toLocaleDateString('he-IL', { month: 'short', year: '2-digit' })
+      const mTxs = allTxs.filter(t => {
+        const td = new Date(t.date)
+        return td.getMonth() === d.getMonth() && td.getFullYear() === d.getFullYear()
+      })
+      points.push({
+        name: label,
+        הכנסות: mTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0),
+        הוצאות: mTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0),
+      })
     }
     return points
   }, [allTxs])
@@ -344,7 +334,6 @@ export default function FinancePage() {
   const thisMonth = currentMonth()
   const activeRules = rules.filter(r => r.is_active).length
   const doneThisMonth = rules.filter(r => r.last_run_month === thisMonth).length
-  const trendChartWidth = Math.max(360, trendData.length * 52)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -436,23 +425,19 @@ export default function FinancePage() {
       </div>
 
       {/* ── TREND CHART ─────────────────────────────────────── */}
-      {trendData.length > 1 && (
-        <div className="page-card" style={{ padding: '1rem 0.75rem 0.75rem' }}>
-          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-sub)', marginBottom: '0.75rem', paddingRight: '0.25rem' }}>
-            מגמה מצטברת
-          </div>
-          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', cursor: 'grab', paddingBottom: '0.5rem' }}>
-            <LineChart width={trendChartWidth} height={220} data={trendData} style={{ direction: 'ltr' }}>
-              <XAxis dataKey="name" tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 10 }} axisLine={false} tickLine={false} width={50} tickFormatter={v => `₪${(v/1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={tooltipStyle} formatter={v => `₪${v.toLocaleString()}`} />
-              <Legend wrapperStyle={{ fontSize: '0.78rem', color: 'var(--text-sub)', paddingTop: '0.5rem' }} />
-              <Line type="monotone" dataKey="הכנסות" stroke="#4ade80" strokeWidth={2.5} dot={{ r: 3, fill: '#4ade80' }} activeDot={{ r: 5 }} />
-              <Line type="monotone" dataKey="הוצאות" stroke="#f87171" strokeWidth={2.5} dot={{ r: 3, fill: '#f87171' }} activeDot={{ r: 5 }} />
-            </LineChart>
-          </div>
-        </div>
-      )}
+      <div className="page-card">
+        <h3 style={{ margin: '0 0 1rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-sub)' }}>הכנסות vs הוצאות – 6 חודשים אחרונים</h3>
+        <ResponsiveContainer width="100%" height={260}>
+          <LineChart data={trendData}>
+            <XAxis dataKey="name" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} width={55} />
+            <Tooltip contentStyle={{ background: '#1e1e3a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.75rem', color: 'var(--text)' }} formatter={v => `₪${v.toLocaleString()}`} />
+            <Legend wrapperStyle={{ fontSize: '0.8rem', color: 'var(--text-sub)' }} />
+            <Line type="monotone" dataKey="הכנסות" stroke="#4ade80" strokeWidth={2.5} dot={{ r: 4, fill: '#4ade80' }} />
+            <Line type="monotone" dataKey="הוצאות" stroke="#f87171" strokeWidth={2.5} dot={{ r: 4, fill: '#f87171' }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
       {/* ── PIE CHART ───────────────────────────────────────── */}
       {pieData.length > 0 && (
