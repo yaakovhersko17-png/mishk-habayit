@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Plus, Bell, Check, Trash2, Clock, ShoppingCart, Edit2, ChevronDown,
-         Calendar, LayoutList, CheckCircle, Settings } from 'lucide-react'
+         Calendar, LayoutList, CheckCircle, Settings, BellRing } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
@@ -11,7 +11,7 @@ import { useSuccess } from '../context/SuccessContext'
 import toast from 'react-hot-toast'
 
 const DAYS_HE = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת']
-const emptyForm = { title:'', description:'', due_date:'', is_shopping_list:false, shopping_items:[], assigned_to:'' }
+const emptyForm = { title:'', description:'', due_date:'', notification_time:'', is_shopping_list:false, shopping_items:[], assigned_to:'' }
 const emptySched = { freq: 'once', time: '09:00', days: [0], dayOfMonth: 1 }
 
 function computeNextDate(s) {
@@ -54,6 +54,7 @@ export default function Reminders() {
   const [selectedFilter, setSelectedFilter] = useState(null)
   const [schedOpen, setSchedOpen] = useState(false)
   const [sched, setSched]         = useState(emptySched)
+  const [notifOpen, setNotifOpen] = useState(false)
 
   useRealtime('reminders', load)
 
@@ -73,11 +74,11 @@ export default function Reminders() {
     setReminders(rData || [])
     setProfiles(pData || [])
     setLoading(false)
-    ;(rData || []).filter(r => !r.is_completed && r.due_date).forEach(r => {
-      const diff = new Date(r.due_date) - Date.now()
+    function scheduleAlert(timeStr, title, body) {
+      const diff = new Date(timeStr) - Date.now()
       if (diff > 0 && diff < 3600000) {
         setTimeout(() => {
-          try { if ('Notification' in window && Notification.permission === 'granted') new Notification(`תזכורת: ${r.title}`, { body: r.description || '' }) } catch (_) {}
+          try { if ('Notification' in window && Notification.permission === 'granted') new Notification(title, { body }) } catch (_) {}
           try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)()
             const osc = ctx.createOscillator(); const gain = ctx.createGain()
@@ -89,14 +90,18 @@ export default function Reminders() {
           } catch (_) {}
         }, diff)
       }
+    }
+    ;(rData || []).filter(r => !r.is_completed).forEach(r => {
+      if (r.notification_time) scheduleAlert(r.notification_time, `🔔 תזכורת: ${r.title}`, r.description || r.due_date ? `מועד: ${new Date(r.due_date).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})}` : '')
+      else if (r.due_date) scheduleAlert(r.due_date, `תזכורת: ${r.title}`, r.description || '')
     })
   }
 
-  function openAdd()   { setEditing(null); setForm(emptyForm); setSchedOpen(false); setSched(emptySched); setModal(true) }
+  function openAdd()   { setEditing(null); setForm(emptyForm); setSchedOpen(false); setSched(emptySched); setNotifOpen(false); setModal(true) }
   function openEdit(r) {
     setEditing(r)
-    setForm({ title:r.title, description:r.description||'', due_date:r.due_date?r.due_date.slice(0,16):'', is_shopping_list:r.is_shopping_list, shopping_items:r.shopping_items||[], assigned_to:r.assigned_to||'' })
-    setSchedOpen(false); setSched(emptySched); setModal(true)
+    setForm({ title:r.title, description:r.description||'', due_date:r.due_date?r.due_date.slice(0,16):'', notification_time:r.notification_time?r.notification_time.slice(0,16):'', is_shopping_list:r.is_shopping_list, shopping_items:r.shopping_items||[], assigned_to:r.assigned_to||'' })
+    setSchedOpen(false); setSched(emptySched); setNotifOpen(!!r.notification_time); setModal(true)
   }
 
   async function handleSave() {
@@ -105,6 +110,7 @@ export default function Reminders() {
     const payload = { ...form, created_by: user.id }
     if (!payload.assigned_to) delete payload.assigned_to
     if (!payload.due_date) delete payload.due_date
+    if (!payload.notification_time) delete payload.notification_time
     if (editing) {
       await supabase.from('reminders').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editing.id)
       await logActivity({ userId:user.id, userName:profile.name, actionType:ACTION_TYPES.UPDATE, entityType:ENTITY_TYPES.REMINDER, description:`עדכן/ה תזכורת: ${form.title}`, entityId:editing.id })
@@ -248,6 +254,12 @@ export default function Reminders() {
                       {isOverdue && <span style={{color:'#f87171',fontWeight:600}}>— עברה הזמן</span>}
                     </div>
                   )}
+                  {r.notification_time && (
+                    <div style={{display:'flex',alignItems:'center',gap:'0.25rem',fontSize:'0.7rem',color:'#fbbf24',marginTop:'0.15rem'}}>
+                      <BellRing size={9}/>
+                      התראה: {new Date(r.notification_time).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'})}
+                    </div>
+                  )}
                   {r.description && <p style={{margin:'0.25rem 0 0',fontSize:'0.78rem',color:'var(--text-muted)'}}>{r.description}</p>}
                   {r.assigned_to && <div style={{marginTop:'0.25rem',fontSize:'0.7rem',color:'var(--text-dim)'}}>👤 {profiles.find(p=>p.id===r.assigned_to)?.name}</div>}
                 </div>
@@ -348,6 +360,38 @@ export default function Reminders() {
                 {profiles.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
+          </div>
+
+          {/* Custom notification time */}
+          <div style={{borderRadius:'0.75rem',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden'}}>
+            <button type="button" onClick={() => setNotifOpen(o=>!o)} style={{width:'100%',display:'flex',alignItems:'center',gap:'0.5rem',padding:'0.75rem',background:'rgba(255,255,255,0.03)',border:'none',cursor:'pointer',color:'var(--text-sub)',fontSize:'0.85rem',fontFamily:'inherit',textAlign:'right'}}>
+              <BellRing size={14} color={form.notification_time ? '#fbbf24' : '#a78bfa'}/>
+              <span style={{flex:1}}>התראה מותאמת אישית</span>
+              {form.notification_time && <span style={{fontSize:'0.72rem',color:'#fbbf24',fontWeight:600,background:'rgba(251,191,36,0.12)',padding:'0.1rem 0.5rem',borderRadius:'9999px',border:'1px solid rgba(251,191,36,0.25)'}}>פעיל</span>}
+              <ChevronDown size={14} style={{transform:notifOpen?'rotate(180deg)':'none',transition:'transform 0.2s'}}/>
+            </button>
+            {notifOpen && (
+              <div style={{padding:'1rem',borderTop:'1px solid rgba(255,255,255,0.06)',display:'flex',flexDirection:'column',gap:'0.75rem'}}>
+                <div style={{fontSize:'0.75rem',color:'var(--text-muted)',lineHeight:1.5}}>
+                  קבע מתי לקבל התראה — לפני מועד ביצוע המשימה (לדוגמה: יום לפני).
+                </div>
+                <div>
+                  <label style={{fontSize:'0.8rem',color:'var(--text-sub)',display:'block',marginBottom:'0.375rem'}}>תאריך ושעת ההתראה</label>
+                  <input className="input-field" type="datetime-local" value={form.notification_time} onChange={e=>setForm({...form,notification_time:e.target.value})} dir="ltr"/>
+                </div>
+                {form.notification_time && form.due_date && new Date(form.notification_time) < new Date(form.due_date) && (
+                  <div style={{display:'flex',alignItems:'center',gap:'0.5rem',padding:'0.5rem 0.75rem',borderRadius:'0.625rem',background:'rgba(251,191,36,0.08)',border:'1px solid rgba(251,191,36,0.2)',fontSize:'0.75rem',color:'#fbbf24'}}>
+                    <BellRing size={12}/>
+                    ההתראה תישלח {Math.round((new Date(form.due_date)-new Date(form.notification_time))/60000)} דקות לפני המועד
+                  </div>
+                )}
+                {form.notification_time && (
+                  <button type="button" onClick={()=>setForm(f=>({...f,notification_time:''}))} style={{alignSelf:'flex-start',padding:'0.3rem 0.75rem',borderRadius:'0.5rem',fontSize:'0.75rem',cursor:'pointer',background:'rgba(248,113,113,0.1)',border:'1px solid rgba(248,113,113,0.25)',color:'#f87171'}}>
+                    הסר התראה
+                  </button>
+                )}
+              </div>
+            )}
           </div>
           <label style={{display:'flex',alignItems:'center',gap:'0.5rem',cursor:'pointer',color:'var(--text-sub)',fontSize:'0.875rem'}}>
             <input type="checkbox" checked={form.is_shopping_list} onChange={e=>setForm({...form,is_shopping_list:e.target.checked})} style={{accentColor:'#6c63ff'}}/>

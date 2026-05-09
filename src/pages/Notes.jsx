@@ -5,6 +5,7 @@ import { Plus, Trash2, Edit2, Search } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import EmptyState from '../components/ui/EmptyState'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
+import ShoppingCard from '../components/ShoppingCard'
 import { logActivity, ACTION_TYPES, ENTITY_TYPES } from '../lib/activityLogger'
 import toast from 'react-hot-toast'
 
@@ -74,6 +75,8 @@ export default function Notes() {
           <button className="btn-primary" onClick={openAdd}><Plus size={14}/>פתק חדש</button>
         </div>
       </div>
+
+      <ShoppingCard />
 
       {filtered.length === 0
         ? <EmptyState icon="📝" title="אין פתקים עדיין" subtitle="הוסף פתק ראשון" action={<button className="btn-primary" onClick={openAdd}><Plus size={14}/>הוסף פתק</button>}/>
