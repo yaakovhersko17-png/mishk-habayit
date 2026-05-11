@@ -215,7 +215,7 @@ export default function Transactions() {
             {filtered.map(t => {
               const isOpen = expandedId === t.id
               const col = t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type?.startsWith('loan')?'#fbbf24':'#f87171'
-              const sign = t.type==='income'?'+':t.type==='transfer'?'↔':'-'
+              const sign = t.type==='income'?'+':t.type==='transfer'?'⇔':'-'
               const toW = wallets.find(w=>w.id===t.to_wallet_id)
               const details = [
                 ['👤', t.profiles?.name||'—'],
@@ -346,7 +346,7 @@ export default function Transactions() {
 
       <AddTransactionSheet
         open={modal}
-        onClose={() => { setModal(false); setSheetInitial(null) }}
+        onClose={() => setModal(false)}
         onSaved={() => {
           loadAll()
           if (!editing) showSuccess('העסקה נוספה בהצלחה!')
