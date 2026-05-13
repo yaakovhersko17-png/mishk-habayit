@@ -163,25 +163,47 @@ export default function Wallets() {
       <Modal open={!!historyWallet} onClose={()=>setHistoryWallet(null)} title={historyWallet ? `היסטוריה – ${historyWallet.icon} ${historyWallet.name}` : ''} size="lg">
         {walletTxs.length === 0
           ? <p style={{textAlign:'center',color:'var(--text-muted)',padding:'2rem 0'}}>אין עסקאות לארנק זה</p>
-          : <div style={{overflowX:'auto'}}>
-              <table style={{width:'100%',borderCollapse:'collapse',minWidth:'400px'}}>
-                <thead>
-                  <tr style={{borderBottom:'1px solid rgba(255,255,255,0.08)'}}>
-                    {['תאריך','תיאור','סכום','קטגוריה'].map(h=><th key={h} style={{padding:'0.625rem 0.75rem',textAlign:'right',fontSize:'0.75rem',color:'var(--text-muted)',fontWeight:500}}>{h}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {walletTxs.map(t=>(
-                    <tr key={`${t.id}_${t._dir}`} style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
-                      <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'var(--text-muted)',whiteSpace:'nowrap'}}>{new Date(t.date).toLocaleDateString('he-IL')}</td>
-                      <td style={{padding:'0.625rem 0.75rem',fontSize:'0.85rem',color:'var(--text)'}}>{t.description}</td>
-                      <td style={{padding:'0.625rem 0.75rem',fontWeight:600,whiteSpace:'nowrap',color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>{t.type==='income'?'+':t.type==='transfer'?(t._dir==='in'?'+↔':'-↔'):t.type.startsWith('loan')?'':'-'}{t.currency}{Number(t.amount).toLocaleString()}</td>
-                      <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'var(--text-sub)'}}>{t.categories ? `${t.categories.icon||''} ${t.categories.name}` : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          : (() => {
+              // Running balance: start from current balance, work backwards (list is newest-first)
+              const balances = []
+              let bal = historyWallet?.balance ?? 0
+              walletTxs.forEach((t, i) => {
+                balances[i] = bal
+                const delta = t.type === 'income' ? Number(t.amount)
+                  : t.type === 'transfer' ? (t._dir === 'in' ? Number(t.amount) : -Number(t.amount))
+                  : -Number(t.amount)
+                bal -= delta
+              })
+              const cur = historyWallet?.currency || '₪'
+              return (
+                <div style={{overflowX:'auto'}}>
+                  <table style={{width:'100%',borderCollapse:'collapse',minWidth:'400px'}}>
+                    <thead>
+                      <tr style={{borderBottom:'1px solid rgba(255,255,255,0.08)'}}>
+                        {['תאריך','תיאור','סכום','קטגוריה'].map(h=><th key={h} style={{padding:'0.625rem 0.75rem',textAlign:'right',fontSize:'0.75rem',color:'var(--text-muted)',fontWeight:500}}>{h}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {walletTxs.map((t, i) => (
+                        <tr key={`${t.id}_${t._dir}`} style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                          <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'var(--text-muted)',whiteSpace:'nowrap'}}>{new Date(t.date).toLocaleDateString('he-IL')}</td>
+                          <td style={{padding:'0.625rem 0.75rem',fontSize:'0.85rem',color:'var(--text)'}}>{t.description}</td>
+                          <td style={{padding:'0.625rem 0.75rem',whiteSpace:'nowrap'}}>
+                            <div style={{fontWeight:600,color:t.type==='income'?'#4ade80':t.type==='transfer'?'#22d3ee':t.type.startsWith('loan')?'#fbbf24':'#f87171'}}>
+                              {t.type==='income'?'+':t.type==='transfer'?(t._dir==='in'?'+↔':'-↔'):t.type.startsWith('loan')?'':'-'}{t.currency}{Number(t.amount).toLocaleString()}
+                            </div>
+                            <div style={{fontSize:'0.68rem',color:'var(--text-muted)',marginTop:'0.15rem'}}>
+                              יתרה: {cur}{Number(balances[i]).toLocaleString()}
+                            </div>
+                          </td>
+                          <td style={{padding:'0.625rem 0.75rem',fontSize:'0.8rem',color:'var(--text-sub)'}}>{t.categories ? `${t.categories.icon||''} ${t.categories.name}` : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            })()
         }
       </Modal>
     </div>
