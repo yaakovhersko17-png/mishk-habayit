@@ -57,9 +57,13 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
   const [selectedGoalId, setSelectedGoalId] = useState('')
   const [savingsAlert, setSavingsAlert]   = useState(false)
   const [addLoanToBalance, setAddLoanToBalance] = useState(false)
+  const [splitMode, setSplitMode]   = useState(false)
+  const [splits, setSplits]         = useState([])
 
   useEffect(() => {
     if (!open) return
+    setSplitMode(false)
+    setSplits([])
     loadData()
     if (editingTx) {
       const t = editingTx.type
@@ -154,6 +158,33 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
       return
     }
 
+
+    if (splitMode) {
+      if (splits.some(s => !s.amount || Number(s.amount) <= 0)) { toast.error('מלא סכום לכל חלק'); setSaving(false); return }
+      if (Math.abs(splitRemaining) > 0.01) { toast.error(`נשאר ${form.currency || '₪'}${splitRemaining.toFixed(2)} לחלוקה`); setSaving(false); return }
+      localStorage.setItem('split_memory', JSON.stringify(splits.map(s => ({ wallet_id: s.wallet_id, category_id: s.category_id }))))
+      const sDbType = type === 'loan' ? (loanSubType === 'given' ? 'loan_given' : 'loan_received') : type
+      for (const s of splits) {
+        const sp = { type: sDbType, description: form.description, amount: Number(s.amount),
+          currency: form.currency || '₪', wallet_id: s.wallet_id || form.wallet_id || null,
+          category_id: s.category_id || null, store_id: form.store_id || null,
+          date: form.date, user_id: user.id }
+        const { error } = await supabase.from('transactions').insert(sp)
+        if (error) { toast.error(error.message || 'שגיאה בפיצול'); setSaving(false); return }
+        if (sp.wallet_id) {
+          const sign = balanceSign(sDbType)
+          if (sign !== 0) {
+            const { data: w } = await supabase.from('wallets').select('balance').eq('id', sp.wallet_id).single()
+            if (w) await supabase.from('wallets').update({ balance: w.balance + sign * Number(s.amount) }).eq('id', sp.wallet_id)
+          }
+        }
+      }
+      await logActivity({ userId: user.id, userName: profile.name, actionType: ACTION_TYPES.CREATE, entityType: ENTITY_TYPES.TRANSACTION, description: `פיצול: ${form.description} – ${form.amount}₪ (${splits.length} חלקים)` })
+      toast.success(`עסקה פוצלה ל-${splits.length} חלקים! ✓`)
+      setSaving(false); onClose(); onSaved?.()
+      return
+    }
+
     const dbType = type === 'loan'
       ? (loanSubType === 'given' ? 'loan_given' : 'loan_received')
       : type
@@ -229,6 +260,20 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
       toast.success('העסקה נשמרה!')
     }
     setSaving(false); onClose(); onSaved?.()
+  }
+
+  const totalAmt       = Number(form.amount) || 0
+  const splitSum       = splits.reduce((s, r) => s + (Number(r.amount) || 0), 0)
+  const splitRemaining = Math.round((totalAmt - splitSum) * 100) / 100
+
+  function toggleSplit() {
+    if (splitMode) { setSplitMode(false); setSplits([]); return }
+    const mem = JSON.parse(localStorage.getItem('split_memory') || '[]')
+    setSplitMode(true)
+    setSplits([
+      { amount: '', category_id: mem[0]?.category_id || '', wallet_id: mem[0]?.wallet_id || form.wallet_id },
+      { amount: '', category_id: mem[1]?.category_id || '', wallet_id: mem[1]?.wallet_id || form.wallet_id },
+    ])
   }
 
   const selW = wallets.find(w => w.id === form.wallet_id)
@@ -392,6 +437,15 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
           </div>
 
           {sep()}
+          {/* Split toggle */}
+          {type !== 'transfer' && type !== 'savings' && !editingTx && (
+            <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'0.5rem 1rem'}}>
+              <button onClick={toggleSplit} style={{padding:'0.35rem 1rem',borderRadius:'0.625rem',fontSize:'0.8rem',cursor:'pointer',fontFamily:'inherit',border:`1px solid ${splitMode?'rgba(108,99,255,0.45)':'rgba(255,255,255,0.1)'}`,background:splitMode?'rgba(108,99,255,0.18)':'rgba(255,255,255,0.04)',color:splitMode?'#a78bfa':'var(--text-muted)',fontWeight:splitMode?700:400,transition:'all 0.15s'}}>
+                {splitMode ? '✕ ביטול פיצול' : '⚡ פצל עסקה'}
+              </button>
+            </div>
+          )}
+          {sep()}
           {/* Date + Time */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1rem',minHeight:52,gap:'0.5rem'}}>
             <span style={{color:'var(--text-sub)',fontSize:'0.875rem',flexShrink:0}}>תאריך</span>
@@ -403,6 +457,44 @@ export default function AddTransactionSheet({ open, onClose, onSaved, editingTx,
             </div>
           </div>
         </div>
+
+        {/* Split rows */}
+        {splitMode && (
+          <div style={{background:'rgba(108,99,255,0.06)',borderRadius:'1rem',border:'1px solid rgba(108,99,255,0.2)',padding:'0.75rem',display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'0.125rem'}}>
+              <span style={{fontSize:'0.8rem',color:'#a78bfa',fontWeight:700}}>פיצול עסקה</span>
+              <span style={{fontSize:'0.75rem',fontWeight:700,color:splitRemaining===0?'#4ade80':splitRemaining<0?'#f87171':'#fbbf24'}}>
+                {splitRemaining===0?'✓ מאוזן':splitRemaining>0?`נשאר ${form.currency||'₪'}${splitRemaining.toFixed(2)}`:`חריגה ${form.currency||'₪'}${Math.abs(splitRemaining).toFixed(2)}`}
+              </span>
+            </div>
+            {splits.map((s, i) => (
+              <div key={i} style={{display:'flex',gap:'0.375rem',alignItems:'center'}}>
+                <input type="number" value={s.amount} onChange={e=>setSplits(p=>p.map((r,j)=>j===i?{...r,amount:e.target.value}:r))} placeholder="₪0"
+                  style={{width:68,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.5rem',padding:'0.375rem 0.5rem',color:'var(--text)',fontSize:'0.85rem',outline:'none',fontFamily:'inherit',textAlign:'right'}} dir="ltr"/>
+                <select value={s.category_id} onChange={e=>setSplits(p=>p.map((r,j)=>j===i?{...r,category_id:e.target.value}:r))}
+                  style={{flex:1,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.5rem',padding:'0.375rem 0.375rem',color:s.category_id?'var(--text)':'var(--text-dim)',fontSize:'0.78rem',outline:'none',fontFamily:'inherit',direction:'rtl',minWidth:0}}>
+                  <option value="">קטגוריה...</option>
+                  {buildCatOptions(categories)}
+                </select>
+                <select value={s.wallet_id} onChange={e=>setSplits(p=>p.map((r,j)=>j===i?{...r,wallet_id:e.target.value}:r))}
+                  style={{width:82,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'0.5rem',padding:'0.375rem 0.375rem',color:s.wallet_id?'var(--text)':'var(--text-dim)',fontSize:'0.78rem',outline:'none',fontFamily:'inherit',direction:'rtl'}}>
+                  <option value="">ארנק</option>
+                  {wallets.map(w=><option key={w.id} value={w.id}>{w.icon||'💳'} {w.name}</option>)}
+                </select>
+                {splits.length > 2 && (
+                  <button onClick={()=>setSplits(p=>p.filter((_,j)=>j!==i))}
+                    style={{background:'none',border:'none',cursor:'pointer',color:'#f87171',padding:'0.2rem',flexShrink:0}}>
+                    <X size={13}/>
+                  </button>
+                )}
+              </div>
+            ))}
+            <button onClick={()=>setSplits(p=>[...p,{amount:'',category_id:'',wallet_id:form.wallet_id}])}
+              style={{padding:'0.375rem',borderRadius:'0.5rem',background:'rgba(108,99,255,0.1)',border:'1px solid rgba(108,99,255,0.2)',color:'#a78bfa',fontSize:'0.78rem',cursor:'pointer',fontFamily:'inherit',width:'100%'}}>
+              + הוסף שורה
+            </button>
+          </div>
+        )}
 
         {/* Secondary details */}
         <div style={{background:'rgba(255,255,255,0.04)',borderRadius:'1rem',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden'}}>

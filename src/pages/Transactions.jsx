@@ -42,7 +42,7 @@ export default function Transactions() {
   const [editing, setEditing]     = useState(null)
   const [form, setForm]           = useState(emptyTx)
   const [search, setSearch]     = useState('')
-  const [filter, setFilter]     = useState({ type:'', category:'', wallet:'', user:'', dateFrom:'', dateTo:'' })
+  const [filter, setFilter]     = useState({ type:'', category:'', wallet:'', user:'', dateFrom:'', dateTo:'', uncategorized:false })
   const [filterOpen, setFilterOpen] = useState(false)
   const [saving, setSaving]         = useState(false)
   const [expandedId, setExpandedId] = useState(null)
@@ -187,6 +187,7 @@ export default function Transactions() {
     if (filter.user && t.user_id !== filter.user) return false
     if (filter.dateFrom && t.date < filter.dateFrom) return false
     if (filter.dateTo && t.date > filter.dateTo) return false
+    if (filter.uncategorized && (t.category_id || t.type === 'transfer')) return false
     return true
   })
 
@@ -200,6 +201,26 @@ export default function Transactions() {
           <p style={{margin:'0.25rem 0 0',color:'var(--text-muted)',fontSize:'0.875rem'}}>{filtered.length} רשומות</p>
         </div>
       </div>
+
+      {/* Uncategorized tracker card */}
+      {(() => {
+        const n = txs.filter(t => !t.category_id && t.type !== 'transfer').length
+        if (!n) return null
+        const active = filter.uncategorized
+        return (
+          <div onClick={() => setFilter(f => ({...f, uncategorized: !f.uncategorized}))}
+            style={{cursor:'pointer',display:'flex',alignItems:'center',gap:'0.875rem',padding:'0.75rem 1rem',borderRadius:'0.875rem',
+              background:active?'rgba(251,191,36,0.14)':'rgba(251,191,36,0.06)',
+              border:`1px solid ${active?'rgba(251,191,36,0.4)':'rgba(251,191,36,0.18)'}`,transition:'all 0.15s'}}>
+            <div style={{width:38,height:38,borderRadius:'0.75rem',background:'rgba(251,191,36,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.2rem',flexShrink:0}}>🏷️</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,color:'#fbbf24',fontSize:'0.88rem'}}>{n} עסקאות ללא קטגוריה</div>
+              <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{active?'מציג ללא קטגוריה בלבד — לחץ לביטול':'לחץ לסינון וסיווג מהיר'}</div>
+            </div>
+            {active && <span style={{fontSize:'0.68rem',color:'#fbbf24',fontWeight:700,background:'rgba(251,191,36,0.15)',padding:'0.15rem 0.5rem',borderRadius:'9999px',border:'1px solid rgba(251,191,36,0.3)',flexShrink:0}}>פעיל</span>}
+          </div>
+        )
+      })()}
 
       {/* Search bar only */}
       <div style={{position:'relative'}}>
@@ -337,7 +358,7 @@ export default function Transactions() {
               </div>
             </div>
             <div style={{display:'flex',gap:'0.75rem',marginTop:'1.25rem'}}>
-              <button className="btn-ghost" onClick={()=>{setFilter({type:'',category:'',wallet:'',user:'',dateFrom:'',dateTo:''});setSearch('');}} style={{flex:1,justifyContent:'center'}}>נקה הכל</button>
+              <button className="btn-ghost" onClick={()=>{setFilter({type:'',category:'',wallet:'',user:'',dateFrom:'',dateTo:'',uncategorized:false});setSearch('');}} style={{flex:1,justifyContent:'center'}}>נקה הכל</button>
               <button className="btn-primary" onClick={()=>setFilterOpen(false)} style={{flex:1,justifyContent:'center'}}>החל</button>
             </div>
           </div>
@@ -352,7 +373,6 @@ export default function Transactions() {
           if (!editing) showSuccess('העסקה נוספה בהצלחה!')
         }}
         editingTx={editing}
-        initialData={null}
       />
 
     </div>
