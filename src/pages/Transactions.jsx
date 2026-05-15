@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase, cached, withRetry, invalidate } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Plus, Search, Mic, MicOff, Edit2, Trash2, SlidersHorizontal, X } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, SlidersHorizontal, X } from 'lucide-react'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import EmptyState from '../components/ui/EmptyState'
@@ -41,15 +41,12 @@ export default function Transactions() {
   const [modal, setModal]         = useState(false)
   const [editing, setEditing]     = useState(null)
   const [form, setForm]           = useState(emptyTx)
-  const [sheetInitial, setSheetInitial] = useState(null)
   const [search, setSearch]     = useState('')
-  const [filter, setFilter]     = useState({ type:'', category:'', wallet:'', user:'', dateFrom:'', dateTo:'' })
-  const [listening, setListening] = useState(false)
+  const [filter, setFilter]     = useState({ type:'', category:'', wallet:'', user:'', dateFrom:'', dateTo:'', uncategorized:false })
   const [filterOpen, setFilterOpen] = useState(false)
   const [saving, setSaving]         = useState(false)
   const [expandedId, setExpandedId] = useState(null)
   const showSuccess = useSuccess()
-  const recognitionRef = useRef(null)
 
   useEffect(() => { loadAll() }, [])
   useRealtime(['transactions', 'wallets'], loadAll)
@@ -181,31 +178,6 @@ export default function Transactions() {
     loadAll()
   }
 
-  function startVoice() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) { toast.error('הדפדפן לא תומך בזיהוי קולי'); return }
-    const rec = new SR()
-    rec.lang = 'he-IL'
-    rec.continuous = false
-    rec.onresult = (e) => {
-      const text = e.results[0][0].transcript
-      toast.success(`שמעתי: "${text}"`)
-      const numMatch = text.match(/\d+/)
-      setEditing(null)
-      setSheetInitial(numMatch
-        ? { amount: numMatch[0], description: text.replace(numMatch[0], '').trim() }
-        : { description: text }
-      )
-      setModal(true)
-      setListening(false)
-    }
-    rec.onerror = () => { setListening(false); toast.error('לא הצלחתי לשמוע') }
-    rec.onend = () => setListening(false)
-    rec.start()
-    recognitionRef.current = rec
-    setListening(true)
-  }
-
   const filtered = txs.filter(t => {
     const q = search.toLowerCase()
     if (q && !t.description?.toLowerCase().includes(q)) return false
@@ -215,6 +187,7 @@ export default function Transactions() {
     if (filter.user && t.user_id !== filter.user) return false
     if (filter.dateFrom && t.date < filter.dateFrom) return false
     if (filter.dateTo && t.date > filter.dateTo) return false
+    if (filter.uncategorized && (t.category_id || t.type === 'transfer')) return false
     return true
   })
 
@@ -227,12 +200,27 @@ export default function Transactions() {
           <h1 style={{margin:0,fontSize:'1.5rem',fontWeight:700,color:'var(--text)'}}>עסקאות</h1>
           <p style={{margin:'0.25rem 0 0',color:'var(--text-muted)',fontSize:'0.875rem'}}>{filtered.length} רשומות</p>
         </div>
-        <div style={{display:'flex',gap:'0.5rem'}}>
-          <button className={`btn-ghost${listening?' active':''}`} onClick={startVoice} style={listening?{background:'rgba(239,68,68,0.15)',borderColor:'rgba(239,68,68,0.3)',color:'#f87171'}:{}}>
-            {listening ? <><MicOff size={15}/>מקשיב...</> : <><Mic size={15}/>קולי</>}
-          </button>
-        </div>
       </div>
+
+      {/* Uncategorized tracker card */}
+      {(() => {
+        const n = txs.filter(t => !t.category_id && t.type !== 'transfer').length
+        if (!n) return null
+        const active = filter.uncategorized
+        return (
+          <div onClick={() => setFilter(f => ({...f, uncategorized: !f.uncategorized}))}
+            style={{cursor:'pointer',display:'flex',alignItems:'center',gap:'0.875rem',padding:'0.75rem 1rem',borderRadius:'0.875rem',
+              background:active?'rgba(251,191,36,0.14)':'rgba(251,191,36,0.06)',
+              border:`1px solid ${active?'rgba(251,191,36,0.4)':'rgba(251,191,36,0.18)'}`,transition:'all 0.15s'}}>
+            <div style={{width:38,height:38,borderRadius:'0.75rem',background:'rgba(251,191,36,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.2rem',flexShrink:0}}>🏷️</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,color:'#fbbf24',fontSize:'0.88rem'}}>{n} עסקאות ללא קטגוריה</div>
+              <div style={{fontSize:'0.72rem',color:'var(--text-muted)',marginTop:'0.1rem'}}>{active?'מציג ללא קטגוריה בלבד — לחץ לביטול':'לחץ לסינון וסיווג מהיר'}</div>
+            </div>
+            {active && <span style={{fontSize:'0.68rem',color:'#fbbf24',fontWeight:700,background:'rgba(251,191,36,0.15)',padding:'0.15rem 0.5rem',borderRadius:'9999px',border:'1px solid rgba(251,191,36,0.3)',flexShrink:0}}>פעיל</span>}
+          </div>
+        )
+      })()}
 
       {/* Search bar only */}
       <div style={{position:'relative'}}>
@@ -370,7 +358,7 @@ export default function Transactions() {
               </div>
             </div>
             <div style={{display:'flex',gap:'0.75rem',marginTop:'1.25rem'}}>
-              <button className="btn-ghost" onClick={()=>{setFilter({type:'',category:'',wallet:'',user:'',dateFrom:'',dateTo:''});setSearch('');}} style={{flex:1,justifyContent:'center'}}>נקה הכל</button>
+              <button className="btn-ghost" onClick={()=>{setFilter({type:'',category:'',wallet:'',user:'',dateFrom:'',dateTo:'',uncategorized:false});setSearch('');}} style={{flex:1,justifyContent:'center'}}>נקה הכל</button>
               <button className="btn-primary" onClick={()=>setFilterOpen(false)} style={{flex:1,justifyContent:'center'}}>החל</button>
             </div>
           </div>
@@ -379,13 +367,12 @@ export default function Transactions() {
 
       <AddTransactionSheet
         open={modal}
-        onClose={() => { setModal(false); setSheetInitial(null) }}
+        onClose={() => setModal(false)}
         onSaved={() => {
           loadAll()
           if (!editing) showSuccess('העסקה נוספה בהצלחה!')
         }}
         editingTx={editing}
-        initialData={editing ? null : sheetInitial}
       />
 
     </div>
